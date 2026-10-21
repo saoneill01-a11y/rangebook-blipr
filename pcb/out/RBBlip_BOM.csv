@@ -1,0 +1,22 @@
+Qty,Part,References,Note
+6,"Ceramic capacitor, 5 mm lead spacing 1uF",C1 C2 C14 C17 C21 C24,
+3,"Electrolytic capacitor, 10 V or more 10uF",C4 C7 C10,
+4,"Ceramic capacitor, 5 mm lead spacing 10nF",C12 C15 C19 C22,
+2,"Ceramic capacitor, 5 mm lead spacing 1nF",C18 C25,
+1,"Electrolytic capacitor, 10 V or more 100uF",C3,
+5,"Ceramic capacitor, 5 mm lead spacing 100nF",C5 C8 C9 C11 C26,
+1,Schottky diode 1N5817,D1,
+2,"Header, 1x3 male (or solder wires straight in)",J1 J5,
+3,"Header, 1x4 male (or solder wires straight in)",J2 J3 J4,
+2,Resistor 1/4 W 330,R10 R17,
+2,Resistor 1/4 W 10,R1 R18,
+2,Resistor 1/4 W 100k,R19 R20,
+1,Resistor 1/4 W 100,R22,
+2,Resistor 1/4 W 1k,R23 R24,
+6,Resistor 1/4 W 10k,R2 R3 R5 R8 R12 R15,
+5,Resistor 1/4 W 4.7k,R4 R7 R11 R14 R21,
+4,Resistor 1/4 W 470,R6 R9 R13 R16,
+2,MCP6022-E/P op-amp + DIP-8 socket,U1 U2,
+1,Regulator MCP1700-3302E,U3,
+2,Female header 1x8 (socket for the ESP32-C3 SuperMini),U4,2 per board
+2,Female header 1x24 (socket for the Teensy 4.1),U5,2 per board

@@ -1,0 +1,682 @@
+// Range Book Blip (DIY radar chronograph) - ESP32-C3 firmware (Bluetooth, OLED, battery gauge)
+// Talks to the Teensy over a serial link and to your phone over Bluetooth Low Energy.
+//
+// Board settings (Arduino IDE, esp32 by Espressif 3.x):
+//   Tools > Board > esp32 > "Nologo ESP32C3 Super Mini" (or "ESP32C3 Dev Module")
+//   USB CDC On Boot: Enabled
+// Libraries (Library Manager): "Adafruit SSD1306" (it asks to add Adafruit GFX and BusIO: say yes)
+//
+// Wiring: GPIO20 (RX) <- 1 kOhm <- Teensy pin 35 (TX8)   GPIO21 (TX) -> 1 kOhm -> Teensy pin 34 (RX8)
+//         GPIO6 -> OLED SDA, GPIO7 -> OLED SCL, 3V3 -> OLED VCC, GND -> OLED GND
+//         GPIO3 <- BATT_SENSE (cell + -> 10k at the cell tab -> switch -> 100k -> BATT_SENSE -> 100k -> GND)
+//
+// Copyright (c) 2026 Sean O'Neill. AGPL-3.0-or-later (same as Range Book).
+
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Preferences.h>
+#include <math.h>
+#include "sensors.h"
+
+#define FW_VERSION "0.2.2"
+#define DEVICE_NAME "RB Blip"
+
+// Bluetooth service and characteristics (Range Book looks for these)
+#define SVC_UUID    "239d0001-5192-4fb5-95ad-180af63137b3"
+#define SHOT_UUID   "239d0002-5192-4fb5-95ad-180af63137b3"  // notify/read: one JSON per shot
+#define STATUS_UUID "239d0003-5192-4fb5-95ad-180af63137b3"  // notify/read: battery, armed, ...
+#define CMD_UUID    "239d0004-5192-4fb5-95ad-180af63137b3"  // write: text commands
+#define CONFIG_UUID "239d0005-5192-4fb5-95ad-180af63137b3"  // notify/read: settings JSON
+#define ENV_UUID    "239d0006-5192-4fb5-95ad-180af63137b3"  // notify/read: add-on sensor readings
+
+static const int PIN_LINK_RX = 20, PIN_LINK_TX = 21;
+static const int PIN_SDA = 6, PIN_SCL = 7;
+static const int PIN_BAT = 3;
+static const int PIN_LED = 8;  // on-board blue LED, lit when LOW
+static const int PIN_ONEWIRE = 10;  // ammo temperature probe (optional)
+static const uint32_t LINK_BAUD = 460800;
+
+HardwareSerial& Link = Serial1;
+Adafruit_SSD1306 oled(128, 64, &Wire, -1);
+Preferences prefs;
+static bool oledOk = false;
+
+static BLEServer* server = nullptr;
+static BLECharacteristic *chShot, *chStatus, *chCmd, *chConfig, *chEnv;
+static volatile bool connected = false;
+static volatile bool needAdvertise = false;
+
+// ---------------- shots ----------------
+struct Shot {
+  uint32_t n;
+  float fps, accel, snr, rms, d0, d1;
+  int16_t pts, code;
+  bool test;
+  char why[14];
+  char b[12];     // the Teensy's boot id when this shot was taken
+};
+static const int MAX_SHOTS = 200;
+static Shot shots[MAX_SHOTS];
+static int shotCount = 0;              // shots stored (ring)
+static uint32_t lastShotN = 0;
+static bool haveLast = false;
+static Shot last;
+// string statistics for the screen (reset with the STRING command)
+static int sN = 0;
+static double sSum = 0, sSum2 = 0;
+static float sMin = 1e9, sMax = -1e9;
+
+static void clearShots() {
+  memset(shots, 0, sizeof(shots));
+  shotCount = 0;
+  lastShotN = 0;
+}
+
+// ---------------- Teensy status ----------------
+static uint32_t teensySeenMs = 0;
+static int tArmed = 1, tSd = 0, tReady = 1;
+static uint32_t tShots = 0, tOvr = 0, tFs = 0;
+static float tNoise = 0;
+static char tFw[12] = "?";
+static char tBoot[12] = "";
+static char configJson[340] = "{}";
+
+// ---------------- battery ----------------
+static float batV = 0, batCal = 1.0f;
+static int batPct = -1;
+static bool unitsMps = false;
+static int bright = 3;   // screen: 0 = off, 1 = dim .. 4 = brightest
+
+static int pctFromVolts(float v) {
+  // resting Li-ion curve, close enough for a gauge
+  static const float V[] = {3.30f, 3.45f, 3.60f, 3.70f, 3.75f, 3.80f, 3.87f, 3.95f, 4.05f, 4.15f, 4.20f};
+  static const int P[] = {0, 5, 15, 30, 40, 50, 60, 70, 80, 92, 100};
+  if (v <= V[0]) return 0;
+  for (int i = 1; i < 11; i++)
+    if (v <= V[i]) return P[i - 1] + (int)((v - V[i - 1]) / (V[i] - V[i - 1]) * (P[i] - P[i - 1]) + 0.5f);
+  return 100;
+}
+
+static float readBatteryRaw() {
+  uint32_t mv = 0;
+  for (int i = 0; i < 16; i++) mv += analogReadMilliVolts(PIN_BAT);
+  return mv / 16.0f * 2.1f / 1000.0f;  // (10k + 100k + 100k) / 100k: the divider plus the 10k at the cell tab
+}
+
+static void updateBattery() {
+  float v = readBatteryRaw() * batCal;
+  if (v < 1.0f) { batV = 0; batPct = -1; return; }  // not wired
+  batV = (batV == 0) ? v : 0.8f * batV + 0.2f * v;
+  batPct = pctFromVolts(batV);
+}
+
+// ---------------- link to the Teensy ----------------
+static uint8_t xorSum(const char* s, size_t n) { uint8_t c = 0; for (size_t i = 0; i < n; i++) c ^= (uint8_t)s[i]; return c; }
+static void toTeensy(const char* cmd) {
+  char buf[200];
+  snprintf(buf, sizeof(buf), "!%s*%02X\n", cmd, xorSum(cmd, strlen(cmd)));
+  Link.write((const uint8_t*)buf, strlen(buf));
+}
+
+// ---------------- Bluetooth ----------------
+class ServerCB : public BLEServerCallbacks {
+  void onConnect(BLEServer*) override { connected = true; }
+  void onDisconnect(BLEServer*) override { connected = false; needAdvertise = true; }
+};
+
+// Commands arrive in a Bluetooth callback; queue them for loop().
+static const int QN = 8;
+static char cmdQueue[QN][160];
+static volatile int qHead = 0, qTail = 0;
+static portMUX_TYPE qMux = portMUX_INITIALIZER_UNLOCKED;
+class CmdCB : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic* c) override {
+    String v = c->getValue();
+    portENTER_CRITICAL(&qMux);
+    int next = (qHead + 1) % QN;
+    if (next != qTail) {
+      size_t n = v.length() < 159 ? v.length() : 159;
+      memcpy(cmdQueue[qHead], v.c_str(), n);
+      cmdQueue[qHead][n] = 0;
+      qHead = next;
+    }
+    portEXIT_CRITICAL(&qMux);
+  }
+};
+
+static void notifyText(BLECharacteristic* ch, const char* s) {
+  ch->setValue((uint8_t*)s, strlen(s));
+  if (connected) ch->notify();
+}
+
+static void shotJson(const Shot& s, char* out, size_t n) {
+  if (s.code == 0)
+    snprintf(out, n, "{\"n\":%lu,\"ok\":1,\"v\":%.1f,\"a\":%.0f,\"p\":%d,\"q\":%.1f,\"r\":%.2f,\"d0\":%.1f,\"d1\":%.1f%s,\"b\":\"%s\"}",
+             (unsigned long)s.n, s.fps, s.accel, s.pts, s.snr, s.rms, s.d0, s.d1, s.test ? ",\"test\":1" : "", s.b);
+  else
+    snprintf(out, n, "{\"n\":%lu,\"ok\":0,\"why\":\"%s\",\"p\":%d,\"q\":%.1f%s,\"b\":\"%s\"}",
+             (unsigned long)s.n, s.why, s.pts, s.snr, s.test ? ",\"test\":1" : "", s.b);
+}
+
+static void statusJson(char* out, size_t n) {
+  bool alive = millis() - teensySeenMs < 6000 && teensySeenMs != 0;
+  snprintf(out, n,
+           "{\"bat\":%d,\"bv\":%.2f,\"arm\":%d,\"shots\":%lu,\"t\":%d,\"rdy\":%d,\"fs\":%lu,\"nz\":%.1f,\"ovr\":%lu,"
+           "\"sd\":%d,\"fw\":\"%s\",\"efw\":\"" FW_VERSION "\",\"b\":\"%s\",\"sens\":\"%s\",\"cc\":%d}",
+           batPct, batV, tArmed, (unsigned long)tShots, alive ? 1 : 0, tReady, (unsigned long)tFs, tNoise,
+           (unsigned long)tOvr, tSd, tFw, tBoot, sensors::letters().c_str(), sensors::get().compassCal);
+}
+
+static void pushStatus() {
+  char js[240];
+  statusJson(js, sizeof(js));
+  notifyText(chStatus, js);
+}
+
+static void envJson(char* out, size_t n) {
+  const EnvReading& e = sensors::get();
+  size_t o = snprintf(out, n, "{");
+  auto add = [&](const char* k, float v, int dec) {
+    if (o < n - 16) o += snprintf(out + o, n - o, "%s\"%s\":%.*f", o > 1 ? "," : "", k, dec, v);
+  };
+  if (e.hasTH) { add("t", e.tempC, 2); add("rh", e.rh, 1); }
+  else if (e.hasP) add("t", e.tempC, 2);  // pressure sensor's own thermometer: rough
+  if (e.hasP) add("p", e.hPa, 2);
+  if (e.hasAmmo) add("am", e.ammoC, 2);
+  if (e.hasHeading) add("hd", e.heading, 1);
+  if (e.hasLevel) { add("pi", e.pitch, 1); add("ro", e.roll, 1); }
+  if (o < n - 10) o += snprintf(out + o, n - o, "%s\"cc\":%d", o > 1 ? "," : "", e.compassCal);
+  snprintf(out + o, n - o, "}");
+}
+
+static void pushEnv() {
+  char js[200];
+  envJson(js, sizeof(js));
+  notifyText(chEnv, js);
+}
+
+static void applyBrightness() {
+  if (!oledOk) return;
+  if (bright <= 0) { oled.ssd1306_command(SSD1306_DISPLAYOFF); return; }
+  static const uint8_t contrast[] = {0, 1, 40, 140, 255};
+  oled.ssd1306_command(SSD1306_DISPLAYON);
+  oled.ssd1306_command(SSD1306_SETCONTRAST);
+  oled.ssd1306_command(contrast[bright > 4 ? 4 : bright]);
+}
+
+// ---------------- screen ----------------
+static uint32_t flashUntil = 0;
+
+static void drawBattery(int x, int y) {
+  oled.drawRect(x, y, 18, 8, SSD1306_WHITE);
+  oled.fillRect(x + 18, y + 2, 2, 4, SSD1306_WHITE);
+  if (batPct >= 0) oled.fillRect(x + 2, y + 2, (14 * batPct + 50) / 100, 4, SSD1306_WHITE);
+}
+
+static void centerText(const char* s, int y, int size) {
+  oled.setTextSize(size);
+  int w = strlen(s) * 6 * size;
+  oled.setCursor((128 - w) / 2 < 0 ? 0 : (128 - w) / 2, y);
+  oled.print(s);
+}
+
+// ---------------- bubble level ----------------
+// Shown for up to 60 s after power-up (and on the LEVEL command) when the level sensor is fitted.
+// The screen is read from behind the chronograph, so its top edge is the FRONT (downrange) and its
+// right edge is the right-hand side. The bubble floats to the high side, like a real bubble level.
+static const float LEVEL_OK_DEG = 0.5f;       // within this on both axes counts as level
+static const float LEVEL_FULL_DEG = 5.0f;     // tilt that puts the bubble at the edge of the ring
+static uint32_t levelUntil = 0;               // millis() when the level screen ends (0 = not showing)
+static uint32_t levelOkSince = 0;             // when it last became level (0 = not level)
+static uint32_t levelDoneAt = 0;              // when it was held level long enough (shows "LEVEL" briefly)
+static uint32_t levelStart = 0;
+
+static void startLevel(uint32_t ms) {
+  levelStart = millis();
+  levelUntil = levelStart + ms;
+  if (levelUntil == 0) levelUntil = 1;
+  levelOkSince = 0;
+  levelDoneAt = 0;
+}
+
+static bool levelShowing() {
+  if (!levelUntil) return false;
+  const EnvReading& e = sensors::get();
+  uint32_t now = millis();
+  if (!e.hasLevel) {                       // no level sensor (give it 3 s to answer after power-up)
+    if (now - levelStart > 3000) levelUntil = 0;
+    return false;
+  }
+  if ((int32_t)(now - levelUntil) >= 0 || (levelDoneAt && now - levelDoneAt > 1500)) {
+    levelUntil = 0;
+    return false;
+  }
+  return true;
+}
+
+static void drawLevel() {
+  const EnvReading& e = sensors::get();
+  uint32_t now = millis();
+  float p = e.pitch, r = e.roll;                       // nose up +, right side down +
+  bool ok = fabsf(p) <= LEVEL_OK_DEG && fabsf(r) <= LEVEL_OK_DEG;
+  if (ok) { if (!levelOkSince) levelOkSince = now; } else { levelOkSince = 0; levelDoneAt = 0; }
+  if (ok && !levelDoneAt && now - levelOkSince >= 3000) levelDoneAt = now;   // held level for 3 s
+
+  oled.clearDisplay();
+  oled.setTextColor(SSD1306_WHITE);
+  // ring, crosshair and the target circle
+  const int cx = 32, cy = 32, R = 30, B = 5;
+  oled.drawCircle(cx, cy, R, SSD1306_WHITE);
+  oled.drawCircle(cx, cy, B + 2, SSD1306_WHITE);
+  oled.drawFastHLine(cx - R + 2, cy, R - B - 4, SSD1306_WHITE);
+  oled.drawFastHLine(cx + B + 3, cy, R - B - 4, SSD1306_WHITE);
+  oled.drawFastVLine(cx, cy - R + 2, R - B - 4, SSD1306_WHITE);
+  oled.drawFastVLine(cx, cy + B + 3, R - B - 4, SSD1306_WHITE);
+  // bubble: nose up = front high = bubble toward the top; right side down = left high = bubble to the left
+  float k = (R - B - 1) / LEVEL_FULL_DEG;
+  float bx = -r * k, by = -p * k;                       // screen y grows downward
+  float d = sqrtf(bx * bx + by * by), dmax = (float)(R - B - 1);
+  if (d > dmax) { bx *= dmax / d; by *= dmax / d; }
+  oled.fillCircle(cx + (int)lroundf(bx), cy + (int)lroundf(by), B, SSD1306_WHITE);
+
+  // right-hand side: what to do
+  oled.setTextSize(1);
+  oled.setCursor(68, 0);
+  oled.print("LEVEL");
+  if (batPct >= 0) drawBattery(108, 0);
+  if (levelDoneAt || ok) {
+    oled.fillRect(66, 22, 62, 20, SSD1306_WHITE);
+    oled.setTextColor(SSD1306_BLACK);
+    oled.setTextSize(2);
+    oled.setCursor(67, 25);
+    oled.print("LEVEL");
+    oled.setTextColor(SSD1306_WHITE);
+    oled.setTextSize(1);
+  } else {
+    // at most 10 characters a line fit beside the ring
+    oled.setCursor(66, 12); oled.print(fabsf(p) <= LEVEL_OK_DEG ? "Nose ok" : (p > 0 ? "Lower nose" : "Lift nose"));
+    if (fabsf(p) > LEVEL_OK_DEG) { oled.setCursor(72, 21); oled.printf("%.1f deg", fabsf(p)); }
+    oled.setCursor(66, 33); oled.print(fabsf(r) <= LEVEL_OK_DEG ? "Sides ok" : (r > 0 ? "Lift right" : "Lift left"));
+    if (fabsf(r) > LEVEL_OK_DEG) { oled.setCursor(72, 42); oled.printf("%.1f deg", fabsf(r)); }
+  }
+  oled.setCursor(66, 56);
+  oled.printf("%lus", (unsigned long)((levelUntil - now) / 1000 + 1));
+  oled.display();
+}
+
+static void drawScreen() {
+  if (!oledOk) return;
+  if (levelShowing()) { drawLevel(); return; }
+  oled.clearDisplay();
+  oled.setTextColor(SSD1306_WHITE);
+  // top bar: shot number, Bluetooth, battery
+  oled.setTextSize(1);
+  oled.setCursor(0, 0);
+  if (haveLast) oled.printf("#%lu", (unsigned long)last.n);
+  if (connected) { oled.setCursor(44, 0); oled.print("BT"); }
+  if (batPct >= 0) {
+    char b[12];
+    snprintf(b, sizeof(b), "%d%%", batPct);
+    oled.setCursor(104 - 6 * strlen(b), 0);
+    oled.print(b);
+  }
+  drawBattery(108, 0);
+
+  bool alive = teensySeenMs && millis() - teensySeenMs < 6000;
+  char big[16];
+  if (!alive) {
+    centerText("NO RADAR", 20, 2);
+    centerText("Teensy not talking", 42, 1);
+  } else if (haveLast && last.code == 0) {
+    float v = unitsMps ? last.fps * 0.3048f : last.fps;
+    snprintf(big, sizeof(big), "%.0f", v);
+    oled.setTextSize(3);
+    int w = strlen(big) * 18;
+    int x = (104 - w) / 2;
+    oled.setCursor(x < 0 ? 0 : x, 14);
+    oled.print(big);
+    oled.setTextSize(1);
+    oled.setCursor(x + w + 3 > 104 ? 104 : x + w + 3, 28);
+    oled.print(unitsMps ? "m/s" : "fps");
+  } else if (haveLast) {
+    centerText("NO READ", 16, 2);
+    centerText(last.why, 34, 1);
+  } else {
+    centerText(tArmed ? "READY" : "PAUSED", 18, 2);
+  }
+  // bottom two lines: string stats, taking turns with the weather when sensors are fitted
+  const EnvReading& e = sensors::get();
+  bool haveWx = e.hasTH || e.hasP || e.hasAmmo || e.hasHeading;
+  bool showWx = haveWx && (sN == 0 || (millis() / 4000) % 2);
+  if (showWx && alive) {
+    oled.setTextSize(1);
+    oled.setCursor(0, 47);
+    if (e.hasTH || e.hasP) {
+      if (unitsMps) oled.printf("%.1fC", e.tempC); else oled.printf("%.1fF", e.tempC * 1.8f + 32);
+      if (e.hasTH) oled.printf(" %.0f%%", e.rh);
+      if (e.hasP) { if (unitsMps) oled.printf(" %.0fhPa", e.hPa); else oled.printf(" %.2fin", e.hPa * 0.02953f); }
+    }
+    oled.setCursor(0, 56);
+    if (e.hasAmmo) { if (unitsMps) oled.printf("Ammo %.1fC", e.ammoC); else oled.printf("Ammo %.1fF", e.ammoC * 1.8f + 32); }
+    if (e.hasHeading) oled.printf("%sHdg %03.0f", e.hasAmmo ? "  " : "", e.heading);
+  } else if (sN > 0 && alive) {
+    float k = unitsMps ? 0.3048f : 1.0f;
+    double mean = sSum / sN;
+    double var = sSum2 / sN - mean * mean;
+    oled.setTextSize(1);
+    oled.setCursor(0, 47);
+    oled.printf("n %d  avg %.0f", sN, mean * k);
+    oled.setCursor(0, 56);
+    if (sN > 1) oled.printf("SD %.1f  ES %.0f", sqrt(var > 0 ? var : 0) * k, (sMax - sMin) * k);
+  }
+  if (batPct >= 0 && batPct < 10 && (millis() / 700) % 2) {
+    oled.fillRect(0, 46, 128, 18, SSD1306_BLACK);
+    centerText("LOW BATTERY", 50, 1);
+  }
+  oled.display();
+}
+
+// ---------------- messages from the Teensy ----------------
+static void handleTeensy(char* line) {
+  // line is the body without '@' and checksum, fields split by commas
+  char* f[16];
+  int nf = 0;
+  for (char* p = strtok(line, ","); p && nf < 16; p = strtok(nullptr, ",")) f[nf++] = p;
+  if (nf == 0) return;
+  teensySeenMs = millis();
+  if (!strcmp(f[0], "S") && nf >= 12) {
+    Shot s = {};
+    s.n = strtoul(f[1], nullptr, 10);
+    s.fps = atof(f[2]);
+    s.accel = atof(f[4]);
+    s.pts = atoi(f[5]);
+    s.snr = atof(f[6]);
+    s.rms = atof(f[7]);
+    s.d0 = atof(f[8]);
+    s.d1 = atof(f[9]);
+    s.code = atoi(f[10]);
+    s.test = !strcmp(f[11], "test");
+    strncpy(s.why, f[11], sizeof(s.why) - 1);
+    strncpy(s.b, tBoot, sizeof(s.b) - 1);
+    // shot numbers only go up within one Teensy start; if it went back, the Teensy restarted
+    if (shotCount > 0 && s.n <= lastShotN) { clearShots(); toTeensy("stat"); }  // and ask for its new boot id
+    shots[s.n % MAX_SHOTS] = s;
+    if (shotCount < MAX_SHOTS) shotCount++;
+    lastShotN = s.n;
+    last = s;
+    haveLast = true;
+    if (s.code == 0 && !s.test) {   // test shots show on the screen but stay out of the string's numbers
+      sN++; sSum += s.fps; sSum2 += (double)s.fps * s.fps;
+      if (s.fps < sMin) sMin = s.fps;
+      if (s.fps > sMax) sMax = s.fps;
+    }
+    levelUntil = 0;   // a shot always replaces the level screen
+    char js[220];
+    shotJson(s, js, sizeof(js));
+    notifyText(chShot, js);
+    Serial.println(js);
+    digitalWrite(PIN_LED, LOW);
+    flashUntil = millis() + 150;
+    drawScreen();
+  } else if (!strcmp(f[0], "T") && nf >= 10) {
+    tArmed = atoi(f[1]);
+    tShots = strtoul(f[2], nullptr, 10);
+    tFs = strtoul(f[3], nullptr, 10);
+    tNoise = atof(f[4]);
+    tOvr = strtoul(f[5], nullptr, 10);
+    tSd = atoi(f[6]);
+    strncpy(tFw, f[7], sizeof(tFw) - 1);
+    // a new boot id means the Teensy restarted: its shot numbers start again at 1, so the stored
+    // shots from the old start must not be re-sent (by SYNC) as if they belonged to the new one
+    if (tBoot[0] && strcmp(tBoot, f[8]) != 0) clearShots();
+    strncpy(tBoot, f[8], sizeof(tBoot) - 1);
+    tReady = atoi(f[9]);
+  } else if (!strcmp(f[0], "C")) {
+    // "C,vmin=300,vmax=4500,..." -> {"vmin":300,"vmax":4500,...}
+    // Built in a scratch buffer and only copied over when everything fitted, so an odd value
+    // can never write past the end or leave half a message behind.
+    char tmp[sizeof(configJson)];
+    const size_t cap = sizeof(tmp);
+    size_t o = 0;
+    bool fits = true;
+    auto add = [&](int w) { if (w < 0 || (size_t)w >= cap - o) fits = false; else o += (size_t)w; };
+    add(snprintf(tmp, cap, "{"));
+    for (int i = 1; i < nf && fits; i++) {
+      char* eq = strchr(f[i], '=');
+      if (!eq || strlen(eq + 1) > 16) continue;   // no sensible setting is that long
+      *eq = 0;
+      add(snprintf(tmp + o, cap - o, "%s\"%s\":%s", o > 1 ? "," : "", f[i], eq + 1));
+    }
+    if (fits)
+      add(snprintf(tmp + o, cap - o, "%s\"units\":\"%s\",\"batcal\":%.4f,\"bright\":%d,\"hoff\":%.1f,\"hrev\":%d,\"hrot\":%d}",
+                   o > 1 ? "," : "", unitsMps ? "mps" : "fps", batCal, bright, sensors::headingOffset(),
+                   sensors::headingReverse() ? 1 : 0, sensors::imuRotation()));
+    if (!fits) return;
+    memcpy(configJson, tmp, o + 1);
+    notifyText(chConfig, configJson);
+  }
+}
+
+static char lnk[220];
+static size_t lnkLen = 0;
+static void readTeensy() {
+  while (Link.available()) {
+    char c = Link.read();
+    if (c == '@') { lnkLen = 0; lnk[lnkLen++] = c; continue; }
+    if (c == '\n') {
+      lnk[lnkLen] = 0;
+      char* star = strrchr(lnk, '*');
+      if (lnkLen > 3 && lnk[0] == '@' && star) {
+        uint8_t want = (uint8_t)strtoul(star + 1, nullptr, 16);
+        *star = 0;
+        if (xorSum(lnk + 1, strlen(lnk + 1)) == want) handleTeensy(lnk + 1);
+      }
+      lnkLen = 0;
+    } else if (lnkLen > 0 && lnkLen < sizeof(lnk) - 1) lnk[lnkLen++] = c;
+  }
+}
+
+// ---------------- commands (Bluetooth and USB) ----------------
+static void handleCommand(char* cmd) {
+  while (*cmd == ' ') cmd++;
+  size_t L = strlen(cmd);
+  while (L && (cmd[L - 1] == '\r' || cmd[L - 1] == '\n' || cmd[L - 1] == ' ')) cmd[--L] = 0;
+  if (!L) return;
+  char word[16] = {0};
+  sscanf(cmd, "%15s", word);
+  for (char* c = word; *c; c++) *c = toupper(*c);
+  const char* arg = cmd + strlen(word);
+  while (*arg == ' ') arg++;
+
+  if (!strcmp(word, "SYNC")) {
+    // re-send stored shots newer than the number given (after a reconnect)
+    uint32_t after = strtoul(arg, nullptr, 10);
+    uint32_t from = lastShotN > (uint32_t)shotCount ? lastShotN - shotCount + 1 : 1;
+    if (after + 1 > from) from = after + 1;
+    for (uint32_t n = from; n <= lastShotN; n++) {
+      const Shot& s = shots[n % MAX_SHOTS];
+      if (s.n != n) continue;
+      char js[220];
+      shotJson(s, js, sizeof(js));
+      notifyText(chShot, js);
+      delay(20);
+    }
+  } else if (!strcmp(word, "STRING")) {
+    sN = 0; sSum = sSum2 = 0; sMin = 1e9; sMax = -1e9;
+    haveLast = false;
+    drawScreen();
+  } else if (!strcmp(word, "UNITS")) {
+    unitsMps = (toupper(arg[0]) == 'M');
+    prefs.putBool("mps", unitsMps);
+    drawScreen();
+    toTeensy("get");
+  } else if (!strcmp(word, "BATV")) {
+    // "BATV 3.97": the battery voltage you measured with a multimeter
+    float actual = atof(arg);
+    float raw = readBatteryRaw();
+    if (actual > 2.5f && actual < 4.5f && raw > 1.0f) {
+      batCal = actual / raw;
+      prefs.putFloat("batcal", batCal);
+      batV = 0;
+      updateBattery();
+    }
+    toTeensy("get");
+    pushStatus();
+  } else if (!strcmp(word, "STATUS")) {
+    pushStatus();
+    pushEnv();
+  } else if (!strcmp(word, "LEVEL")) {
+    // LEVEL: show the bubble level for 60 s.  LEVEL OFF: back to the normal screen.
+    if (toupper(arg[0]) == 'O' && toupper(arg[1]) == 'F') levelUntil = 0; else startLevel(60000);
+    drawScreen();
+  } else if (!strcmp(word, "BRIGHT")) {
+    bright = atoi(arg);
+    if (bright < 0) bright = 0;
+    if (bright > 4) bright = 4;
+    prefs.putInt("bright", bright);
+    applyBrightness();
+    toTeensy("get");
+  } else if (!strcmp(word, "COMPASS")) {
+    // COMPASS CAL START | COMPASS CAL STOP | COMPASS MATCH <deg> | COMPASS OFFSET <deg> | COMPASS REVERSE 0/1 | COMPASS ROT 0/90/180/270
+    char a1[12] = {0}, a2[12] = {0};
+    sscanf(arg, "%11s %11s", a1, a2);
+    for (char* c = a1; *c; c++) *c = toupper(*c);
+    for (char* c = a2; *c; c++) *c = toupper(*c);
+    if (!strcmp(a1, "CAL") && !strcmp(a2, "START")) sensors::compassCalStart();
+    else if (!strcmp(a1, "CAL") && !strcmp(a2, "STOP")) {
+      bool ok = sensors::compassCalStop();
+      char js[60];
+      snprintf(js, sizeof(js), "{\"compass\":\"%s\"}", ok ? "calibrated" : "not enough turning");
+      notifyText(chEnv, js);
+    }
+    else if (!strcmp(a1, "MATCH")) {
+      // the phone says the chronograph is pointing at <deg>: set the offset so it agrees
+      float want = atof(a2);
+      float off = want - sensors::headingRaw();
+      while (off < -180) off += 360;
+      while (off > 180) off -= 360;
+      sensors::setHeadingOffset(off);
+    }
+    else if (!strcmp(a1, "OFFSET")) sensors::setHeadingOffset(atof(a2));
+    else if (!strcmp(a1, "REVERSE")) sensors::setHeadingReverse(atoi(a2) != 0);
+    else if (!strcmp(a1, "ROT")) sensors::setImuRotation(atoi(a2));
+    toTeensy("get");
+    pushEnv();
+  } else {
+    toTeensy(cmd);  // everything else is for the Teensy (SET, GET, ARM, DISARM, TEST, REC, STAT ...)
+  }
+}
+
+// ---------------- setup / loop ----------------
+void setup() {
+  pinMode(PIN_LED, OUTPUT);
+  digitalWrite(PIN_LED, HIGH);
+  Serial.begin(115200);
+  Link.setRxBufferSize(1024);  // must come before begin()
+  Link.begin(LINK_BAUD, SERIAL_8N1, PIN_LINK_RX, PIN_LINK_TX);
+
+  prefs.begin("chrono", false);
+  batCal = prefs.getFloat("batcal", 1.0f);
+  unitsMps = prefs.getBool("mps", false);
+  bright = prefs.getInt("bright", 3);
+  analogReadResolution(12);
+  analogSetPinAttenuation(PIN_BAT, ADC_11db);
+
+  Wire.begin(PIN_SDA, PIN_SCL);
+  Wire.setClock(400000);
+  oledOk = oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  if (oledOk) {
+    oled.clearDisplay();
+    oled.setTextColor(SSD1306_WHITE);
+    centerText("RB Blip", 18, 2);
+    centerText("v" FW_VERSION, 40, 1);
+    oled.display();
+    applyBrightness();
+  }
+  sensors::begin(PIN_ONEWIRE);
+
+  BLEDevice::init(DEVICE_NAME);
+  BLEDevice::setMTU(185);
+  server = BLEDevice::createServer();
+  server->setCallbacks(new ServerCB());
+  BLEService* svc = server->createService(BLEUUID(SVC_UUID), 20);
+  chShot = svc->createCharacteristic(SHOT_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  chStatus = svc->createCharacteristic(STATUS_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  chConfig = svc->createCharacteristic(CONFIG_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  chCmd = svc->createCharacteristic(CMD_UUID, BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR);
+  chEnv = svc->createCharacteristic(ENV_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+#ifdef CONFIG_BLUEDROID_ENABLED
+  chShot->addDescriptor(new BLE2902());
+  chStatus->addDescriptor(new BLE2902());
+  chConfig->addDescriptor(new BLE2902());
+  chEnv->addDescriptor(new BLE2902());
+#endif
+  chEnv->setValue("{}");
+  chCmd->setCallbacks(new CmdCB());
+  chShot->setValue("{}");
+  chConfig->setValue(configJson);
+  svc->start();
+  BLEAdvertising* adv = BLEDevice::getAdvertising();
+  adv->addServiceUUID(SVC_UUID);
+  adv->setScanResponse(true);
+  BLEDevice::startAdvertising();
+
+  updateBattery();
+  pushStatus();
+  Serial.printf("RB Blip ESP32-C3 firmware %s ready. Sensors found: %s\n"
+                "Commands: STATUS, SYNC n, STRING, UNITS fps|mps, BATV volts, BRIGHT 0-4, LEVEL [OFF], COMPASS ...,\n"
+                "or any Teensy command (STAT, GET, SET ..., ARM, DISARM, TEST, REC, TIME).\n", FW_VERSION,
+                sensors::letters().length() ? sensors::letters().c_str() : "none");
+  delay(300);
+  toTeensy("get");
+  toTeensy("stat");
+  startLevel(60000);   // only shows if the level sensor answers (levelShowing() checks)
+}
+
+void loop() {
+  readTeensy();
+
+  // commands from Bluetooth
+  while (qTail != qHead) {
+    char c[160];
+    portENTER_CRITICAL(&qMux);
+    memcpy(c, cmdQueue[qTail], sizeof(c));
+    qTail = (qTail + 1) % QN;
+    portEXIT_CRITICAL(&qMux);
+    handleCommand(c);
+  }
+  // commands typed in the Serial Monitor
+  static char usb[160];
+  static size_t usbLen = 0;
+  while (Serial.available()) {
+    char ch = Serial.read();
+    if (ch == '\n' || ch == '\r') { if (usbLen) { usb[usbLen] = 0; handleCommand(usb); usbLen = 0; } }
+    else if (usbLen < sizeof(usb) - 1) usb[usbLen++] = ch;
+  }
+
+  if (needAdvertise) {
+    needAdvertise = false;
+    delay(200);
+    BLEDevice::startAdvertising();
+  }
+  if (flashUntil && millis() > flashUntil) { digitalWrite(PIN_LED, HIGH); flashUntil = 0; }
+
+  sensors::update();
+  static uint32_t lastBat = 0, lastStat = 0, lastDraw = 0, lastEnv = 0;
+  static bool wasConnected = false;
+  uint32_t now = millis();
+  if (now - lastBat >= 2000) { lastBat = now; updateBattery(); }
+  if (now - lastStat >= 2000 || connected != wasConnected) {
+    lastStat = now;
+    if (connected && !wasConnected) { notifyText(chConfig, configJson); }
+    wasConnected = connected;
+    pushStatus();
+  }
+  if (now - lastDraw >= (levelUntil ? 100u : 500u)) { lastDraw = now; drawScreen(); }
+  if (now - lastEnv >= 2000) { lastEnv = now; if (sensors::letters().length()) pushEnv(); }
+}
