@@ -50,7 +50,7 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 - `drive` / `drive off`: USB drive mode (below; it turns on by itself when you plug into a computer)
 - `time 1792480000`: set the clock (Range Book does this every time it connects), so raw recordings have the date and time
 
-ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
+ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
 
 ## What changed in 0.2.2
 
@@ -68,6 +68,7 @@ Needs circuit board v1.1 (or the matching hand wiring): the serial link moved.
 - ESP32: the battery gauge expects the 10 kOhm resistor at the cell's + tab (divider ratio 2.1). `BATV` calibration still fine-tunes it.
 - ESP32: the settings message can no longer overrun its buffer.
 - ESP32: at power-up a bullet flies across the screen and writes "RB Blip" behind it, then the screen blinks once (about 2 s), before the bubble level.
+- ESP32: `ANIM 1` (or the switch in Range Book's chronograph settings) plays a short version after each good shot: the bullet crosses the screen and writes the velocity behind it, then the screen blinks. Off by default; `ANIM 0` turns it off. Bluetooth and the radar link keep working while it plays.
 - ESP32: with the level sensor fitted, the screen shows a bubble level for 60 s after power-up (and on `LEVEL`). It goes back to the normal screen once it has been level within 0.5 degrees for 3 s, when a shot comes in, or on `LEVEL OFF`.
 
 ## What changed in 0.2.1

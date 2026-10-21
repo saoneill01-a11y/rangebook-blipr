@@ -91,6 +91,8 @@ static float batV = 0, batCal = 1.0f;
 static int batPct = -1;
 static bool unitsMps = false;
 static int bright = 3;   // screen: 0 = off, 1 = dim .. 4 = brightest
+static bool shotAnim = false;   // ANIM 1: after each good shot a bullet flies across and writes the velocity
+static uint32_t animStart = 0;  // millis() when the shot animation started (0 = not running)
 
 static int pctFromVolts(float v) {
   // resting Li-ion curve, close enough for a gauge
@@ -271,6 +273,13 @@ static void bootAnimation() {
   delay(600);
 }
 
+// After a good shot (when ANIM is on): the same bullet crosses the velocity line and writes the number
+// behind it, then the screen blinks once. It runs from loop() a frame at a time, so Bluetooth and the
+// Teensy link keep working; a new shot just restarts it.
+static const uint32_t ANIM_MS = 620;          // bullet crossing time
+static const uint32_t ANIM_BLINK_MS = 70;     // the blink at the end
+static bool animRunning() { return animStart && millis() - animStart < ANIM_MS + ANIM_BLINK_MS; }
+
 // ---------------- bubble level ----------------
 // Shown for up to 60 s after power-up (and on the LEVEL command) when the level sensor is fitted.
 // The screen is read from behind the chronograph, so its top edge is the FRONT (downrange) and its
@@ -389,6 +398,21 @@ static void drawScreen() {
     oled.setTextSize(1);
     oled.setCursor(x + w + 3 > 104 ? 104 : x + w + 3, 28);
     oled.print(unitsMps ? "m/s" : "fps");
+    if (animStart) {
+      uint32_t t = millis() - animStart;
+      if (t < ANIM_MS) {
+        const int y = 25;
+        int bx = -BULLET_LEN + (int)((128 + BULLET_LEN) * t / ANIM_MS);
+        oled.fillRect(bx < 0 ? 0 : bx, 9, 128, 31, SSD1306_BLACK);              // not written yet
+        int wake = bx - 22;
+        oled.fillRect(wake < 0 ? 0 : wake, 9, bx - (wake < 0 ? 0 : wake), 31, SSD1306_BLACK);
+        for (int k = 0; k < 3; k++) {
+          int len = 8 + (((bx + BULLET_LEN) / 6 + k * 5) % 3) * 5;
+          oled.drawFastHLine(bx - 3 - len, y - 3 + k * 3, len, SSD1306_WHITE);
+        }
+        drawBullet(bx, y);
+      }
+    }
   } else if (haveLast) {
     centerText("NO READ", 16, 2);
     centerText(last.why, 34, 1);
@@ -425,6 +449,12 @@ static void drawScreen() {
     centerText("LOW BATTERY", 50, 1);
   }
   oled.display();
+  if (animStart) {
+    uint32_t t = millis() - animStart;
+    bool blink = t >= ANIM_MS && t < ANIM_MS + ANIM_BLINK_MS;
+    oled.invertDisplay(blink);
+    if (t >= ANIM_MS + ANIM_BLINK_MS) animStart = 0;
+  }
 }
 
 // ---------------- messages from the Teensy ----------------
@@ -462,6 +492,7 @@ static void handleTeensy(char* line) {
       if (s.fps > sMax) sMax = s.fps;
     }
     levelUntil = 0;   // a shot always replaces the level screen
+    animStart = (shotAnim && s.code == 0) ? (millis() | 1) : 0;
     char js[220];
     shotJson(s, js, sizeof(js));
     notifyText(chShot, js);
@@ -499,8 +530,8 @@ static void handleTeensy(char* line) {
       add(snprintf(tmp + o, cap - o, "%s\"%s\":%s", o > 1 ? "," : "", f[i], eq + 1));
     }
     if (fits)
-      add(snprintf(tmp + o, cap - o, "%s\"units\":\"%s\",\"batcal\":%.4f,\"bright\":%d,\"hoff\":%.1f,\"hrev\":%d,\"hrot\":%d}",
-                   o > 1 ? "," : "", unitsMps ? "mps" : "fps", batCal, bright, sensors::headingOffset(),
+      add(snprintf(tmp + o, cap - o, "%s\"units\":\"%s\",\"batcal\":%.4f,\"bright\":%d,\"anim\":%d,\"hoff\":%.1f,\"hrev\":%d,\"hrot\":%d}",
+                   o > 1 ? "," : "", unitsMps ? "mps" : "fps", batCal, bright, shotAnim ? 1 : 0, sensors::headingOffset(),
                    sensors::headingReverse() ? 1 : 0, sensors::imuRotation()));
     if (!fits) return;
     memcpy(configJson, tmp, o + 1);
@@ -580,6 +611,11 @@ static void handleCommand(char* cmd) {
     // LEVEL: show the bubble level for 60 s.  LEVEL OFF: back to the normal screen.
     if (toupper(arg[0]) == 'O' && toupper(arg[1]) == 'F') levelUntil = 0; else startLevel(60000);
     drawScreen();
+  } else if (!strcmp(word, "ANIM")) {
+    // ANIM 1: play the bullet animation after each good shot.  ANIM 0: just show the number.
+    shotAnim = atoi(arg) != 0 || (arg[0] && toupper(arg[1]) == 'N');   // also takes ON / OFF
+    prefs.putBool("anim", shotAnim);
+    toTeensy("get");   // the config notification carries "anim"
   } else if (!strcmp(word, "BRIGHT")) {
     bright = atoi(arg);
     if (bright < 0) bright = 0;
@@ -630,6 +666,7 @@ void setup() {
   batCal = prefs.getFloat("batcal", 1.0f);
   unitsMps = prefs.getBool("mps", false);
   bright = prefs.getInt("bright", 3);
+  shotAnim = prefs.getBool("anim", false);
   analogReadResolution(12);
   analogSetPinAttenuation(PIN_BAT, ADC_11db);
 
@@ -673,7 +710,7 @@ void setup() {
   updateBattery();
   pushStatus();
   Serial.printf("RB Blip ESP32-C3 firmware %s ready. Sensors found: %s\n"
-                "Commands: STATUS, SYNC n, STRING, UNITS fps|mps, BATV volts, BRIGHT 0-4, LEVEL [OFF], COMPASS ...,\n"
+                "Commands: STATUS, SYNC n, STRING, UNITS fps|mps, BATV volts, BRIGHT 0-4, ANIM 0|1, LEVEL [OFF], COMPASS ...,\n"
                 "or any Teensy command (STAT, GET, SET ..., ARM, DISARM, TEST, REC, TIME).\n", FW_VERSION,
                 sensors::letters().length() ? sensors::letters().c_str() : "none");
   delay(300);
@@ -721,6 +758,6 @@ void loop() {
     wasConnected = connected;
     pushStatus();
   }
-  if (now - lastDraw >= (levelUntil ? 100u : 500u)) { lastDraw = now; drawScreen(); }
+  if (now - lastDraw >= (animStart ? 15u : levelUntil ? 100u : 500u)) { lastDraw = now; drawScreen(); }
   if (now - lastEnv >= 2000) { lastEnv = now; if (sensors::letters().length()) pushEnv(); }
 }
