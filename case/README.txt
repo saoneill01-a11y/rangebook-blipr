@@ -12,7 +12,8 @@ WHAT CHANGED IN v0.7 (lids only; base, front cover, pod and roof are the same as
   - Two 8 mm risers hang 6 mm under the lid at the pod's screw spots. Press an M3 heat-set insert into
     each from the top (the pod hides them), then hold the pod down with 2 x M3x8. No nuts.
   - No ammo-probe jack hole (the probe isn't used: your ammo sits at air temperature).
-  - BLIP moved to the front on the +X side, in line with the screen.
+  - BLIP sits beside the pod: centred between the pod and the lid's +X edge (5.9 mm each side), level
+    with the middle of the pod.
   - The screen now sits over the Teensy, about 5 mm above it. Solder the screen's 4 wires straight to
     its pads (or bend the header pins flat) rather than using a straight header with Dupont plugs.
 

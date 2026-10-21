@@ -103,7 +103,8 @@ POD_POST_W = 2.0          # uprights splitting the pod's vent slots (shorter bri
 POD_BOARD_DX = 21.0                   # board centres at -21 (SHT45), 0 (BMP390), +21 (IMU): long sides front-to-back
 POD_CABLE_X, POD_CABLE_Y = -21.0, -19.0   # cable slot centre, pod coords (front-left corner, under nothing)
 POD_CABLE_W, POD_CABLE_D = 8.0, 7.0   # slot for the STEMMA QT cable through pod floor and lid
-NAME_IX, NAME_IY = 90.0, 34.0          # centre of the debossed BLIP on the lid (inside coords): front, in line with the screen
+NAME_IY = 34.0                         # debossed BLIP on the lid (inside coords): level with the pod's centre ...
+NAME_IX = (POD_IX + POD_W / 2 + IW + WALL) / 2   # ... and centred between the pod's +X side and the lid's +X edge
 NAME_H, NAME_STROKE, NAME_DEPTH = 12.0, 2.4, 0.6
 # --- STEMMA QT sensor boards (Adafruit 1.0" x 0.7"): mounting holes 0.1" in from each corner
 SQ_HOLE_DX, SQ_HOLE_DY = 20.32, 12.7   # hole spacing along the long and short side
