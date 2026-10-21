@@ -67,6 +67,7 @@ Needs circuit board v1.1 (or the matching hand wiring): the serial link moved.
 - ESP32: `COMPASS REVERSE` is ignored when the accelerometer is fitted (the accelerometer already knows which way is up). `COMPASS ROT` is counter-clockwise seen from above.
 - ESP32: the battery gauge expects the 10 kOhm resistor at the cell's + tab (divider ratio 2.1). `BATV` calibration still fine-tunes it.
 - ESP32: the settings message can no longer overrun its buffer.
+- ESP32: at power-up a bullet flies across the screen and writes "RB Blip" behind it, then the screen blinks once (about 2 s), before the bubble level.
 - ESP32: with the level sensor fitted, the screen shows a bubble level for 60 s after power-up (and on `LEVEL`). It goes back to the normal screen once it has been level within 0.5 degrees for 3 s, when a shot comes in, or on `LEVEL OFF`.
 
 ## What changed in 0.2.1

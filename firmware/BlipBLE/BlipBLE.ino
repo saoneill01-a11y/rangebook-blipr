@@ -225,6 +225,52 @@ static void centerText(const char* s, int y, int size) {
   oled.print(s);
 }
 
+// ---------------- boot animation ----------------
+// A bullet flies across the screen from left to right and "writes" the name behind it, then the screen
+// blinks once. About 2 s; it runs once at power-up, before the bubble level.
+static const int BOOT_Y = 25;   // bullet centre line (middle of the size-2 name)
+
+// Bullet side view, tail to nose: half-height of each 1-px column (boat tail, bearing surface, spitzer nose)
+static const uint8_t BULLET_PROFILE[] = {3, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+                                         5, 5, 5, 5, 4, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 1, 0};
+static const int BULLET_LEN = sizeof(BULLET_PROFILE);
+
+static void drawBullet(int x, int y) {          // x = tail, nose to the right
+  for (int i = 0; i < BULLET_LEN; i++) {
+    int h = BULLET_PROFILE[i];
+    oled.drawFastVLine(x + i, y - h, 2 * h + 1, SSD1306_WHITE);
+  }
+}
+
+static void bootAnimation() {
+  char ver[16];
+  snprintf(ver, sizeof(ver), "v%s", FW_VERSION);
+  for (int x = -BULLET_LEN; x <= 132; x += 6) {
+    oled.clearDisplay();
+    centerText("RB Blip", 18, 2);
+    centerText(ver, 44, 1);
+    if (x < 128) oled.fillRect(x < 0 ? 0 : x, 0, 128, 64, SSD1306_BLACK);     // not written yet
+    int wake = x - 22;                                                           // the wake hides the text briefly
+    oled.fillRect(wake < 0 ? 0 : wake, BOOT_Y - 7, x - (wake < 0 ? 0 : wake), 15, SSD1306_BLACK);
+    for (int k = 0; k < 3; k++) {                                                // speed lines
+      int len = 8 + (((x + BULLET_LEN) / 6 + k * 5) % 3) * 5;
+      int y = BOOT_Y - 3 + k * 3;
+      oled.drawFastHLine(x - 3 - len, y, len, SSD1306_WHITE);
+    }
+    drawBullet(x, BOOT_Y);
+    oled.display();
+    delay(12);
+  }
+  oled.clearDisplay();
+  centerText("RB Blip", 18, 2);
+  centerText(ver, 44, 1);
+  oled.display();
+  oled.invertDisplay(true);   // the "blip"
+  delay(70);
+  oled.invertDisplay(false);
+  delay(600);
+}
+
 // ---------------- bubble level ----------------
 // Shown for up to 60 s after power-up (and on the LEVEL command) when the level sensor is fitted.
 // The screen is read from behind the chronograph, so its top edge is the FRONT (downrange) and its
@@ -593,10 +639,8 @@ void setup() {
   if (oledOk) {
     oled.clearDisplay();
     oled.setTextColor(SSD1306_WHITE);
-    centerText("RB Blip", 18, 2);
-    centerText("v" FW_VERSION, 40, 1);
-    oled.display();
     applyBrightness();
+    bootAnimation();            // ends on the name and version, which stay up while Bluetooth starts
   }
   sensors::begin(PIN_ONEWIRE);
 
