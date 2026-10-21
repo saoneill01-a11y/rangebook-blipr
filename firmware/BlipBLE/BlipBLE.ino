@@ -21,6 +21,8 @@
 #include <Adafruit_SSD1306.h>
 #include <Preferences.h>
 #include <math.h>
+#include <Update.h>
+#include "esp_ota_ops.h"
 #include "sensors.h"
 
 #define FW_VERSION "0.2.2"
@@ -33,6 +35,7 @@
 #define CMD_UUID    "239d0004-5192-4fb5-95ad-180af63137b3"  // write: text commands
 #define CONFIG_UUID "239d0005-5192-4fb5-95ad-180af63137b3"  // notify/read: settings JSON
 #define ENV_UUID    "239d0006-5192-4fb5-95ad-180af63137b3"  // notify/read: add-on sensor readings
+#define OTA_UUID    "239d0007-5192-4fb5-95ad-180af63137b3"  // write/read/notify: firmware update for this board (see PROTOCOL.md)
 
 static const int PIN_LINK_RX = 20, PIN_LINK_TX = 21;
 static const int PIN_SDA = 6, PIN_SCL = 7;
@@ -126,9 +129,92 @@ static void toTeensy(const char* cmd) {
 }
 
 // ---------------- Bluetooth ----------------
+// ---------------- firmware update over Bluetooth ----------------
+// Range Book sends a new app image for this board in small numbered pieces. It goes into the spare app slot;
+// the board only switches to it if every byte arrived and the MD5 matches. After the restart the new firmware
+// has to run for 15 s before it's kept: if it crashes or resets before then, the board goes back to the old one.
+static BLECharacteristic* chOta = nullptr;
+static volatile bool otaActive = false;
+static volatile uint32_t otaSize = 0, otaGot = 0, otaLastMs = 0;
+static uint32_t otaRebootAt = 0;
+static void otaSay(const char* state, const char* why = nullptr, bool notify = true) {
+  char m[128];
+  if (why) snprintf(m, sizeof(m), "{\"ota\":\"%s\",\"got\":%lu,\"size\":%lu,\"why\":\"%s\"}", state, (unsigned long)otaGot, (unsigned long)otaSize, why);
+  else snprintf(m, sizeof(m), "{\"ota\":\"%s\",\"got\":%lu,\"size\":%lu}", state, (unsigned long)otaGot, (unsigned long)otaSize);
+  if (!chOta) return;
+  chOta->setValue((uint8_t*)m, strlen(m));
+  if (notify && connected) chOta->notify();
+}
+static void otaStop(const char* why) {
+  if (otaActive) Update.abort();
+  otaActive = false;
+  otaSay("error", why);
+}
+class OtaCB : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic* c) override {
+    uint8_t* d = c->getData();
+    size_t n = c->getLength();
+    if (!d || !n) return;
+    otaLastMs = millis();
+    if (d[0] == 'B') {                          // B<size> <md5 hex>: start
+      char a[64] = {0};
+      memcpy(a, d + 1, n - 1 < sizeof(a) - 1 ? n - 1 : sizeof(a) - 1);
+      unsigned long sz = 0;
+      char md5[40] = {0};
+      if (sscanf(a, "%lu %39s", &sz, md5) != 2 || strlen(md5) != 32 || sz < 1024) { otaStop("bad start message"); return; }
+      if (otaActive) Update.abort();
+      otaActive = false;
+      otaGot = 0;
+      otaSize = sz;
+      if (!Update.begin(sz, U_FLASH)) { otaStop(Update.errorString()); return; }
+      Update.setMD5(md5);
+      otaActive = true;
+      otaSay("ready");
+    } else if (d[0] == 'D') {                   // D + 4-byte offset (little-endian) + data
+      if (!otaActive || n < 6) { otaSay("error", "not started", false); return; }
+      uint32_t off = d[1] | (d[2] << 8) | (d[3] << 16) | ((uint32_t)d[4] << 24);
+      if (off != otaGot) { otaSay("resend", nullptr, false); return; }   // a piece went missing: Range Book goes back
+      size_t len = n - 5;
+      if (otaGot + len > otaSize) { otaStop("too much data"); return; }
+      if (Update.write(d + 5, len) != len) { otaStop(Update.errorString()); return; }
+      otaGot += len;
+      otaSay("rx", nullptr, false);             // readable progress, no notification per piece
+    } else if (d[0] == 'E') {                   // E: finish, check, switch on the next restart
+      if (!otaActive || otaGot != otaSize) { otaStop("incomplete"); return; }
+      otaActive = false;
+      if (!Update.end()) { otaSay("error", Update.errorString()); return; }   // includes the MD5 and image check
+      otaSay("done");
+      otaRebootAt = millis() + 1500;
+    } else if (d[0] == 'A') {                   // A: abort
+      if (otaActive) Update.abort();
+      otaActive = false;
+      otaSay("idle");
+    }
+  }
+};
+
+// The Arduino core normally accepts a new firmware as soon as it starts. Ask it to wait: loop() keeps it
+// after 15 s of normal running (see keepFirmwareIfRunning), so a firmware that crashes early rolls back.
+extern "C" bool verifyRollbackLater() { return true; }
+static void keepFirmwareIfRunning() {
+  static bool done = false;
+  if (done || millis() < 15000) return;
+  done = true;
+  const esp_partition_t* run = esp_ota_get_running_partition();
+  esp_ota_img_states_t st;
+  if (esp_ota_get_state_partition(run, &st) == ESP_OK && st == ESP_OTA_IMG_PENDING_VERIFY) {
+    esp_ota_mark_app_valid_cancel_rollback();
+    Serial.println("New firmware kept.");
+  }
+}
+
 class ServerCB : public BLEServerCallbacks {
   void onConnect(BLEServer*) override { connected = true; }
-  void onDisconnect(BLEServer*) override { connected = false; needAdvertise = true; }
+  void onDisconnect(BLEServer*) override {
+    connected = false;
+    needAdvertise = true;
+    if (otaActive) { Update.abort(); otaActive = false; otaSay("idle", nullptr, false); }   // start again next time
+  }
 };
 
 // Commands arrive in a Bluetooth callback; queue them for loop().
@@ -366,6 +452,19 @@ static void drawLevel() {
 
 static void drawScreen() {
   if (!oledOk) return;
+  if (otaActive || otaRebootAt) {               // firmware update in progress
+    oled.clearDisplay();
+    oled.setTextColor(SSD1306_WHITE);
+    centerText(otaRebootAt ? "UPDATED" : "UPDATING", 10, 2);
+    uint32_t pct = otaSize ? (uint64_t)otaGot * 100 / otaSize : 0;
+    oled.drawRect(4, 34, 120, 10, SSD1306_WHITE);
+    oled.fillRect(6, 36, (int)(116 * pct / 100), 6, SSD1306_WHITE);
+    char b[24];
+    snprintf(b, sizeof(b), otaRebootAt ? "restarting" : "%lu%%  keep close", (unsigned long)pct);
+    centerText(b, 50, 1);
+    oled.display();
+    return;
+  }
   if (levelShowing()) { drawLevel(); return; }
   oled.clearDisplay();
   oled.setTextColor(SSD1306_WHITE);
@@ -685,13 +784,16 @@ void setup() {
   BLEDevice::setMTU(185);
   server = BLEDevice::createServer();
   server->setCallbacks(new ServerCB());
-  BLEService* svc = server->createService(BLEUUID(SVC_UUID), 20);
+  BLEService* svc = server->createService(BLEUUID(SVC_UUID), 30);
   chShot = svc->createCharacteristic(SHOT_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   chStatus = svc->createCharacteristic(STATUS_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   chConfig = svc->createCharacteristic(CONFIG_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   chCmd = svc->createCharacteristic(CMD_UUID, BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR);
   chEnv = svc->createCharacteristic(ENV_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  chOta = svc->createCharacteristic(OTA_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE |
+                                              BLECharacteristic::PROPERTY_WRITE_NR | BLECharacteristic::PROPERTY_NOTIFY);
 #ifdef CONFIG_BLUEDROID_ENABLED
+  chOta->addDescriptor(new BLE2902());
   chShot->addDescriptor(new BLE2902());
   chStatus->addDescriptor(new BLE2902());
   chConfig->addDescriptor(new BLE2902());
@@ -699,6 +801,8 @@ void setup() {
 #endif
   chEnv->setValue("{}");
   chCmd->setCallbacks(new CmdCB());
+  chOta->setCallbacks(new OtaCB());
+  otaSay("idle", nullptr, false);
   chShot->setValue("{}");
   chConfig->setValue(configJson);
   svc->start();
@@ -747,6 +851,10 @@ void loop() {
   }
   if (flashUntil && millis() > flashUntil) { digitalWrite(PIN_LED, HIGH); flashUntil = 0; }
 
+  keepFirmwareIfRunning();
+  if (otaRebootAt && millis() > otaRebootAt) { Serial.println("Restarting into the new firmware..."); delay(100); ESP.restart(); }
+  if (otaActive && millis() - otaLastMs > 20000) { Update.abort(); otaActive = false; otaSay("idle"); }   // sender gave up
+
   sensors::update();
   static uint32_t lastBat = 0, lastStat = 0, lastDraw = 0, lastEnv = 0;
   static bool wasConnected = false;
@@ -758,6 +866,6 @@ void loop() {
     wasConnected = connected;
     pushStatus();
   }
-  if (now - lastDraw >= (animStart ? 15u : levelUntil ? 100u : 500u)) { lastDraw = now; drawScreen(); }
+  if (now - lastDraw >= (animStart ? 15u : (levelUntil || otaActive) ? 100u : 500u)) { lastDraw = now; drawScreen(); }
   if (now - lastEnv >= 2000) { lastEnv = now; if (sensors::letters().length()) pushEnv(); }
 }

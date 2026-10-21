@@ -68,6 +68,7 @@ Needs circuit board v1.1 (or the matching hand wiring): the serial link moved.
 - ESP32: the battery gauge expects the 10 kOhm resistor at the cell's + tab (divider ratio 2.1). `BATV` calibration still fine-tunes it.
 - ESP32: the settings message can no longer overrun its buffer.
 - ESP32: at power-up a bullet flies across the screen and writes "RB Blip" behind it, then the screen blinks once (about 2 s), before the bubble level.
+- ESP32: firmware updates over Bluetooth. Range Book (chronograph settings › Firmware) sends the new firmware in numbered pieces to a spare slot; the board checks each piece's place and the whole file's MD5, switches on the next restart, and keeps the new firmware only after it has run for 15 s (if it crashes or resets sooner, it goes back to the old one). The first 0.2.2 has to go on with the USB cable; after that, Range Book can do it. The Teensy is still updated over USB.
 - ESP32: `ANIM 1` (or the switch in Range Book's chronograph settings) plays a short version after each good shot: the bullet crosses the screen and writes the velocity behind it, then the screen blinks. Off by default; `ANIM 0` turns it off. Bluetooth and the radar link keep working while it plays.
 - ESP32: with the level sensor fitted, the screen shows a bubble level for 60 s after power-up (and on `LEVEL`). It goes back to the normal screen once it has been level within 0.5 degrees for 3 s, when a shot comes in, or on `LEVEL OFF`.
 
@@ -100,6 +101,7 @@ Notes:
 ## Prebuilt files
 
 - `prebuilt/BlipTeensy.hex` (built with USB Type Serial + MTP Disk): open the Teensy Loader app (installed with the Teensy package), File > Open HEX File, press the Teensy's button.
+- `prebuilt/BlipBLE.app.bin`: the app image alone, the file Range Book sends for a Bluetooth update (not for the web flasher).
 - `prebuilt/BlipBLE.merged.bin`: flash with the web flasher at https://espressif.github.io/esptool-js/ in Chrome (address 0x0).
 
 ## Raw capture files (SD card, `/shots/`)
