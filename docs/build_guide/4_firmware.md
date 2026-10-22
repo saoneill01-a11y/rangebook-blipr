@@ -89,7 +89,7 @@ OLED VCC → ESP32 **3V3**, GND → GND, SDA → **GPIO6**, SCL → **GPIO7**. P
 
 ## 8. Connect from Range Book
 
-Range Book 2.43 talks to the chronograph directly. Open Range Book through its https:// address in Chrome on the Android phone (or in the Bluefy app on the iPhone), go to **Tools › Chronograph** and tap **Connect chronograph**, then pick **RB BLIPR**. Tap **Test shot**: a 2,700 fps shot appears in big numbers and in the string. The same button is on each range trip (under Chronograph) and on each ladder group.
+Range Book 2.43 talks to the chronograph directly. Open Range Book through its https:// address in Chrome on the Android phone (or in the Bluefy app on the iPhone), go to **Tools › BLIPR Chronograph** and tap **Connect chronograph**, then pick **RB BLIPR**. Tap **Test shot**: a 2,700 fps shot appears in big numbers and in the string. The same button is on each range trip (under Chronograph) and on each ladder group.
 
 When it connects, Range Book sets the chronograph's clock, its screen units, the velocity window and the radar position. Settings (the pill at the bottom right) has the battery, calibration against another chronograph, screen brightness and, with the sensor kit, compass calibration.
 

@@ -61,7 +61,7 @@ The posts suit Adafruit's 1.0 × 0.7 in boards, whose holes sit 0.1 in from each
 
 1. Load firmware v0.2.2 on the ESP32 (it already has the sensor code; see the Firmware tab for the libraries).
 2. Open the ESP32's Serial Monitor and type `STATUS`. The status line's `sens` should list the letters for what's fitted: **T** SHT45, **P** BMP390, **C** compass, **L** level. A sensor plugged in later is found within 15 s.
-3. In Range Book, **Tools › Chronograph** shows a **Conditions** card. Check the level: lift the front and **Level** should say *nose up*; tip it right and it should say *tipped right*. If not, change Sensor board turned (Settings › Compass) until it does; it covers however the board went onto its posts (the angle counts counter-clockwise, seen from above). This needs ESP32 firmware 0.2.2.
+3. In Range Book, **Tools › BLIPR Chronograph** shows a **Conditions** card. Check the level: lift the front and **Level** should say *nose up*; tip it right and it should say *tipped right*. If not, change Sensor board turned (Settings › Compass) until it does; it covers however the board went onto its posts (the angle counts counter-clockwise, seen from above). This needs ESP32 firmware 0.2.2.
 4. **Calibrate the compass** once: Settings › Compass › **Calibrate compass**, turn the chronograph slowly through a full circle on the bench (for the best heading when it's tilted, also tip it well over on the way: nose up, nose down and onto each side), then **Finish**. Do it away from the truck, steel benches and the rifle.
 5. **Match my phone**: hold the phone flat, pointing the same way as the radar, and tap it; the chronograph copies the phone's heading. With this IMU there's no Turns backwards switch: its level sensor already knows which way is up.
 
@@ -73,4 +73,4 @@ The posts suit Adafruit's 1.0 × 0.7 in boards, whose holes sit 0.1 in from each
 
 - Keep the chronograph in the shade if you can; even with the roof, sun on the case reads warm. Give the air temperature 10 minutes after you set it out.
 - Range trips and ladders fill an empty temperature from it, and a trip's air (humidity, pressure, density altitude) too.
-- **Use this air in the profile** (Tools › Chronograph) sets a Shooting profile's temperature and altitude; **Use … for Coriolis** sets its direction of fire.
+- **Use this air in the profile** (Tools › BLIPR Chronograph) sets a Shooting profile's temperature and altitude; **Use … for Coriolis** sets its direction of fire.
