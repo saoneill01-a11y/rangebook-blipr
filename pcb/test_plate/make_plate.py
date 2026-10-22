@@ -1,4 +1,4 @@
-"""3D-printable hole-check plate for the RB Blip PCB v1.1: the board outline and every component hole, nothing else.
+"""3D-printable hole-check plate for the RB BLIPR PCB v1.1: the board outline and every component hole, nothing else.
 Holes print a little bigger than drilled, because FDM printers make small holes undersize.
 A triangle cut through the plate points at the FRONT (radar) edge and sits the right way up when you look at the TOP."""
 import os, sys, re, math
@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import csg
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-G = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "out", "gerber", "rbblip-")
+G = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "out", "gerber", "rbblipr-")
 W, H, T = 70.0, 90.0, 1.6     # same as the real board (1.6 mm)
 GROW = 0.30                   # printed hole = drill + this
 SKIP_BELOW = 0.5              # vias (0.3 mm) carry no part: left out
@@ -83,7 +83,7 @@ def main():
         planes.append((tuple(nn), float(nn @ P[0])))
     bad, total = csg.edge_report(faces)
     out = os.path.join(HERE, "out"); os.makedirs(out, exist_ok=True)
-    name = "RBBlip_PCB_v1.1_hole_check"
+    name = "RBBLIPR_PCB_v1.1_hole_check"
     nt = csg.write_stl(os.path.join(out, name + ".stl"), pts, faces, planes, name)
     if bad == 0:
         csg.write_step(os.path.join(out, name + ".step"), pts, faces, planes, name)

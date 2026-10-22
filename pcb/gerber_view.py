@@ -83,7 +83,7 @@ def drills(path, h=H):
     return holes
 
 def composite(gdir, out, side="top"):
-    pre = os.path.join(gdir, "rbblip-")
+    pre = os.path.join(gdir, "rbblipr-")
     cu = render(pre + ("F_Cu.gtl" if side == "top" else "B_Cu.gbl"))
     mask = render(pre + ("F_Mask.gts" if side == "top" else "B_Mask.gbs"))
     silk = render(pre + "F_Silk.gto") if side == "top" else None

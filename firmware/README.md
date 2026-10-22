@@ -1,12 +1,12 @@
-# Range Book Blip firmware v0.2.2
+# Range Book BLIPR firmware v0.2.2
 
-Firmware for Range Book Blip, the DIY radar chronograph. Step-by-step setup and the bench tests are in the
+Firmware for Range Book BLIPR (Ballistic Launch Inspection Portable Radar), the DIY radar chronograph. Step-by-step setup and the bench tests are in the
 build guide's **Firmware** tab; this file is the quick reference.
 
 | Folder | Board | What it does |
 |---|---|---|
-| `BlipTeensy/` | Teensy 4.1 | Samples the radar, finds shots, measures muzzle velocity, saves raw captures to the SD card |
-| `BlipBLE/` | ESP32-C3 SuperMini | Bluetooth link to your phone, the OLED screen, the battery gauge, the optional sensors |
+| `BliprTeensy/` | Teensy 4.1 | Samples the radar, finds shots, measures muzzle velocity, saves raw captures to the SD card |
+| `BliprBLE/` | ESP32-C3 SuperMini | Bluetooth link to your phone, the OLED screen, the battery gauge, the optional sensors |
 | `prebuilt/` | both | Ready-made files if the Arduino IDE gives you trouble (see below) |
 | `test/` | your computer | The shot simulator used to check the velocity math (not needed for the build) |
 | `PROTOCOL.md` | | The Bluetooth interface, for Range Book and for testing with nRF Connect |
@@ -54,7 +54,7 @@ ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`,
 
 ## What changed in 0.2.2
 
-- New name: **Range Book Blip**. The Bluetooth name is now RB Blip (was RB Chrono), the sketches are `BlipTeensy` and `BlipBLE`, and the SD card shows up as RB Blip SD. Range Book finds it by its Bluetooth service, so the name change doesn't affect connecting.
+- New name: **Range Book BLIPR** (Ballistic Launch Inspection Portable Radar). The Bluetooth name is now RB BLIPR (was RB Chrono), the sketches are `BliprTeensy` and `BliprBLE`, and the SD card shows up as BLIPR SD. Range Book finds it by its Bluetooth service, so the name change doesn't affect connecting.
 - Teensy: USB drive mode. With USB Type "Serial + MTP Disk", the SD card shows up on the computer as a drive; it turns on by itself about a second after the Teensy is plugged into a computer (shots pause, the screen shows PAUSED) and off 3 seconds after unplugging. `drive` refreshes the file list, `drive off` or `arm` resumes shots while plugged in.
 
 Needs circuit board v1.1 (or the matching hand wiring): the serial link moved.
@@ -67,7 +67,7 @@ Needs circuit board v1.1 (or the matching hand wiring): the serial link moved.
 - ESP32: `COMPASS REVERSE` is ignored when the accelerometer is fitted (the accelerometer already knows which way is up). `COMPASS ROT` is counter-clockwise seen from above.
 - ESP32: the battery gauge expects the 10 kOhm resistor at the cell's + tab (divider ratio 2.1). `BATV` calibration still fine-tunes it.
 - ESP32: the settings message can no longer overrun its buffer.
-- ESP32: at power-up a bullet flies across the screen and writes "RB Blip" behind it, then the screen blinks once (about 2 s), before the bubble level.
+- ESP32: at power-up a bullet flies across the screen and writes "BLIPR" behind it, then the screen blinks once (about 2 s), before the bubble level.
 - ESP32: firmware updates over Bluetooth. Range Book (chronograph settings › Firmware) sends the new firmware in numbered pieces to a spare slot; the board checks each piece's place and the whole file's MD5, switches on the next restart, and keeps the new firmware only after it has run for 15 s (if it crashes or resets sooner, it goes back to the old one). The first 0.2.2 has to go on with the USB cable; after that, Range Book can do it. The Teensy is still updated over USB.
 - ESP32: `ANIM 1` (or the switch in Range Book's chronograph settings) plays a short version after each good shot: the bullet crosses the screen and writes the velocity behind it, then the screen blinks. Off by default; `ANIM 0` turns it off. Bluetooth and the radar link keep working while it plays.
 - ESP32: with the level sensor fitted, the screen shows a bubble level for 60 s after power-up (and on `LEVEL`). It goes back to the normal screen once it has been level within 0.5 degrees for 3 s, when a shot comes in, or on `LEVEL OFF`.
@@ -87,7 +87,7 @@ Needs circuit board v1.1 (or the matching hand wiring): the serial link moved.
 
 You don't need to open the case or take the card out.
 1. Switch the chronograph on (the Teensy runs from the battery; the USB cable only carries data), then plug a USB cable from the Teensy's port into the computer.
-2. On Windows, open File Explorer: under This PC there is a device called **Teensy** with a storage called **RB Blip SD**. On a Mac, install **OpenMTP** (free) and open it. On Linux, most file managers show it.
+2. On Windows, open File Explorer: under This PC there is a device called **Teensy** with a storage called **BLIPR SD**. On a Mac, install **OpenMTP** (free) and open it. On Linux, most file managers show it.
 3. Nothing to type: about a second after it's plugged into a computer, the Teensy goes into drive mode by itself. Shot detection pauses and the chronograph's screen shows PAUSED.
 4. Copy the `shots` folder and `log.csv` to the computer. Each recording is about 320 KB, so 100 of them are about 32 MB; MTP is slower than a card reader, so a big folder can take a minute or more.
 5. Unplug the cable. About 3 seconds later the chronograph is listening for shots again. A USB charger or power bank doesn't count as a computer, so it won't pause anything.
@@ -100,9 +100,9 @@ Notes:
 
 ## Prebuilt files
 
-- `prebuilt/BlipTeensy.hex` (built with USB Type Serial + MTP Disk): open the Teensy Loader app (installed with the Teensy package), File > Open HEX File, press the Teensy's button.
-- `prebuilt/BlipBLE.app.bin`: the app image alone, the file Range Book sends for a Bluetooth update (not for the web flasher).
-- `prebuilt/BlipBLE.merged.bin`: flash with the web flasher at https://espressif.github.io/esptool-js/ in Chrome (address 0x0).
+- `prebuilt/BliprTeensy.hex` (built with USB Type Serial + MTP Disk): open the Teensy Loader app (installed with the Teensy package), File > Open HEX File, press the Teensy's button.
+- `prebuilt/BliprBLE.app.bin`: the app image alone, the file Range Book sends for a Bluetooth update (not for the web flasher).
+- `prebuilt/BliprBLE.merged.bin`: flash with the web flasher at https://espressif.github.io/esptool-js/ in Chrome (address 0x0).
 
 ## Raw capture files (SD card, `/shots/`)
 

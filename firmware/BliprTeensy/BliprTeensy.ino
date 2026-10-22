@@ -1,4 +1,4 @@
-// Range Book Blip (DIY radar chronograph) - Teensy 4.1 firmware
+// Range Book BLIPR (Ballistic Launch Inspection Portable Radar) - Teensy 4.1 firmware
 // Samples the radar's I and Q channels, detects shots, measures muzzle velocity,
 // saves raw captures to the SD card and reports each shot to the ESP32-C3
 // (which handles Bluetooth, the OLED and the battery gauge).
@@ -583,12 +583,12 @@ void setup() {
   sdInit();
 #if HAVE_DRIVE
   MTP.begin();
-  if (sdOk) MTP.addFilesystem(SD, "RB Blip SD");
+  if (sdOk) MTP.addFilesystem(SD, "BLIPR SD");
 #endif
   startSampling();
   uint32_t t0 = millis();
   while (!Serial && millis() - t0 < 1500) {}
-  Serial.printf("\nRange Book Blip, Teensy firmware %s\n", FW_VERSION);
+  Serial.printf("\nRange Book BLIPR, Teensy firmware %s\n", FW_VERSION);
   Serial.printf("Sample rate %.0f Hz (asked for %lu). SD card %s. Type 'help' for commands.\n",
                 fsActual, (unsigned long)cfg.fsReq, sdOk ? "found" : "NOT found");
   sendConfig(Serial, true);
@@ -619,7 +619,7 @@ void loop() {
       if (driveMode != u) {
         driveMode = u;
         sendStatus(true);
-        if (u) Serial.println("\nPlugged into a computer: USB drive mode, shots paused. The SD card is \"RB Blip SD\".\n"
+        if (u) Serial.println("\nPlugged into a computer: USB drive mode, shots paused. The SD card is \"BLIPR SD\".\n"
                               "Type 'arm' (or 'drive off') to listen for shots while plugged in.");
       }
     }

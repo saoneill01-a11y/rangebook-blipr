@@ -1,6 +1,6 @@
 # Firmware: setup and bench tests
 
-Today's goal is to load both programs, check that the Teensy measures a fake bullet correctly, and see shots arrive on your phone over Bluetooth. You don't need the radar, amplifier or battery for any of it. Everything is in **RB\_Blip\_firmware\_v0.2.2.zip**. Version 0.2.2 is needed for circuit board v1.1: the Teensy now talks to the ESP32 on pins 34 and 35 (Serial8), not 0 and 1. It also fixes the compass calibration and sets the radar frequency default to 24.150 GHz.
+Today's goal is to load both programs, check that the Teensy measures a fake bullet correctly, and see shots arrive on your phone over Bluetooth. You don't need the radar, amplifier or battery for any of it. Everything is in **RB\_BLIPR\_firmware\_v0.2.2.zip**. Version 0.2.2 is needed for circuit board v1.1: the Teensy now talks to the ESP32 on pins 34 and 35 (Serial8), not 0 and 1. It also fixes the compass calibration and sets the radar frequency default to 24.150 GHz.
 
 ## What you need
 
@@ -22,19 +22,19 @@ Today's goal is to load both programs, check that the Teensy measures a fake bul
 
 ## 2. Load the Teensy
 
-1. Unzip the firmware and open `BlipTeensy/BlipTeensy.ino`.
+1. Unzip the firmware and open `BliprTeensy/BliprTeensy.ino`.
 2. Tools menu: Board **Teensy 4.1**, USB Type **Serial + MTP Disk (Experimental)**, CPU Speed **600 MHz**, and the Teensy's Port. (The MTP part lets the SD card show up as a drive, see section 9. Plain **Serial** also works, just without the drive.)
 3. Click Upload (→). The first time, a small Teensy Loader window may ask you to press the button on the Teensy.
 4. Open the Serial Monitor (magnifying glass, top right). Press the Teensy's button or replug it if the screen is blank. You should see:
 
 ```
-Range Book Blip, Teensy firmware 0.2.2
+Range Book BLIPR, Teensy firmware 0.2.2
 Sample rate 600000 Hz (asked for 600000). SD card found.
 ```
 
 5. Type `stat` and press Enter. **overruns** should be 0.
 
-If the IDE won't build it, use the ready-made file instead. Open the Teensy Loader app, choose File › Open HEX File › `prebuilt/BlipTeensy.hex`, then press the Teensy's button.
+If the IDE won't build it, use the ready-made file instead. Open the Teensy Loader app, choose File › Open HEX File › `prebuilt/BliprTeensy.hex`, then press the Teensy's button.
 
 ## 3. Fake bullet test (Teensy only)
 
@@ -57,10 +57,10 @@ With nothing on A0/A1 the inputs pick up stray noise, so touching the board can 
 
 ## 4. Load the ESP32-C3
 
-1. Open `BlipBLE/BlipBLE.ino` in a **second** IDE window, so each board keeps its own Serial Monitor.
+1. Open `BliprBLE/BliprBLE.ino` in a **second** IDE window, so each board keeps its own Serial Monitor.
 2. Tools menu: Board **Nologo ESP32C3 Super Mini** (or ESP32C3 Dev Module), **USB CDC On Boot: Enabled**, and its Port.
 3. Click Upload. If it can't connect: hold the **BOOT** button, tap **RESET**, let go of BOOT, and upload again. Tap RESET once it's done.
-4. Serial Monitor at **115200**: you should see *RB Blip ESP32-C3 firmware 0.2.2 ready*.
+4. Serial Monitor at **115200**: you should see *BLIPR ESP32-C3 firmware 0.2.2 ready*.
 
 ## 5. Connect the two boards
 
@@ -76,7 +76,7 @@ In the ESP32's Serial Monitor type `TEST`. The Teensy makes up a shot, and the E
 
 ## 6. See it on your phone
 
-1. In nRF Connect, scan, find **RB Blip** and tap Connect.
+1. In nRF Connect, scan, find **RB BLIPR** and tap Connect.
 2. Open the service whose number starts **239D0001** (it shows as an unknown service).
 3. Turn on notifications for **239D0002** (shots) and **239D0003** (status): the triple-arrow icon on Android, *Subscribe* on iPhone.
 4. On **239D0004**, tap the write (up-arrow) button, pick **Text / UTF-8**, type `TEST` and send it. A shot appears under 239D0002.
@@ -89,7 +89,7 @@ OLED VCC → ESP32 **3V3**, GND → GND, SDA → **GPIO6**, SCL → **GPIO7**. P
 
 ## 8. Connect from Range Book
 
-Range Book 2.43 talks to the chronograph directly. Open Range Book through its https:// address in Chrome on the Android phone (or in the Bluefy app on the iPhone), go to **Tools › Chronograph** and tap **Connect chronograph**, then pick **RB Blip**. Tap **Test shot**: a 2,700 fps shot appears in big numbers and in the string. The same button is on each range trip (under Chronograph) and on each ladder group.
+Range Book 2.43 talks to the chronograph directly. Open Range Book through its https:// address in Chrome on the Android phone (or in the Bluefy app on the iPhone), go to **Tools › Chronograph** and tap **Connect chronograph**, then pick **RB BLIPR**. Tap **Test shot**: a 2,700 fps shot appears in big numbers and in the string. The same button is on each range trip (under Chronograph) and on each ladder group.
 
 When it connects, Range Book sets the chronograph's clock, its screen units, the velocity window and the radar position. Settings (the pill at the bottom right) has the battery, calibration against another chronograph, screen brightness and, with the sensor kit, compass calibration.
 
@@ -100,13 +100,19 @@ You don't need to open the case or take the card out.
 1. Switch the chronograph on. The Teensy runs from the battery, and the USB cable only carries data.
 2. Plug a USB cable from the Teensy's port into the computer.
 3. Find the drive:
-   - **Windows:** in File Explorer, under This PC, open **Teensy**, then **RB Blip SD**.
+   - **Windows:** in File Explorer, under This PC, open **Teensy**, then **BLIPR SD**.
    - **Mac:** install the free **OpenMTP** app and open it.
 4. Nothing to type. About a second after it's plugged into a computer, the chronograph pauses shot detection by itself and its screen shows PAUSED.
 5. Copy the `shots` folder and `log.csv`. Each recording is about 320 KB, and MTP is slower than a card reader, so a big folder can take a minute or more.
 6. Unplug the cable. About 3 seconds later it's listening for shots again. A USB charger or power bank doesn't count as a computer, so it won't pause anything.
 
 The bench tests above still work while plugged in, because `sim` and `arm` switch the pause off. PJRC still calls MTP experimental. If the drive doesn't appear, unplug and plug it in again, or fall back to a card reader.
+
+## 10. Later updates to the Bluetooth board
+
+Once firmware 0.2.2 is on the ESP32 (with the USB-C cable, step 4), Range Book can update it over Bluetooth. In the chronograph settings, scroll to **Firmware** and tap **Update the Bluetooth board**. It takes about 2 minutes: keep the phone close with its screen on, and don't shoot until it's done. BLIPR's screen shows UPDATING and a progress bar, then restarts and reconnects by itself.
+
+If the connection drops partway, nothing changes: BLIPR stays on its old firmware, and you try again. It only switches once the whole file has arrived and checks out, and if the new firmware doesn't start properly it goes back to the old one. The radar board (Teensy) is still updated with the USB cable.
 
 ## Send me
 

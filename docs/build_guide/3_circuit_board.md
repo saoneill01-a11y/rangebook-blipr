@@ -14,7 +14,7 @@ It's worth it here: the amplifier is about 40 parts and 100 connections, and on 
 
 ## Ordering
 
-1. Unzip **RB\_Blip\_PCB\_v1.1.zip**. Inside is **RBBlip\_PCB\_v1.1\_gerbers.zip**: upload that one, unopened.
+1. Unzip **RB\_BLIPR\_PCB\_v1.1.zip**. Inside is **RBBLIPR\_PCB\_v1.1\_gerbers.zip**: upload that one, unopened.
 2. pcbway.com › PCB Instant Quote › Quick-order PCB › Add Gerber file. It reads the size and layers by itself.
 3. Leave the standard settings: 2 layers, FR-4, 1.6 mm, HASL lead-free, 1 oz copper, white silkscreen, any mask colour, quantity 5.
 4. PCBWay reviews the files before making them and emails if anything looks wrong.
@@ -25,7 +25,7 @@ JLCPCB, OSH Park and Aisler take the same zip.
 
 &#91;image: PCB v1.1 assembly drawing\]
 
-The BOM in the zip (**RBBlip\_BOM.csv**) lists every part by reference. Solder in this order, lowest parts first:
+The BOM in the zip (**RBBLIPR\_BOM.csv**) lists every part by reference. Solder in this order, lowest parts first:
 
 1. Resistors (colour bands on the Wiring pictures tab; R23 and R24 are 1 kΩ), then D1: stripe to the right, on the square pad.
 2. Ceramic capacitors (either way round), then the two 8-pin sockets, notch matching the drawing.
@@ -37,7 +37,7 @@ The BOM in the zip (**RBBlip\_BOM.csv**) lists every part by reference. Solder i
 
 **The ESP32 goes in chip side up**, with its USB socket toward the back and its antenna at the front edge. Its pin names are printed on the underside, so from above they read the other way round. Don't match them by eye. Seen from above, its 5V pin is the one nearest the USB on the right-hand edge, and it goes in the back hole of the right-hand row, next to D1's square pad. Seat the module without power and use the meter's beep test: its 5V pin to D1's square pad, and its G pin to J1 pin 2. Both must beep before you power up.
 
-Use a pan-head M3 screw no wider than 5.5 mm in the back-right corner; it sits close to the Teensy's header. You can 3D-print the hole-check plate (RB\_Blip\_PCB\_v1.1\_hole\_check.zip) to test-fit every part before ordering.
+Use a pan-head M3 screw no wider than 5.5 mm in the back-right corner; it sits close to the Teensy's header. You can 3D-print the hole-check plate (RB\_BLIPR\_PCB\_v1.1\_hole\_check.zip) to test-fit every part before ordering.
 
 ## What the factory will make
 

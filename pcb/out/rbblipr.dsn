@@ -1,5 +1,5 @@
-(pcb rbblip
-  (parser (string_quote ") (space_in_quoted_tokens on) (host_cad "rbblip-py") (host_version "1"))
+(pcb rbblipr
+  (parser (string_quote ") (space_in_quoted_tokens on) (host_cad "rbblipr-py") (host_version "1"))
   (resolution um 1)
   (unit um)
   (structure

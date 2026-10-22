@@ -1,6 +1,6 @@
-# Range Book Blip Bluetooth interface (v0.2, firmware 0.2.2)
+# Range Book BLIPR Bluetooth interface (v0.2, firmware 0.2.2)
 
-Device name: **RB Blip** (firmware before 0.2.2 called itself RB Chrono). One custom service; all values are UTF-8 text (JSON or plain commands).
+Device name: **RB BLIPR** (earlier test firmware called itself RB Blip or RB Chrono). One custom service; all values are UTF-8 text (JSON or plain commands).
 
 | Characteristic | UUID | Properties | Contents |
 |---|---|---|---|
@@ -63,7 +63,7 @@ Read / write / notify. Every write starts with one letter:
 - `B<size> <md5>`: start an update of `<size>` bytes whose MD5 is `<md5>` (32 hex digits). Answer `{"ota":"ready",...}`.
 - `D` + 4-byte offset (little-endian) + up to 176 bytes of the app image: one piece. A piece whose offset isn't the
   next one expected is ignored and the value says `"resend"`; read the value's `got` and carry on from there.
-- `E`: finish. Blip checks the size, the MD5 and the image, answers `{"ota":"done"}` and restarts 1.5 s later.
+- `E`: finish. BLIPR checks the size, the MD5 and the image, answers `{"ota":"done"}` and restarts 1.5 s later.
 - `A`: abort.
 Read the value at any time for `{"ota":"idle|ready|rx|resend|done|error","got":N,"size":N,"why":"..."}`. A dropped
 connection or 20 s without a piece abandons the update; the old firmware keeps running. After the restart the new

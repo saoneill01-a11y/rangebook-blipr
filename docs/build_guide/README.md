@@ -1,4 +1,4 @@
-# Build guide (exported copy)
+# BLIPR build guide (exported copy)
 
 A Markdown copy of the live build guide, exported Oct 21, 2026. The export leaves out pictures; each
 one shows as a placeholder like `[image: …]`. The pictures themselves are in this repo:

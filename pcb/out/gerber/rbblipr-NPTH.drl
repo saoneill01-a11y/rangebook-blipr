@@ -1,5 +1,5 @@
 M48
-; RB Blip main board v1.1, non-plated
+; RB BLIPR main board v1.1, non-plated
 FMAT,2
 METRIC,TZ
 ; #@! TF.FileFunction,NonPlated,1,2,NPTH

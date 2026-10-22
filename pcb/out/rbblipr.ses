@@ -1,5 +1,5 @@
-(session rbblip
-  (base_design rbblip)
+(session rbblipr
+  (base_design rbblipr)
   (placement
     (resolution um 1)
     (component IMG_U5
@@ -176,7 +176,7 @@
   (routes 
     (resolution um 1)
     (parser
-      (host_cad "rbblip-py")
+      (host_cad "rbblipr-py")
       (host_version 1)
     )
     (library_out 

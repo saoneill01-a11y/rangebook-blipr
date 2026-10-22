@@ -120,7 +120,7 @@ def box(x0, y0, x1, y1, title=None, dashed=False):
 
 
 # ======================= title
-text((2, 122), "Range Book Blip — schematic v0.5 (one amplifier channel shown in full; Q channel is identical)", size=13, ha="left", w="bold")
+text((2, 122), "Range Book BLIPR — schematic v0.5 (one amplifier channel shown in full; Q channel is identical)", size=13, ha="left", w="bold")
 text((2, 118.5), "All grounds connect together. Op-amps U1, U2 = MCP6022 (pin 8 = +3V3OP, pin 4 = GND). Gain per stage = 1 + 10k/470 ≈ 22, two stages about 480 at the peak.", size=9.5, ha="left")
 
 # ======================= POWER (top band)

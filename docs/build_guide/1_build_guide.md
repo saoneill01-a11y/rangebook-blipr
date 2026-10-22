@@ -1,10 +1,10 @@
-# Range Book Blip – Build Guide
+# Range Book BLIPR – Build Guide
 
 Oct 19, 2026 · @Sean
 
 ## Overview
 
-You're building Range Book Blip, a bench-side 24 GHz Doppler radar chronograph that sends each shot's velocity over Bluetooth to your web app. It sits beside the rifle on the bench, so nothing goes downrange.
+You're building Range Book BLIPR (Ballistic Launch Inspection Portable Radar), a bench-side 24 GHz Doppler radar chronograph that sends each shot's velocity over Bluetooth to your web app. It sits beside the rifle on the bench, so nothing goes downrange.
 
 How it works, in one pass: the RFbeam K-LC5 radar sends out a 24 GHz signal and outputs two very weak signals (called I and Q) whose frequency is proportional to the bullet's speed: about 161 Hz per m/s, so roughly 150 kHz for a 3,000 fps rifle bullet. A two-stage amplifier boosts each signal about 500 times. The Teensy 4.1 samples both signals with its two built-in ADCs, finds the frequency with an FFT, and works out velocity. An ESP32-C3 board sends the result to your phone over Bluetooth Low Energy.
 
@@ -12,7 +12,7 @@ How it works, in one pass: the RFbeam K-LC5 radar sends out a 24 GHz signal and 
 
 **What this guide covers:** the hardware. That means the circuit, soldering, wiring, the 3D-printed case, and electrical checks with a multimeter at each stage. **What comes later:** the firmware for the Teensy and ESP32, and the web app connection. Until the firmware exists, the checkpoints in this guide confirm the hardware is built right; the first real test with a moving target happens once the test firmware is written.
 
-**Case files (v0.1 draft):** `base`, `lid_oled` / `lid_plain`, and `front_cover`, each as STEP and STL, plus `blip_case.py`, the parametric script that generates them. The case is built from datasheet and typical sizes, so expect one round of adjustments after you measure your actual parts (see the last section).
+**Case files (v0.1 draft):** `base`, `lid_oled` / `lid_plain`, and `front_cover`, each as STEP and STL, plus `blipr_case.py`, the parametric script that generates them. The case is built from datasheet and typical sizes, so expect one round of adjustments after you measure your actual parts (see the last section).
 
 **Firmware (v0.1.0):** setup and bench tests are on the Firmware tab.
 
@@ -71,7 +71,7 @@ The spreadsheet has prices and links; this table adds the reference names (R1, C
 | C12, C15, C19, C22 | 10 nF ceramic | 4 | Input coupling |
 | R23, R24 | 1 kΩ | 2 | new (v1.1): one in each serial line between the Teensy and ESP32 |
 | C18, C25 | 1 nF ceramic | 2 | ADC input filter |
-| — | 70 × 90 mm double-sided perfboard | 1 | Or the RB Blip circuit board v1.1 (Circuit board tab) |
+| — | 70 × 90 mm double-sided perfboard | 1 | Or the RB BLIPR circuit board v1.1 (Circuit board tab) |
 | — | Female headers 2.54 mm | 2×24, 2×8, 1×5, 1×4 | Teensy, ESP32, radar, OLED |
 | — | M3 heat-set inserts (about 4.6–5 mm OD) | 8 | **new**, 4 lid + 4 board posts |
 | — | M3 × 8 mm screws (lid), M3 × 6 mm screws (board) | 4 + 4 | **new** |
@@ -311,7 +311,7 @@ ASA warps, so use an enclosure or a draft shield, a brim on the base, and a bed 
 
 &#91;image: Front cover as printed: the recessed area is the 0.9 mm window\]
 
-**Changing the case.** Every size lives at the top of `blip_case.py`. Edit a number and run `python3 blip_case.py`; it rebuilds all the STEP and STL files in a few seconds with plain Python. No CAD software is needed, and no extra packages. The STEP files open in Fusion, FreeCAD or Onshape as solids. Curved surfaces like the screw holes come through as many small flat faces, which is fine for measuring and simple edits.
+**Changing the case.** Every size lives at the top of `blipr_case.py`. Edit a number and run `python3 blipr_case.py`; it rebuilds all the STEP and STL files in a few seconds with plain Python. No CAD software is needed, and no extra packages. The STEP files open in Fusion, FreeCAD or Onshape as solids. Curved surfaces like the screw holes come through as many small flat faces, which is fine for measuring and simple edits.
 
 ## When your parts arrive: measure, then adjust
 

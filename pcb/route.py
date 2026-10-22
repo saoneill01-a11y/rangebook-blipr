@@ -16,8 +16,8 @@ def write_dsn(path):
     stacks = {}
     lines = []
     A = lines.append
-    A('(pcb rbblip')
-    A('  (parser (string_quote ") (space_in_quoted_tokens on) (host_cad "rbblip-py") (host_version "1"))')
+    A('(pcb rbblipr')
+    A('  (parser (string_quote ") (space_in_quoted_tokens on) (host_cad "rbblipr-py") (host_version "1"))')
     A('  (resolution um 1)')
     A('  (unit um)')
     A('  (structure')
@@ -100,12 +100,12 @@ def parse_ses(path):
 
 if __name__ == "__main__":
     os.makedirs("out", exist_ok=True)
-    write_dsn("out/rbblip.dsn")
+    write_dsn("out/rbblipr.dsn")
     print("dsn written")
     if "--route" in sys.argv:
-        ok = run_freerouting(os.path.abspath("out/rbblip.dsn"), os.path.abspath("out/rbblip.ses"), int(sys.argv[sys.argv.index("--route") + 1]) if len(sys.argv) > sys.argv.index("--route") + 1 else 40)
+        ok = run_freerouting(os.path.abspath("out/rbblipr.dsn"), os.path.abspath("out/rbblipr.ses"), int(sys.argv[sys.argv.index("--route") + 1]) if len(sys.argv) > sys.argv.index("--route") + 1 else 40)
         print("routed" if ok else "routing failed; see log")
-    if os.path.exists("out/rbblip.ses"):
-        r = parse_ses("out/rbblip.ses")
+    if os.path.exists("out/rbblipr.ses"):
+        r = parse_ses("out/rbblipr.ses")
         json.dump(r, open("out/routes.json", "w"))
         print(len(r["wires"]), "wires", len(r["vias"]), "vias")

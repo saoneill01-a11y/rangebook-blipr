@@ -1,4 +1,4 @@
-"""Range Book Blip main board v1.1: footprints, placement and netlist (through-hole, 70 x 90 mm, 2 layers).
+"""Range Book BLIPR main board v1.1: footprints, placement and netlist (through-hole, 70 x 90 mm, 2 layers).
 
 Coordinates in mm, board origin at the FRONT-LEFT corner (front = the radar side), x to the right, y toward the back.
 The board drops into the printed base in place of the 70 x 90 perfboard: same size, same four M3 holes 3 mm in.

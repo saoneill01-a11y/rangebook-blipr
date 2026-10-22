@@ -1,7 +1,7 @@
 """
-Range Book Blip (DIY radar chronograph) - parametric case (v0.7, draft from datasheet / nominal sizes).
+Range Book BLIPR (Ballistic Launch Inspection Portable Radar) - parametric case (v0.7, draft from datasheet / nominal sizes).
 
-Run:  python3 blip_case.py
+Run:  python3 blipr_case.py
 Needs only Python 3 (csg.py sits next to this file). Writes STEP + STL for:
   base, lid_oled, lid_plain, front_cover, front_cover_thin,
   lid_sensors (lid_oled plus risers, insert holes and a cable slot for the sensor pod), sensor_pod, sensor_pod_roof
@@ -103,9 +103,14 @@ POD_POST_W = 2.0          # uprights splitting the pod's vent slots (shorter bri
 POD_BOARD_DX = 21.0                   # board centres at -21 (SHT45), 0 (BMP390), +21 (IMU): long sides front-to-back
 POD_CABLE_X, POD_CABLE_Y = -21.0, -19.0   # cable slot centre, pod coords (front-left corner, under nothing)
 POD_CABLE_W, POD_CABLE_D = 8.0, 7.0   # slot for the STEMMA QT cable through pod floor and lid
-NAME_IY = 34.0                         # debossed BLIP on the lid (inside coords): level with the pod's centre ...
-NAME_IX = (POD_IX + POD_W / 2 + IW + WALL) / 2   # ... and centred between the pod's +X side and the lid's +X edge
+NAME_TEXT = "BLIPR"
 NAME_H, NAME_STROKE, NAME_DEPTH = 12.0, 2.4, 0.6
+NAME_GAP = 8.0                         # BLIPR sits this far behind the sensor pod (toward you), centred under it
+NAME_IX = POD_IX                       # centred under the pod, as seen from your seat
+NAME_IY = POD_IY + POD_D / 2 + NAME_GAP + NAME_H / 2
+SITE_TEXT, SITE_SIZE = "", 5.5   # small font lettering, e.g. "rangebook.org" (off for now: too fine to print well on the bed side)
+SITE_FONT = "/usr/share/fonts/opentype/inter/Inter-Bold.otf"
+SITE_END_IX, SITE_EDGE = 11.0, 5.0      # where the text ends (inside X) / gap from the lid's back edge (mm)
 # --- STEMMA QT sensor boards (Adafruit 1.0" x 0.7"): mounting holes 0.1" in from each corner
 SQ_HOLE_DX, SQ_HOLE_DY = 20.32, 12.7   # hole spacing along the long and short side
 SQ_STANDOFF_D, SQ_STANDOFF_H = 4.8, 5.0
@@ -195,34 +200,58 @@ def base():
 
 
 def name_cuts(cx, cy, ztop):
-    """'BLIP' in rounded block letters, cut NAME_DEPTH into the lid's top face. It reads from behind the
-    case (like the OLED): the tops of the letters point to the front."""
-    H, sw, r = NAME_H, NAME_STROKE, 3.0
-    letters = []          # (width, list of (kind, u0, v0, u1, v1, radius)), u to the right, v up
+    """NAME_TEXT ('BLIPR') in rounded block letters, cut NAME_DEPTH into the lid's top face, centred on (cx, cy).
+    It reads from behind the case (like the OLED): the tops of the letters point to the front."""
+    H, sw = NAME_H, NAME_STROKE
+    k = H / 12.0                     # the letter shapes were drawn 12 mm tall
+    r = 3.0 * k
     def bowl(u0, v0, u1, v1):
         return [("ring", u0, v0, u1, v1, r)]
-    B = [("box", 0, 0, sw, H, 0)] + bowl(0, H / 2 - sw / 2, 7.6, H) + bowl(0, 0, 8.4, H / 2 + sw / 2)
-    L = [("box", 0, 0, sw, H, 0), ("box", 0, 0, 7.0, sw, 0)]
-    I = [("box", 0, 0, sw, H, 0)]
-    P = [("box", 0, 0, sw, H, 0)] + bowl(0, H * 0.42 - sw / 2, 8.0, H)
-    gap = 2.6
-    widths = [8.4, 7.0, sw, 8.0]
-    total = sum(widths) + gap * 3
+    stem = ("box", 0, 0, sw, H, 0)
+    G = {
+        "B": (8.4 * k, [stem] + bowl(0, H / 2 - sw / 2, 7.6 * k, H) + bowl(0, 0, 8.4 * k, H / 2 + sw / 2)),
+        "L": (7.0 * k, [stem, ("box", 0, 0, 7.0 * k, sw, 0)]),
+        "I": (sw, [stem]),
+        "P": (8.0 * k, [stem] + bowl(0, H * 0.42 - sw / 2, 8.0 * k, H)),
+        "R": (8.4 * k, [stem] + bowl(0, H * 0.42 - sw / 2, 8.0 * k, H) +
+              [("leg", 3.2 * k, H * 0.42, 8.4 * k, 0, 0)]),
+    }
+    gap = 2.6 * k
+    glyphs = [G[ch] for ch in NAME_TEXT]
+    total = sum(w for w, _ in glyphs) + gap * (len(glyphs) - 1)
     z0, z1 = ztop - NAME_DEPTH, ztop + 1
-    def place(u0, v0, u1, v1):      # local -> lid coords, turned 180 degrees so it reads from the back
-        return (cx + total / 2 - u1, cy + H / 2 - v1, cx + total / 2 - u0, cy + H / 2 - v0)
+    def pt(u, v):                    # local -> lid coords, turned 180 degrees so it reads from the back
+        return (cx + total / 2 - u, cy + H / 2 - v)
     out, u = [], 0.0
-    for shapes, w in zip((B, L, I, P), widths):
+    for w, shapes in glyphs:
         for kind, a0, b0, a1, b1, rr in shapes:
-            x0_, y0_, x1_, y1_ = place(u + a0, b0, u + a1, b1)
+            if kind == "leg":        # the R's leg: a slanted bar from the bowl down to the baseline
+                lw = sw * 1.15
+                q = [pt(u + a0, b0), pt(u + a0 + lw, b0), pt(u + a1, b1), pt(u + a1 - lw, b1)]
+                area = sum(q[i][0] * q[(i + 1) % 4][1] - q[(i + 1) % 4][0] * q[i][1] for i in range(4))
+                out.append(prism(q if area > 0 else q[::-1], z0, z1))
+                continue
+            (xa, ya), (xb, yb) = pt(u + a1, b1), pt(u + a0, b0)
             if kind == "box":
-                out.append(box(x0_, y0_, z0, x1_, y1_, z1))
+                out.append(box(xa, ya, z0, xb, yb, z1))
             else:
-                ring = rbox(x0_, y0_, z0, x1_, y1_, z1, rr).subtract(
-                    rbox(x0_ + sw, y0_ + sw, z0 - 1, x1_ - sw, y1_ - sw, z1 + 1, max(rr - sw, 0.4)))
-                out.append(ring)
+                out.append(rbox(xa, ya, z0, xb, yb, z1, rr).subtract(
+                    rbox(xa + sw, ya + sw, z0 - 1, xb - sw, yb - sw, z1 + 1, max(rr - sw, 0.4))))
         u += w + gap
     return out
+
+
+def site_cuts(ztop):
+    """SITE_TEXT ('rangebook.org') in small lower-case letters in the lid corner at your bottom right as you sit
+    behind it (back edge, far side from the gun), reading the same way as the name."""
+    if not SITE_TEXT:
+        return []
+    from textcut import text_outline, text_solid
+    cs, (u0, v0, u1, v1) = text_outline(SITE_TEXT, SITE_FONT, SITE_SIZE)
+    right = X(SITE_END_IX)               # the end of the text (the 'g') is this far along X
+    bottom = Y(ID) + WALL - SITE_EDGE    # the bottom of the letters, this far in from the back edge
+    place = lambda u, v: (right + (u1 - u), bottom - (v - v0))
+    return text_solid(cs, place, ztop - NAME_DEPTH, ztop + 1)
 
 
 def lid(with_oled, sensors=False):
@@ -239,6 +268,7 @@ def lid(with_oled, sensors=False):
     for cx, cy in [(0, 0), (IW - COL, 0), (0, ID - COL), (IW - COL, ID - COL)]:
         cuts.append(cyl_z(X(cx + COL / 2), Y(cy + COL / 2), SCREW_CLEAR / 2, -1, LID_T + 1, SEG))
     cuts += name_cuts(X(NAME_IX), Y(NAME_IY), LID_T)
+    cuts += site_cuts(LID_T)
     if with_oled:
         wy = OLED_IY + OLED_WIN_OFFSET
         cuts.append(box(X(OLED_IX - OLED_WIN_W / 2), Y(wy - OLED_WIN_H / 2), -1, X(OLED_IX + OLED_WIN_W / 2), Y(wy + OLED_WIN_H / 2), LID_T + 1))

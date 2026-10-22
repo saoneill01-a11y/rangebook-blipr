@@ -1,4 +1,4 @@
-// Range Book Blip (DIY radar chronograph) - ESP32-C3 firmware (Bluetooth, OLED, battery gauge)
+// Range Book BLIPR (Ballistic Launch Inspection Portable Radar) - ESP32-C3 firmware (Bluetooth, OLED, battery gauge)
 // Talks to the Teensy over a serial link and to your phone over Bluetooth Low Energy.
 //
 // Board settings (Arduino IDE, esp32 by Espressif 3.x):
@@ -26,7 +26,7 @@
 #include "sensors.h"
 
 #define FW_VERSION "0.2.2"
-#define DEVICE_NAME "RB Blip"
+#define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
 #define SVC_UUID    "239d0001-5192-4fb5-95ad-180af63137b3"
@@ -314,7 +314,7 @@ static void centerText(const char* s, int y, int size) {
 }
 
 // ---------------- boot animation ----------------
-// A bullet flies across the screen from left to right and "writes" the name behind it, then the screen
+// A bullet flies across the screen from left to right and "writes" BLIPR behind it, then the screen
 // blinks once. About 2 s; it runs once at power-up, before the bubble level.
 static const int BOOT_Y = 25;   // bullet centre line (middle of the size-2 name)
 
@@ -335,11 +335,11 @@ static void bootAnimation() {
   snprintf(ver, sizeof(ver), "v%s", FW_VERSION);
   for (int x = -BULLET_LEN; x <= 132; x += 6) {
     oled.clearDisplay();
-    centerText("RB Blip", 18, 2);
+    centerText("BLIPR", 14, 3);
     centerText(ver, 44, 1);
     if (x < 128) oled.fillRect(x < 0 ? 0 : x, 0, 128, 64, SSD1306_BLACK);     // not written yet
     int wake = x - 22;                                                           // the wake hides the text briefly
-    oled.fillRect(wake < 0 ? 0 : wake, BOOT_Y - 7, x - (wake < 0 ? 0 : wake), 15, SSD1306_BLACK);
+    oled.fillRect(wake < 0 ? 0 : wake, 9, x - (wake < 0 ? 0 : wake), 31, SSD1306_BLACK);
     for (int k = 0; k < 3; k++) {                                                // speed lines
       int len = 8 + (((x + BULLET_LEN) / 6 + k * 5) % 3) * 5;
       int y = BOOT_Y - 3 + k * 3;
@@ -350,7 +350,7 @@ static void bootAnimation() {
     delay(12);
   }
   oled.clearDisplay();
-  centerText("RB Blip", 18, 2);
+  centerText("BLIPR", 14, 3);
   centerText(ver, 44, 1);
   oled.display();
   oled.invertDisplay(true);   // the "blip"
@@ -813,7 +813,7 @@ void setup() {
 
   updateBattery();
   pushStatus();
-  Serial.printf("RB Blip ESP32-C3 firmware %s ready. Sensors found: %s\n"
+  Serial.printf("BLIPR ESP32-C3 firmware %s ready. Sensors found: %s\n"
                 "Commands: STATUS, SYNC n, STRING, UNITS fps|mps, BATV volts, BRIGHT 0-4, ANIM 0|1, LEVEL [OFF], COMPASS ...,\n"
                 "or any Teensy command (STAT, GET, SET ..., ARM, DISARM, TEST, REC, TIME).\n", FW_VERSION,
                 sensors::letters().length() ? sensors::letters().c_str() : "none");

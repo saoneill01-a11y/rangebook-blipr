@@ -1,4 +1,4 @@
-Range Book Blip main board v1.1 (PCB)
+Range Book BLIPR main board v1.1 (PCB)
 ================================
 
 v1.1 replaces v1.0. Do not order v1.0: its ESP32-C3 socket was mirrored and would have put 5 V on GPIO5.
@@ -21,8 +21,8 @@ M3 holes 3 mm in from the corners, so it drops onto the posts of the base you've
 from the parts list solders straight into it; the Teensy 4.1 and ESP32-C3 plug into female headers.
 
 FILES
-  RBBlip_PCB_v1.1_gerbers.zip   upload THIS to PCBWay (or JLCPCB, OSH Park, Aisler...)
-  RBBlip_BOM.csv                what goes where, by reference (R1, C3, ...)
+  RBBLIPR_PCB_v1.1_gerbers.zip   upload THIS to PCBWay (or JLCPCB, OSH Park, Aisler...)
+  RBBLIPR_BOM.csv                what goes where, by reference (R1, C3, ...)
   pcb_assembly.png                where each part goes (print it and keep it on the bench)
   pcb_top.png, pcb_bottom.png     the copper, for reference
   gerber_view_top.png / _bottom   the Gerber files drawn back out (what the factory will make)

@@ -1,5 +1,5 @@
 // Desktop test of radar_dsp: synthesises radar captures of a shot and checks the
-// recovered muzzle velocity. Build: g++ -O2 -std=c++17 -I../BlipTeensy sim_test.cpp ../BlipTeensy/radar_dsp.cpp
+// recovered muzzle velocity. Build: g++ -O2 -std=c++17 -I../BliprTeensy sim_test.cpp ../BliprTeensy/radar_dsp.cpp
 #include "radar_dsp.h"
 #include <cmath>
 #include <cstdio>

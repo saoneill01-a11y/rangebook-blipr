@@ -3,7 +3,7 @@ import os, sys, numpy as np, matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import blip_case as c
+import blipr_case as c
 from render import load_stl, zbuffer
 O = os.path.join(HERE, "out") + os.sep
 def boxtris(x0,y0,z0,x1,y1,z1):

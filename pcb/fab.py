@@ -192,7 +192,7 @@ class Gerber:
             self.body.append("X%sY%sD01*" % (self.c(x), self.c(y)))
         self.body.append("G37*")
     def write(self, path):
-        h = ["G04 RB Blip main board v1.1*", "%%TF.FileFunction,%s*%%" % self.func, "%FSLAX46Y46*%", "%MOMM*%", "%LPD*%", "G01*"]
+        h = ["G04 RB BLIPR main board v1.1*", "%%TF.FileFunction,%s*%%" % self.func, "%FSLAX46Y46*%", "%MOMM*%", "%LPD*%", "G01*"]
         for key, code in sorted(self.ap.items(), key=lambda kv: kv[1]):
             if key[0] == "C":
                 h.append("%%ADD%dC,%.4f*%%" % (code, key[1]))
@@ -476,7 +476,7 @@ def build_silk(pads):
     silk_text(g, "UP", ux, uy - 11.3, 0.7, "center", 0)
     silk_text(g, "USB ^", ux, uy - 3.6, 0.9, "center", 0)
     silk_text(g, "ANTENNA", ux, uy - 16.2, 0.8, "center", 0)
-    silk_text(g, "RB BLIP v1.1", 35.0, 88.2, 1.2, "center", 0)
+    silk_text(g, "RB BLIPR v1.1", 35.0, 88.2, 1.2, "center", 0)
     silk_text(g, "I CHANNEL", 28.0, 36.5, 0.8, "center", 0)
     silk_text(g, "Q CHANNEL", 46.0, 63.6, 0.8, "center", 0)
     # DIP pin-1 dots and TO-92 pin numbers
@@ -502,7 +502,7 @@ def silk_check(pads):
 
 def write_all(pads, wires, vias):
     os.makedirs(os.path.join(OUT, "gerber"), exist_ok=True)
-    pre = os.path.join(OUT, "gerber", "rbblip-")
+    pre = os.path.join(OUT, "gerber", "rbblipr-")
     # copper top
     gt = Gerber("F.Cu", "Copper,L1,Top")
     for w in wires:
@@ -561,7 +561,7 @@ def write_all(pads, wires, vias):
     # drills
     def excellon(path, holes, plated):
         tools = sorted({round(d, 2) for _, _, d in holes})
-        L = ["M48", "; RB Blip main board v1.1, %s" % ("plated" if plated else "non-plated"), "FMAT,2", "METRIC,TZ",
+        L = ["M48", "; RB BLIPR main board v1.1, %s" % ("plated" if plated else "non-plated"), "FMAT,2", "METRIC,TZ",
              "; #@! TF.FileFunction,%s,1,2,%s" % ("Plated" if plated else "NonPlated", "PTH" if plated else "NPTH")]
         for i, d in enumerate(tools):
             L.append("T%dC%.3f" % (i + 1, d))
@@ -703,12 +703,12 @@ if __name__ == "__main__":
     print("Silk outline over pads:", sc or "none")
     m, islands, spokes, res = write_all(pads, wires, vias)
     print("islands removed (cells):", int(islands.sum()), " spokes:", len(spokes))
-    bom(os.path.join(OUT, "RBBlip_BOM.csv"))
+    bom(os.path.join(OUT, "RBBLIPR_BOM.csv"))
     pour_final = m & ~islands
     picture(pads, wires, vias, os.path.join(OUT, "pcb_top.png"), "top", pour_final, res)
     picture(pads, wires, vias, os.path.join(OUT, "pcb_bottom.png"), "bottom", pour_final, res)
     picture(pads, wires, vias, os.path.join(OUT, "pcb_assembly.png"), "top", None, res, assembly=True)
-    z = zipfile.ZipFile(os.path.join(OUT, "RBBlip_PCB_v1.1_gerbers.zip"), "w", zipfile.ZIP_DEFLATED)
+    z = zipfile.ZipFile(os.path.join(OUT, "RBBLIPR_PCB_v1.1_gerbers.zip"), "w", zipfile.ZIP_DEFLATED)
     for fn in sorted(os.listdir(os.path.join(OUT, "gerber"))):
         z.write(os.path.join(OUT, "gerber", fn), fn)
     z.close()

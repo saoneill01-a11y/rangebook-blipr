@@ -1,4 +1,4 @@
-Range Book Blip - case files, v0.7 (draft from datasheet and typical part sizes)
+Range Book BLIPR - case files, v0.7 (draft from datasheet and typical part sizes)
 
 SIDES: "+X side" is the side wall with the Teensy's USB hole. On the bench it faces the gun and you
 (you sit behind it, across the gun, with the chronograph at about 1 o'clock). The "far side" is the other one.
@@ -12,8 +12,8 @@ WHAT CHANGED IN v0.7 (lids only; base, front cover, pod and roof are the same as
   - Two 8 mm risers hang 6 mm under the lid at the pod's screw spots. Press an M3 heat-set insert into
     each from the top (the pod hides them), then hold the pod down with 2 x M3x8. No nuts.
   - No ammo-probe jack hole (the probe isn't used: your ammo sits at air temperature).
-  - BLIP sits beside the pod: centred between the pod and the lid's +X edge (5.9 mm each side), level
-    with the middle of the pod.
+  - BLIPR (Ballistic Launch Inspection Portable Radar) is cut into the lid, 12 mm tall, centred under the
+    sensor pod as you see it from your seat, 8 mm behind it.
   - The screen now sits over the Teensy, about 5 mm above it. Solder the screen's 4 wires straight to
     its pads (or bend the header pins flat) rather than using a straight header with Dupont plugs.
 
@@ -24,7 +24,7 @@ WHAT CHANGED IN v0.6 (base and front cover are the same as v0.5)
     are screwed down (4 x M2.5x6 brass each, into 5 mm posts) instead of sitting on pegs; a column in
     each inside corner, rounded and filleted into the walls, takes a roof screw.
   - Pod roof: 4 screw holes, and its lip is notched to clear the corner columns.
-  - The script is now blip_case.py (was chronograph_case.py).
+  - The script is now blipr_case.py (was chronograph_case.py, then blip_case.py).
 
 WHAT CHANGED IN v0.5 (base only; every other part is the same as v0.4)
   - The Teensy USB hole in the right wall now reaches 7 mm lower (it is 17 mm tall instead of 10),
@@ -80,8 +80,8 @@ Hardware: 8 x M3 heat-set inserts (4.1 mm holes), 4 x M3x8 (lid), 4 x M3x6 (boar
           Sensor pod: 2 x M3x8 + 2 more M3 heat-set inserts (in the lid's risers).  Sensor boards and pod roof: 16 x M2.5x6 brass screws.
 
 CHANGING THE CASE
-  All sizes are at the top of blip_case.py. Edit a number, then run:
-      python3 blip_case.py
+  All sizes are at the top of blipr_case.py. Edit a number, then run:
+      python3 blipr_case.py
   It rebuilds every STEP and STL in out/ in a few seconds. Plain Python 3 only;
   csg.py (included) does the geometry, so no CAD program or extra packages are needed.
   Optional previews (needs numpy + matplotlib): python3 render.py

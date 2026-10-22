@@ -38,14 +38,14 @@ def bullet(o, x, y):
 def frames():
     o = O(); Y = 25; out = []
     for x in range(-32, 133, 6):
-        o.clear(); o.center("RB Blip", 18, 2); o.center("v0.2.2", 44, 1)
+        o.clear(); o.center("BLIPR", 14, 3); o.center("v0.2.2", 44, 1)
         if x < 128: o.fillRect(max(0, x), 0, 128, 64, 0)
-        wake = x - 22; w0 = max(0, wake); o.fillRect(w0, Y - 7, x - w0, 15, 0)
+        wake = x - 22; w0 = max(0, wake); o.fillRect(w0, 9, x - w0, 31, 0)
         for k in range(3):
             ln = 8 + (((x + 32) // 6 + k * 5) % 3) * 5
             o.hline(x - 3 - ln, Y - 3 + k * 3, ln, 1)
         bullet(o, x, Y); out.append((o.b.copy(), 40))
-    o.clear(); o.center("RB Blip", 18, 2); o.center("v0.2.2", 44, 1)
+    o.clear(); o.center("BLIPR", 14, 3); o.center("v0.2.2", 44, 1)
     out.append((o.b.copy(), 30)); out.append((1 - o.b, 70)); out.append((o.b.copy(), 1400))
     return out
 def img(b, scale=4):

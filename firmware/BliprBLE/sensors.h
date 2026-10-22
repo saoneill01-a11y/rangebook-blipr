@@ -1,4 +1,4 @@
-// Optional add-on sensors for the RB Blip (ESP32-C3). Each one is found
+// Optional add-on sensors for BLIPR (ESP32-C3). Each one is found
 // automatically at start-up; anything not plugged in is simply skipped.
 //   SHT45   temperature + humidity      I2C 0x44
 //   BMP390  air pressure                I2C 0x77 (or 0x76)
