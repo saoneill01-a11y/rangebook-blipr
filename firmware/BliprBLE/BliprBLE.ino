@@ -19,6 +19,9 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Fonts/FreeSansBold9pt7b.h>     // smooth outline fonts for the big text (the small text stays in the
+#include <Fonts/FreeSansBold12pt7b.h>    // built-in 5x7 font, which is already crisp at its own size)
+#include <Fonts/FreeSansBold18pt7b.h>
 #include <Preferences.h>
 #include <math.h>
 #include <Update.h>
@@ -306,6 +309,18 @@ static void drawBattery(int x, int y) {
   if (batPct >= 0) oled.fillRect(x + 2, y + 2, (14 * batPct + 50) / 100, 4, SSD1306_WHITE);
 }
 
+// Big text in a smooth font, centred in [x0, x0 + w), with its baseline (the bottom of the capitals) at y.
+static void centerFont(const GFXfont* f, const char* s, int baseline, int x0 = 0, int w = 128) {
+  oled.setTextSize(1);
+  oled.setFont(f);
+  int16_t bx, by;
+  uint16_t bw, bh;
+  oled.getTextBounds(s, 0, baseline, &bx, &by, &bw, &bh);
+  oled.setCursor(x0 + (w - (int)bw) / 2 - bx, baseline);
+  oled.print(s);
+  oled.setFont(nullptr);
+}
+
 static void centerText(const char* s, int y, int size) {
   oled.setTextSize(size);
   int w = strlen(s) * 6 * size;
@@ -335,7 +350,7 @@ static void bootAnimation() {
   snprintf(ver, sizeof(ver), "v%s", FW_VERSION);
   for (int x = -BULLET_LEN; x <= 132; x += 6) {
     oled.clearDisplay();
-    centerText("BLIPR", 14, 3);
+    centerFont(&FreeSansBold18pt7b, "BLIPR", 38);
     centerText(ver, 44, 1);
     if (x < 128) oled.fillRect(x < 0 ? 0 : x, 0, 128, 64, SSD1306_BLACK);     // not written yet
     int wake = x - 22;                                                           // the wake hides the text briefly
@@ -350,7 +365,7 @@ static void bootAnimation() {
     delay(12);
   }
   oled.clearDisplay();
-  centerText("BLIPR", 14, 3);
+  centerFont(&FreeSansBold18pt7b, "BLIPR", 38);
   centerText(ver, 44, 1);
   oled.display();
   oled.invertDisplay(true);   // the "blip"
@@ -433,9 +448,7 @@ static void drawLevel() {
   if (levelDoneAt || ok) {
     oled.fillRect(66, 22, 62, 20, SSD1306_WHITE);
     oled.setTextColor(SSD1306_BLACK);
-    oled.setTextSize(2);
-    oled.setCursor(67, 25);
-    oled.print("LEVEL");
+    centerFont(&FreeSansBold9pt7b, "LEVEL", 38, 66, 62);
     oled.setTextColor(SSD1306_WHITE);
     oled.setTextSize(1);
   } else {
@@ -455,7 +468,7 @@ static void drawScreen() {
   if (otaActive || otaRebootAt) {               // firmware update in progress
     oled.clearDisplay();
     oled.setTextColor(SSD1306_WHITE);
-    centerText(otaRebootAt ? "UPDATED" : "UPDATING", 10, 2);
+    centerFont(&FreeSansBold12pt7b, otaRebootAt ? "UPDATED" : "UPDATING", 27);
     uint32_t pct = otaSize ? (uint64_t)otaGot * 100 / otaSize : 0;
     oled.drawRect(4, 34, 120, 10, SSD1306_WHITE);
     oled.fillRect(6, 36, (int)(116 * pct / 100), 6, SSD1306_WHITE);
@@ -484,18 +497,22 @@ static void drawScreen() {
   bool alive = teensySeenMs && millis() - teensySeenMs < 6000;
   char big[16];
   if (!alive) {
-    centerText("NO RADAR", 20, 2);
-    centerText("Teensy not talking", 42, 1);
+    centerFont(&FreeSansBold12pt7b, "NO RADAR", 33);
+    centerText("Teensy not talking", 40, 1);
   } else if (haveLast && last.code == 0) {
     float v = unitsMps ? last.fps * 0.3048f : last.fps;
     snprintf(big, sizeof(big), "%.0f", v);
-    oled.setTextSize(3);
-    int w = strlen(big) * 18;
-    int x = (104 - w) / 2;
-    oled.setCursor(x < 0 ? 0 : x, 14);
-    oled.print(big);
+    // the number in the big smooth font, with the units after it on the same baseline
     oled.setTextSize(1);
-    oled.setCursor(x + w + 3 > 104 ? 104 : x + w + 3, 28);
+    oled.setFont(&FreeSansBold18pt7b);
+    int16_t bx, by;
+    uint16_t bw, bh;
+    oled.getTextBounds(big, 0, 37, &bx, &by, &bw, &bh);
+    int x = (128 - ((int)bw + 3 + 18)) / 2;
+    oled.setCursor(x - bx, 37);
+    oled.print(big);
+    oled.setFont(nullptr);
+    oled.setCursor(x + bw + 3, 37 - 7);
     oled.print(unitsMps ? "m/s" : "fps");
     if (animStart) {
       uint32_t t = millis() - animStart;
@@ -513,10 +530,10 @@ static void drawScreen() {
       }
     }
   } else if (haveLast) {
-    centerText("NO READ", 16, 2);
-    centerText(last.why, 34, 1);
+    centerFont(&FreeSansBold12pt7b, "NO READ", 30);
+    centerText(last.why, 36, 1);
   } else {
-    centerText(tArmed ? "READY" : "PAUSED", 18, 2);
+    centerFont(&FreeSansBold12pt7b, tArmed ? "READY" : "PAUSED", 33);
   }
   // bottom two lines: string stats, taking turns with the weather when sensors are fitted
   const EnvReading& e = sensors::get();
