@@ -1,6 +1,8 @@
-"""Preview of the OLED boot animation.  python3 oled_boot_animation_preview.py path/to/Adafruit-GFX-Library/glcdfont.c"""
-import os, sys, re, numpy as np
+"""Preview of the OLED boot animation.  GFX_FONTS=path/to/Adafruit-GFX-Library/Fonts/ python3 oled_boot_animation_preview.py path/to/glcdfont.c"""
+import os, re, sys, numpy as np
 OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'out')
+sys.path.insert(0, __import__("os").path.dirname(__import__("os").path.abspath(__file__)))
+import gfxfont as G
 from PIL import Image, ImageDraw
 src = open(sys.argv[1] if len(sys.argv) > 1 else 'glcdfont.c').read()
 body = src[src.index('{', src.index('font[]')) + 1: src.rindex('}')]
@@ -38,14 +40,14 @@ def bullet(o, x, y):
 def frames():
     o = O(); Y = 25; out = []
     for x in range(-32, 133, 6):
-        o.clear(); o.center("BLIPR", 14, 3); o.center("v0.2.2", 44, 1)
+        o.clear(); (lambda b: G.draw(o, "FreeSansBold18pt7b", "BLIPR", (128 - b[2]) // 2 - b[0], 38))(G.bounds("FreeSansBold18pt7b", "BLIPR")); o.center("v0.2.2", 44, 1)
         if x < 128: o.fillRect(max(0, x), 0, 128, 64, 0)
         wake = x - 22; w0 = max(0, wake); o.fillRect(w0, 9, x - w0, 31, 0)
         for k in range(3):
             ln = 8 + (((x + 32) // 6 + k * 5) % 3) * 5
             o.hline(x - 3 - ln, Y - 3 + k * 3, ln, 1)
         bullet(o, x, Y); out.append((o.b.copy(), 40))
-    o.clear(); o.center("BLIPR", 14, 3); o.center("v0.2.2", 44, 1)
+    o.clear(); (lambda b: G.draw(o, "FreeSansBold18pt7b", "BLIPR", (128 - b[2]) // 2 - b[0], 38))(G.bounds("FreeSansBold18pt7b", "BLIPR")); o.center("v0.2.2", 44, 1)
     out.append((o.b.copy(), 30)); out.append((1 - o.b, 70)); out.append((o.b.copy(), 1400))
     return out
 def img(b, scale=4):

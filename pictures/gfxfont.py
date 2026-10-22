@@ -1,6 +1,7 @@
 """Parse Adafruit GFX custom font headers and draw text like the library does."""
 import re
-FD = '/home/claude/tools/sketchbook/libraries/Adafruit-GFX-Library/Fonts/'
+import os
+FD = os.environ.get('GFX_FONTS', 'Adafruit-GFX-Library/Fonts/')   # the library's Fonts folder
 _cache = {}
 def load(name):
     if name in _cache: return _cache[name]
