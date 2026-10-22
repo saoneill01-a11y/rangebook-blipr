@@ -50,7 +50,7 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 - `drive` / `drive off`: USB drive mode (below; it turns on by itself when you plug into a computer)
 - `time 1792480000`: set the clock (Range Book does this every time it connects), so raw recordings have the date and time
 
-ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
+ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
 
 ## What changed in 0.2.2
 
@@ -67,6 +67,7 @@ Needs circuit board v1.1 (or the matching hand wiring): the serial link moved.
 - ESP32: `COMPASS REVERSE` is ignored when the accelerometer is fitted (the accelerometer already knows which way is up). `COMPASS ROT` is counter-clockwise seen from above.
 - ESP32: the battery gauge expects the 10 kOhm resistor at the cell's + tab (divider ratio 2.1). `BATV` calibration still fine-tunes it.
 - ESP32: the settings message can no longer overrun its buffer.
+- ESP32: screen looks. `THEME 0`–`THEME 3` (or Range Book's chronograph settings › Look) picks Classic, Big number, Stats (a smaller number with the whole string beside it) or Retro (the old blocky font); `INVERT 1` shows dark text on a lit screen. Both are remembered.
 - ESP32: the big text on the screen (the velocity, BLIPR, READY / PAUSED, NO READ, NO RADAR, UPDATING, the LEVEL box) uses a smooth font (FreeSans Bold, part of the Adafruit GFX library) instead of the 5x7 font scaled up. The small text stays 5x7, which is already sharp at its own size.
 - ESP32: at power-up a bullet flies across the screen and writes "BLIPR" behind it, then the screen blinks once (about 2 s), before the bubble level.
 - ESP32: firmware updates over Bluetooth. Range Book (chronograph settings › Firmware) sends the new firmware in numbered pieces to a spare slot; the board checks each piece's place and the whole file's MD5, switches on the next restart, and keeps the new firmware only after it has run for 15 s (if it crashes or resets sooner, it goes back to the old one). The first 0.2.2 has to go on with the USB cable; after that, Range Book can do it. The Teensy is still updated over USB.

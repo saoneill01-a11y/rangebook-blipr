@@ -22,6 +22,7 @@
 #include <Fonts/FreeSansBold9pt7b.h>     // smooth outline fonts for the big text (the small text stays in the
 #include <Fonts/FreeSansBold12pt7b.h>    // built-in 5x7 font, which is already crisp at its own size)
 #include <Fonts/FreeSansBold18pt7b.h>
+#include <Fonts/FreeSansBold24pt7b.h>
 #include <Preferences.h>
 #include <math.h>
 #include <Update.h>
@@ -97,6 +98,10 @@ static float batV = 0, batCal = 1.0f;
 static int batPct = -1;
 static bool unitsMps = false;
 static int bright = 3;   // screen: 0 = off, 1 = dim .. 4 = brightest
+// Screen look (THEME): 0 Classic, 1 Big number, 2 Stats, 3 Retro (the old blocky font). INVERT 1: dark on lit.
+enum { THEME_CLASSIC, THEME_BIG, THEME_STATS, THEME_RETRO, THEME_COUNT };
+static int screenTheme = THEME_CLASSIC;
+static bool screenInv = false;
 static bool shotAnim = false;   // ANIM 1: after each good shot a bullet flies across and writes the velocity
 static uint32_t animStart = 0;  // millis() when the shot animation started (0 = not running)
 
@@ -346,11 +351,12 @@ static void drawBullet(int x, int y) {          // x = tail, nose to the right
 }
 
 static void bootAnimation() {
+  oled.invertDisplay(screenInv);
   char ver[16];
   snprintf(ver, sizeof(ver), "v%s", FW_VERSION);
   for (int x = -BULLET_LEN; x <= 132; x += 6) {
     oled.clearDisplay();
-    centerFont(&FreeSansBold18pt7b, "BLIPR", 38);
+    if (screenTheme == THEME_RETRO) centerText("BLIPR", 14, 3); else centerFont(&FreeSansBold18pt7b, "BLIPR", 38);
     centerText(ver, 44, 1);
     if (x < 128) oled.fillRect(x < 0 ? 0 : x, 0, 128, 64, SSD1306_BLACK);     // not written yet
     int wake = x - 22;                                                           // the wake hides the text briefly
@@ -365,12 +371,12 @@ static void bootAnimation() {
     delay(12);
   }
   oled.clearDisplay();
-  centerFont(&FreeSansBold18pt7b, "BLIPR", 38);
+  if (screenTheme == THEME_RETRO) centerText("BLIPR", 14, 3); else centerFont(&FreeSansBold18pt7b, "BLIPR", 38);
   centerText(ver, 44, 1);
   oled.display();
-  oled.invertDisplay(true);   // the "blip"
+  oled.invertDisplay(!screenInv);   // the "blip"
   delay(70);
-  oled.invertDisplay(false);
+  oled.invertDisplay(screenInv);
   delay(600);
 }
 
@@ -448,7 +454,8 @@ static void drawLevel() {
   if (levelDoneAt || ok) {
     oled.fillRect(66, 22, 62, 20, SSD1306_WHITE);
     oled.setTextColor(SSD1306_BLACK);
-    centerFont(&FreeSansBold9pt7b, "LEVEL", 38, 66, 62);
+    if (screenTheme == THEME_RETRO) { oled.setTextSize(2); oled.setCursor(67, 25); oled.print("LEVEL"); oled.setTextSize(1); }
+    else centerFont(&FreeSansBold9pt7b, "LEVEL", 38, 66, 62);
     oled.setTextColor(SSD1306_WHITE);
     oled.setTextSize(1);
   } else {
@@ -465,6 +472,7 @@ static void drawLevel() {
 
 static void drawScreen() {
   if (!oledOk) return;
+  oled.invertDisplay(screenInv);
   if (otaActive || otaRebootAt) {               // firmware update in progress
     oled.clearDisplay();
     oled.setTextColor(SSD1306_WHITE);
@@ -494,83 +502,149 @@ static void drawScreen() {
   }
   drawBattery(108, 0);
 
-  bool alive = teensySeenMs && millis() - teensySeenMs < 6000;
-  char big[16];
-  if (!alive) {
-    centerFont(&FreeSansBold12pt7b, "NO RADAR", 33);
-    centerText("Teensy not talking", 40, 1);
-  } else if (haveLast && last.code == 0) {
-    float v = unitsMps ? last.fps * 0.3048f : last.fps;
-    snprintf(big, sizeof(big), "%.0f", v);
-    // the number in the big smooth font, with the units after it on the same baseline
-    oled.setTextSize(1);
-    oled.setFont(&FreeSansBold18pt7b);
-    int16_t bx, by;
-    uint16_t bw, bh;
-    oled.getTextBounds(big, 0, 37, &bx, &by, &bw, &bh);
-    int x = (128 - ((int)bw + 3 + 18)) / 2;
-    oled.setCursor(x - bx, 37);
-    oled.print(big);
-    oled.setFont(nullptr);
-    oled.setCursor(x + bw + 3, 37 - 7);
-    oled.print(unitsMps ? "m/s" : "fps");
-    if (animStart) {
-      uint32_t t = millis() - animStart;
-      if (t < ANIM_MS) {
-        const int y = 25;
-        int bx = -BULLET_LEN + (int)((128 + BULLET_LEN) * t / ANIM_MS);
-        oled.fillRect(bx < 0 ? 0 : bx, 9, 128, 31, SSD1306_BLACK);              // not written yet
-        int wake = bx - 22;
-        oled.fillRect(wake < 0 ? 0 : wake, 9, bx - (wake < 0 ? 0 : wake), 31, SSD1306_BLACK);
-        for (int k = 0; k < 3; k++) {
-          int len = 8 + (((bx + BULLET_LEN) / 6 + k * 5) % 3) * 5;
-          oled.drawFastHLine(bx - 3 - len, y - 3 + k * 3, len, SSD1306_WHITE);
-        }
-        drawBullet(bx, y);
-      }
-    }
-  } else if (haveLast) {
-    centerFont(&FreeSansBold12pt7b, "NO READ", 30);
-    centerText(last.why, 36, 1);
-  } else {
-    centerFont(&FreeSansBold12pt7b, tArmed ? "READY" : "PAUSED", 33);
-  }
-  // bottom two lines: string stats, taking turns with the weather when sensors are fitted
+  const bool retro = screenTheme == THEME_RETRO;
+  auto bigWord = [&](const char* w, int baseline) {     // a status word in the theme's big font
+    if (retro) centerText(w, baseline - 14, 2); else centerFont(&FreeSansBold12pt7b, w, baseline);
+  };
+  const char* units = unitsMps ? "m/s" : "fps";
+  const float k = unitsMps ? 0.3048f : 1.0f;
+  const double mean = sN ? sSum / sN : 0, var = sN ? sSum2 / sN - mean * mean : 0;
+  const double sd = sqrt(var > 0 ? var : 0);
   const EnvReading& e = sensors::get();
-  bool haveWx = e.hasTH || e.hasP || e.hasAmmo || e.hasHeading;
-  bool showWx = haveWx && (sN == 0 || (millis() / 4000) % 2);
-  if (showWx && alive) {
-    oled.setTextSize(1);
-    oled.setCursor(0, 47);
+  const bool haveWx = e.hasTH || e.hasP || e.hasAmmo || e.hasHeading;
+  auto wxLine1 = [&]() {
     if (e.hasTH || e.hasP) {
       if (unitsMps) oled.printf("%.1fC", e.tempC); else oled.printf("%.1fF", e.tempC * 1.8f + 32);
       if (e.hasTH) oled.printf(" %.0f%%", e.rh);
       if (e.hasP) { if (unitsMps) oled.printf(" %.0fhPa", e.hPa); else oled.printf(" %.2fin", e.hPa * 0.02953f); }
     }
-    oled.setCursor(0, 56);
+  };
+  auto wxLine2 = [&]() {
     if (e.hasAmmo) { if (unitsMps) oled.printf("Ammo %.1fC", e.ammoC); else oled.printf("Ammo %.1fF", e.ammoC * 1.8f + 32); }
     if (e.hasHeading) oled.printf("%sHdg %03.0f", e.hasAmmo ? "  " : "", e.heading);
-  } else if (sN > 0 && alive) {
-    float k = unitsMps ? 0.3048f : 1.0f;
-    double mean = sSum / sN;
-    double var = sSum2 / sN - mean * mean;
+  };
+  // where the velocity sits, for the shot animation: [0, ax) x [ay0, ay1), bullet centre line ayc
+  int ax = 128, ay0 = 9, ay1 = 40, ayc = 25;
+
+  bool alive = teensySeenMs && millis() - teensySeenMs < 6000;
+  char big[16];
+  if (!alive) {
+    bigWord("NO RADAR", 33);
+    centerText("Teensy not talking", 40, 1);
+  } else if (haveLast && last.code == 0) {
+    float v = last.fps * k;
+    snprintf(big, sizeof(big), "%.0f", v);
     oled.setTextSize(1);
-    oled.setCursor(0, 47);
-    oled.printf("n %d  avg %.0f", sN, mean * k);
+    int16_t bx, by;
+    uint16_t bw, bh;
+    if (screenTheme == THEME_BIG) {               // the number as big as it goes, units on its baseline
+      oled.setFont(&FreeSansBold24pt7b);
+      oled.getTextBounds(big, 0, 46, &bx, &by, &bw, &bh);
+      int x = (128 - ((int)bw + 3 + 18)) / 2;
+      oled.setCursor(x - bx, 46);
+      oled.print(big);
+      oled.setFont(nullptr);
+      oled.setCursor(x + bw + 3, 46 - 7);
+      oled.print(units);
+      ay1 = 49; ayc = 30;
+    } else if (screenTheme == THEME_STATS) {      // a smaller number on the left, the whole string on the right
+      oled.setFont(&FreeSansBold12pt7b);
+      oled.getTextBounds(big, 0, 28, &bx, &by, &bw, &bh);
+      int x = (72 - (int)bw) / 2;
+      oled.setCursor(x - bx, 28);
+      oled.print(big);
+      oled.setFont(nullptr);
+      oled.setCursor((72 - 18) / 2, 32);
+      oled.print(units);
+      ax = 72; ay1 = 41; ayc = 21;
+    } else if (retro) {                           // the original 5x7 font, three times size
+      oled.setTextSize(3);
+      int w = strlen(big) * 18;
+      int x = (104 - w) / 2;
+      oled.setCursor(x < 0 ? 0 : x, 14);
+      oled.print(big);
+      oled.setTextSize(1);
+      oled.setCursor(x + w + 3 > 104 ? 104 : x + w + 3, 28);
+      oled.print(units);
+    } else {                                      // Classic
+      oled.setFont(&FreeSansBold18pt7b);
+      oled.getTextBounds(big, 0, 37, &bx, &by, &bw, &bh);
+      int x = (128 - ((int)bw + 3 + 18)) / 2;
+      oled.setCursor(x - bx, 37);
+      oled.print(big);
+      oled.setFont(nullptr);
+      oled.setCursor(x + bw + 3, 37 - 7);
+      oled.print(units);
+    }
+  } else if (haveLast) {
+    bigWord("NO READ", 30);
+    centerText(last.why, 36, 1);
+  } else {
+    bigWord(tArmed ? "READY" : "PAUSED", 33);
+  }
+
+  oled.setTextSize(1);
+  if (alive && screenTheme == THEME_STATS && haveLast && last.code == 0) {
+    // right-hand column: the string; bottom left: the weather
+    const int cx = 78;
+    oled.setCursor(cx, 10); oled.printf("n %d", sN);
+    if (sN > 0) {
+      oled.setCursor(cx, 19); oled.printf("avg %.0f", mean * k);
+      if (sN > 1) {
+        oled.setCursor(cx, 28); oled.printf("SD %.1f", sd * k);
+        oled.setCursor(cx, 37); oled.printf("ES %.0f", (sMax - sMin) * k);
+      }
+      oled.setCursor(cx, 46); oled.printf("lo %.0f", sMin * k);
+      oled.setCursor(cx, 55); oled.printf("hi %.0f", sMax * k);
+    }
+    if (haveWx) { oled.setCursor(0, 47); wxLine1(); oled.setCursor(0, 56); wxLine2(); }
+  } else if (alive && screenTheme == THEME_BIG) {
+    // one line under the big number: the string, taking turns with the weather
     oled.setCursor(0, 56);
-    if (sN > 1) oled.printf("SD %.1f  ES %.0f", sqrt(var > 0 ? var : 0) * k, (sMax - sMin) * k);
+    if (haveWx && (sN == 0 || (millis() / 4000) % 2)) wxLine1();
+    else if (sN > 1) oled.printf("n%d avg %.0f SD %.1f", sN, mean * k, sd * k);
+    else if (sN == 1) oled.printf("n1 avg %.0f", mean * k);
+  } else if (alive) {
+    // Classic and Retro: two lines of string stats, taking turns with the weather when sensors are fitted
+    bool showWx = haveWx && (sN == 0 || (millis() / 4000) % 2);
+    if (showWx) {
+      oled.setCursor(0, 47); wxLine1();
+      oled.setCursor(0, 56); wxLine2();
+    } else if (sN > 0) {
+      oled.setCursor(0, 47);
+      oled.printf("n %d  avg %.0f", sN, mean * k);
+      oled.setCursor(0, 56);
+      if (sN > 1) oled.printf("SD %.1f  ES %.0f", sd * k, (sMax - sMin) * k);
+    }
+  }
+
+  // the shot animation: the bullet crosses the velocity and writes it behind itself
+  if (animStart && haveLast && last.code == 0) {
+    uint32_t t = millis() - animStart;
+    if (t < ANIM_MS) {
+      int bx = -BULLET_LEN + (int)((ax + BULLET_LEN) * t / ANIM_MS);
+      if (bx < ax) oled.fillRect(bx < 0 ? 0 : bx, ay0, ax - (bx < 0 ? 0 : bx), ay1 - ay0, SSD1306_BLACK);   // not written yet
+      int wake = bx - 22;
+      oled.fillRect(wake < 0 ? 0 : wake, ay0, bx - (wake < 0 ? 0 : wake), ay1 - ay0, SSD1306_BLACK);
+      for (int j = 0; j < 3; j++) {
+        int len = 8 + (((bx + BULLET_LEN) / 6 + j * 5) % 3) * 5;
+        oled.drawFastHLine(bx - 3 - len, ayc - 3 + j * 3, len, SSD1306_WHITE);
+      }
+      drawBullet(bx, ayc);
+    }
   }
   if (batPct >= 0 && batPct < 10 && (millis() / 700) % 2) {
     oled.fillRect(0, 46, 128, 18, SSD1306_BLACK);
     centerText("LOW BATTERY", 50, 1);
   }
   oled.display();
+  bool blink = false;
   if (animStart) {
     uint32_t t = millis() - animStart;
-    bool blink = t >= ANIM_MS && t < ANIM_MS + ANIM_BLINK_MS;
-    oled.invertDisplay(blink);
+    blink = t >= ANIM_MS && t < ANIM_MS + ANIM_BLINK_MS;
     if (t >= ANIM_MS + ANIM_BLINK_MS) animStart = 0;
   }
+  oled.invertDisplay(blink ? !screenInv : screenInv);
 }
 
 // ---------------- messages from the Teensy ----------------
@@ -646,8 +720,8 @@ static void handleTeensy(char* line) {
       add(snprintf(tmp + o, cap - o, "%s\"%s\":%s", o > 1 ? "," : "", f[i], eq + 1));
     }
     if (fits)
-      add(snprintf(tmp + o, cap - o, "%s\"units\":\"%s\",\"batcal\":%.4f,\"bright\":%d,\"anim\":%d,\"hoff\":%.1f,\"hrev\":%d,\"hrot\":%d}",
-                   o > 1 ? "," : "", unitsMps ? "mps" : "fps", batCal, bright, shotAnim ? 1 : 0, sensors::headingOffset(),
+      add(snprintf(tmp + o, cap - o, "%s\"units\":\"%s\",\"batcal\":%.4f,\"bright\":%d,\"anim\":%d,\"theme\":%d,\"inv\":%d,\"hoff\":%.1f,\"hrev\":%d,\"hrot\":%d}",
+                   o > 1 ? "," : "", unitsMps ? "mps" : "fps", batCal, bright, shotAnim ? 1 : 0, screenTheme, screenInv ? 1 : 0, sensors::headingOffset(),
                    sensors::headingReverse() ? 1 : 0, sensors::imuRotation()));
     if (!fits) return;
     memcpy(configJson, tmp, o + 1);
@@ -727,6 +801,20 @@ static void handleCommand(char* cmd) {
     // LEVEL: show the bubble level for 60 s.  LEVEL OFF: back to the normal screen.
     if (toupper(arg[0]) == 'O' && toupper(arg[1]) == 'F') levelUntil = 0; else startLevel(60000);
     drawScreen();
+  } else if (!strcmp(word, "THEME")) {
+    // THEME 0-3 or CLASSIC / BIG / STATS / RETRO: how the screen looks
+    static const char* names[] = {"CLASSIC", "BIG", "STATS", "RETRO"};
+    int t = -1;
+    if (isdigit((unsigned char)arg[0])) t = atoi(arg);
+    else for (int i = 0; i < THEME_COUNT; i++) if (!strncasecmp(arg, names[i], strlen(names[i]))) t = i;
+    if (t >= 0 && t < THEME_COUNT) { screenTheme = t; prefs.putInt("theme", t); drawScreen(); }
+    toTeensy("get");
+  } else if (!strcmp(word, "INVERT")) {
+    // INVERT 1: dark text on a lit screen.  INVERT 0: light text on black (the usual)
+    screenInv = atoi(arg) != 0 || (arg[0] && toupper(arg[1]) == 'N');
+    prefs.putBool("inv", screenInv);
+    oled.invertDisplay(screenInv);
+    toTeensy("get");
   } else if (!strcmp(word, "ANIM")) {
     // ANIM 1: play the bullet animation after each good shot.  ANIM 0: just show the number.
     shotAnim = atoi(arg) != 0 || (arg[0] && toupper(arg[1]) == 'N');   // also takes ON / OFF
@@ -783,6 +871,9 @@ void setup() {
   unitsMps = prefs.getBool("mps", false);
   bright = prefs.getInt("bright", 3);
   shotAnim = prefs.getBool("anim", false);
+  screenTheme = prefs.getInt("theme", THEME_CLASSIC);
+  if (screenTheme < 0 || screenTheme >= THEME_COUNT) screenTheme = THEME_CLASSIC;
+  screenInv = prefs.getBool("inv", false);
   analogReadResolution(12);
   analogSetPinAttenuation(PIN_BAT, ADC_11db);
 
@@ -831,7 +922,7 @@ void setup() {
   updateBattery();
   pushStatus();
   Serial.printf("BLIPR ESP32-C3 firmware %s ready. Sensors found: %s\n"
-                "Commands: STATUS, SYNC n, STRING, UNITS fps|mps, BATV volts, BRIGHT 0-4, ANIM 0|1, LEVEL [OFF], COMPASS ...,\n"
+                "Commands: STATUS, SYNC n, STRING, UNITS fps|mps, BATV volts, BRIGHT 0-4, THEME 0-3, INVERT 0|1, ANIM 0|1, LEVEL [OFF], COMPASS ...,\n"
                 "or any Teensy command (STAT, GET, SET ..., ARM, DISARM, TEST, REC, TIME).\n", FW_VERSION,
                 sensors::letters().length() ? sensors::letters().c_str() : "none");
   delay(300);

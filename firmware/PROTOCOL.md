@@ -44,9 +44,9 @@ C = compass, L = level), `cc` compass calibration (0 never, 1 calibrating now, 2
 
 ## Config
 ```json
-{"vmin":300,"vmax":4500,"lat":0.100,"behind":0.100,"cal":0,"f0":24150000000,"snr":12.0,"trig":9.0,"fs":600000,"save":1,"arm":1,"units":"fps","batcal":1.0000,"bright":2,"anim":0,"hoff":0.0,"hrev":0,"hrot":0}
+{"vmin":300,"vmax":4500,"lat":0.100,"behind":0.100,"cal":0,"f0":24150000000,"snr":12.0,"trig":9.0,"fs":600000,"save":1,"arm":1,"units":"fps","batcal":1.0000,"bright":2,"anim":0,"theme":0,"inv":0,"hoff":0.0,"hrev":0,"hrot":0}
 ```
-`bright` screen brightness 0–4, `anim` bullet animation after each shot (1 = on), `hoff` compass offset (degrees), `hrev` compass turns backwards (only used without an
+`bright` screen brightness 0–4, `anim` bullet animation after each shot (1 = on), `theme` screen look (0–3), `inv` screen inverted (1 = on), `hoff` compass offset (degrees), `hrev` compass turns backwards (only used without an
 accelerometer), `hrot` IMU board rotation (0/90/180/270, counter-clockwise seen from above).
 
 ## Sensors
@@ -92,6 +92,8 @@ firmware is kept once it has run for 15 s; a crash or reset before that rolls ba
 | `COMPASS OFFSET 12.5` | set the offset directly |
 | `COMPASS REVERSE 1` | heading turns the wrong way: only for a magnetometer with **no** accelerometer, mounted upside down. Ignored when the accelerometer is fitted, because it already knows which way is up |
 | `COMPASS ROT 90` | the IMU board is turned 0, 90, 180 or 270 degrees **counter-clockwise, seen from above**, on its mount (90 = the board's X arrow points left instead of forward). After setting it, lift the front: pitch must read positive (nose up) |
+| `THEME 0`…`THEME 3` | screen look: 0 Classic, 1 Big number, 2 Stats, 3 Retro (also takes the names). Remembered; the config JSON carries `"theme"` |
+| `INVERT 1` / `INVERT 0` | dark text on a lit screen, or the usual light on black. Remembered; config `"inv"` |
 | `ANIM 1` / `ANIM 0` | bullet animation on the chronograph's screen after each good shot, or not (default off; remembered). The config JSON carries `"anim":1` or `0` |
 | `LEVEL` / `LEVEL OFF` | show the bubble level on the chronograph's screen for 60 s / go back to the normal screen (needs the level sensor) |
 | `DRIVE` / `DRIVE OFF` | USB drive mode: pause shot detection and refresh the SD card file list on the USB-connected computer / resume (status reports armed 0 while paused). It also turns on by itself when the Teensy is plugged into a computer, and off when unplugged. `ARM` and `sim` also end it. Needs the Teensy built with USB Type Serial + MTP Disk |
