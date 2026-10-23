@@ -86,6 +86,12 @@ OLED_WIN_W, OLED_WIN_H = 24.0, 12.0
 OLED_WIN_OFFSET = 3.0                 # window centre is this far toward the BACK of module centre
 OLED_POCKET = 28.4
 OLED_POCKET_D = 1.0
+# v0.8 (Sean's design, tested): the screen screws in with 4 x M2 into pads in the pocket's corners. The pads fill the
+# corners and stand OLED_PAD_DROP below the lid; holes are 1.7 mm pilots for M2 screws (M2 x 4 is about right).
+OLED_PAD_W, OLED_PAD_D, OLED_PAD_DROP, OLED_PILOT = 6.0, 4.3, 1.0, 1.7
+OLED_HOLES = [(-11.9, -11.95), (11.9, -11.95), (-11.9, 12.05), (11.6, 12.05)]   # from the module centre, as measured
+# radar hold-down: a rib under every lid that comes down to just above the radar's top edge (1 mm foam on it)
+RADAR_RIB_LEN, RADAR_RIB_T, RADAR_FOAM, RADAR_SQUEEZE = 18.0, 3.0, 1.0, 0.3
 
 # --- optional sensor kit (see the build guide's Sensors tab)
 # v0.4: the pod holds all three boards (SHT45, BMP390 and the compass/level IMU) and sits on the rear-right of the
@@ -273,7 +279,25 @@ def lid(with_oled, sensors=False):
         wy = OLED_IY + OLED_WIN_OFFSET
         cuts.append(box(X(OLED_IX - OLED_WIN_W / 2), Y(wy - OLED_WIN_H / 2), -1, X(OLED_IX + OLED_WIN_W / 2), Y(wy + OLED_WIN_H / 2), LID_T + 1))
         cuts.append(box(X(OLED_IX - OLED_POCKET / 2), Y(OLED_IY - OLED_POCKET / 2), -1, X(OLED_IX + OLED_POCKET / 2), Y(OLED_IY + OLED_POCKET / 2), OLED_POCKET_D))
-    return s.subtract(union_all(cuts))
+    s = s.subtract(union_all(cuts))
+    adds, holes = [], []
+    if with_oled:                                 # screw pads in the screen pocket's four corners
+        h = OLED_POCKET / 2
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                xa, xb = sorted((OLED_IX + sx * h, OLED_IX + sx * (h - OLED_PAD_W)))
+                ya, yb = sorted((OLED_IY + sy * h, OLED_IY + sy * (h - OLED_PAD_D)))
+                adds.append(box(X(xa), Y(ya), -OLED_PAD_DROP, X(xb), Y(yb), OLED_POCKET_D + 0.01))
+        for dx, dy in OLED_HOLES:
+            holes.append(cyl_z(X(OLED_IX + dx), Y(OLED_IY + dy), OLED_PILOT / 2, -OLED_PAD_DROP - 1, OLED_POCKET_D, 20))
+    # radar hold-down rib: with the lid on, it stops RADAR_FOAM - RADAR_SQUEEZE above the radar's top edge
+    rib_bottom = (RADAR_LEDGE + RADAR_W + RADAR_FOAM - RADAR_SQUEEZE) - IH      # lid coords: the underside is z = 0
+    ry = HOLDER_T + 3.0                                                          # over the middle of the module's 6 mm edge
+    adds.append(box(X(RADAR_CX - RADAR_RIB_LEN / 2), Y(ry - RADAR_RIB_T / 2), rib_bottom, X(RADAR_CX + RADAR_RIB_LEN / 2), Y(ry + RADAR_RIB_T / 2), 0.3))
+    s = s.union(union_all(adds))
+    if holes:
+        s = s.subtract(union_all(holes))
+    return s
 
 
 def sensor_pod():
@@ -369,6 +393,65 @@ def export(solid, name, outdir):
     return bad
 
 
+# ---------------- the base now comes from Sean's CAD ----------------
+# From case v0.8 the base is Sean's own model (user_edits/base_from_sean_2026-10-22.stl): battery-holder mounting
+# points, USB-C charge and power-button holes in the far-side wall, the old back-wall charge and switch slots filled,
+# the Teensy USB hole trimmed at the top. base() above is the older script version, kept for reference. Small changes
+# on top of his model are listed in BASE_EDITS and made with mesh booleans (needs: pip install trimesh manifold3d).
+BASE_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_edits", "base_from_sean_2026-10-22.stl")
+BASE_EDITS = [
+    # (what, "cut" or "add", box from inside coords: x0, y0, z0, x1, y1, z1)
+    ("radar pocket 0.2 mm wider each side and 0.2 mm deeper, for 1 mm foam tape on its sides and back",
+     "cut", (RADAR_CX - 13.3, HOLDER_T, RADAR_LEDGE, RADAR_CX + 13.3, HOLDER_T + 6.8, IH + 5)),
+]
+
+
+def base_mesh():
+    import numpy as np, trimesh, manifold3d as mf
+    t = trimesh.load(BASE_SOURCE, force="mesh")
+    m = mf.Manifold(mf.Mesh64(vert_properties=np.asarray(t.vertices, np.float64), tri_verts=np.asarray(t.faces, np.uint64)))
+    for what, op, (a, b, c, d, e, f) in BASE_EDITS:
+        blk = mf.Manifold.cube([d - a, e - b, f - c]).translate([X(a), Y(b), Z(c)])
+        m = m - blk if op == "cut" else m + blk
+    mm = m.to_mesh64()
+    return trimesh.Trimesh(np.asarray(mm.vert_properties)[:, :3], np.asarray(mm.tri_verts))
+
+
+def export_mesh(t, name, outdir):
+    """STL straight from the mesh; STEP through OpenCascade (pip install cadquery-ocp), flat areas merged into faces."""
+    t.export(os.path.join(outdir, name + ".stl"))
+    try:
+        from OCP.BRepBuilderAPI import BRepBuilderAPI_MakePolygon, BRepBuilderAPI_MakeFace, BRepBuilderAPI_Sewing, BRepBuilderAPI_MakeSolid
+        from OCP.gp import gp_Pnt
+        from OCP.TopoDS import TopoDS
+        from OCP.TopExp import TopExp_Explorer
+        from OCP.TopAbs import TopAbs_SHELL
+        from OCP.ShapeUpgrade import ShapeUpgrade_UnifySameDomain
+        from OCP.STEPControl import STEPControl_Writer, STEPControl_AsIs
+        sew = BRepBuilderAPI_Sewing(1e-3)
+        V_ = t.vertices
+        for a, b, c in t.faces:
+            poly = BRepBuilderAPI_MakePolygon(gp_Pnt(*V_[a]), gp_Pnt(*V_[b]), gp_Pnt(*V_[c]), True)
+            f = BRepBuilderAPI_MakeFace(poly.Wire(), True)
+            if f.IsDone():
+                sew.Add(f.Face())
+        sew.Perform()
+        ex = TopExp_Explorer(sew.SewedShape(), TopAbs_SHELL)
+        mk = BRepBuilderAPI_MakeSolid()
+        while ex.More():
+            mk.Add(TopoDS.Shell(ex.Current()))
+            ex.Next()
+        u = ShapeUpgrade_UnifySameDomain(mk.Solid(), True, True, True)
+        u.Build()
+        w = STEPControl_Writer()
+        w.Transfer(u.Shape(), STEPControl_AsIs)
+        w.Write(os.path.join(outdir, name + ".step"))
+        step = "STEP written"
+    except Exception as ex_:
+        step = "STEP skipped (%s)" % ex_
+    print("  %s: %d triangles, watertight %s, %d body, %s" % (name, len(t.faces), t.is_watertight, t.body_count, step))
+
+
 def main():
     outdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")
     os.makedirs(outdir, exist_ok=True)
@@ -378,6 +461,11 @@ def main():
     only = sys.argv[1:]
     for name, fn in parts.items():
         if only and name not in only:
+            continue
+        if name == "base":                      # Sean's CAD model plus BASE_EDITS
+            t = time.time()
+            export_mesh(base_mesh(), "base", outdir)
+            print("base built in %.1f s" % (time.time() - t))
             continue
         t = time.time()
         s = run_big_stack(fn)

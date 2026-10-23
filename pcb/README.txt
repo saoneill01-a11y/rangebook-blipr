@@ -53,7 +53,7 @@ ASSEMBLY ORDER (lowest parts first, so the board sits flat while you solder)
      on top), USB toward the back, its antenna end at the board's front edge.
   7. Power test BEFORE plugging in the op-amps and modules (the build guide's Step 2 checkpoint):
      +5 V at J1, 3.3 V at U3's OUT leg, about 1.65 V at VREF (the + leg of C10).
-  8. Op-amps into the sockets, Teensy and ESP32 in, then wire the radar, OLED, switch and battery.
+  8. Op-amps into the sockets, Teensy and ESP32 in, then wire the radar, OLED and battery holder (no switch: the holder's own button is on/off).
 
 CHECK BEFORE SOLDERING THE ESP32
   The SuperMini's pin names are printed on its UNDERSIDE, so from above they read mirrored.

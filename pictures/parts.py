@@ -191,7 +191,7 @@ def shield(ax, x, y, s=1.0):
     ax.add_patch(Rectangle((x - 1.5 * s, y + 12 * s), 5 * s, 6 * s, fc="#c8c8c8", ec="#666", zorder=3))
     label(ax, x + 2 * s, y + 9.5 * s, "USB-C\n(charge)", size=5 * s, color="white")
     ax.add_patch(Rectangle((x + 4 * s, y + H - 4 * s), 6 * s, 3 * s, fc="#eee", ec="#555", zorder=3))
-    label(ax, x + 7 * s, y + H - 6 * s, "its own switch:\nleave ON", size=4.6 * s, color="white")
+    label(ax, x + 7 * s, y + H - 6 * s, "its button:\nON / OFF", size=4.6 * s, color="white")
     # header at the right end
     for i, nm in enumerate(("5V", "GND", "5V", "GND")):
         pins["%s%d" % (nm, i)] = pin(ax, x + W - 7 * s, y + 4 * s + i * 2.54 * s, nm, "right", size=6 * s, r=0.75 * s, lbl_color="white", dist=1.7 * s)

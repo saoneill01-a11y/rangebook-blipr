@@ -1,7 +1,20 @@
-Range Book BLIPR - case files, v0.7 (draft from datasheet and typical part sizes)
+Range Book BLIPR - case files, v0.8
 
 SIDES: "+X side" is the side wall with the Teensy's USB hole. On the bench it faces the gun and you
 (you sit behind it, across the gun, with the chronograph at about 1 o'clock). The "far side" is the other one.
+
+WHAT CHANGED IN v0.8 (base and lids; front cover, pod and roof are the same as v0.7)
+  - The base is now Sean's own CAD edit (user_edits/base_from_sean_2026-10-22.stl), used as the master:
+    mounts for the battery holder, a USB-C charging hole and a hole to press the holder's own power
+    button through, both in the side wall. The old slide-switch and charge slots are gone. No separate
+    power switch: the holder's button turns BLIPR on and off.
+  - Radar pocket: 0.2 mm wider each side and 0.2 mm deeper, for 1 mm x 5 mm foam tape on the radar's two
+    sides and back. The module is pushed forward against the window by the foam; no crush ribs.
+  - Every lid with a screen (lid_oled, lid_sensors) has Sean's screen mount: 4 pads in the pocket's corners,
+    1 mm proud of the underside, with 1.7 mm pilot holes for 4 x M2 x 4 screws (tested and fits).
+  - Every lid has a radar hold-down rib underneath (18 x 3 mm, 5.3 mm long). It stops 0.7 mm above the
+    radar's top edge: put a 20 mm strip of the same foam tape on the radar's top edge and the lid
+    presses it down lightly, so the module can't rattle or tip back.
 
 WHAT CHANGED IN v0.7 (lids only; base, front cover, pod and roof are the same as v0.6)
   - Screen moved to the back corner on the +X side, nearest you, so nothing is between you and it.
@@ -42,7 +55,7 @@ WHAT CHANGED IN v0.4
   screw holes and cable slot moved.
 
 PRINT FILES (out/)
-  base.stl / base.step               main body (v0.5); print floor-down, no supports
+  base.stl / base.step               main body (v0.8, Sean's CAD + wider radar pocket); print floor-down
   lid_oled.stl / lid_oled.step       lid with a window for the 0.96" OLED; print top-face down
   lid_plain.stl / lid_plain.step     lid without the screen window
   front_cover.stl / front_cover.step thin radar window cover (0.9 mm window); print flat, smooth face down,
@@ -75,6 +88,9 @@ PRINT FILES (out/)
   lid too if you have them (steel ones 20 mm or more from the compass are calibrated out, but brass is simpler).
 
 Outside size: 118.8 x 130.8 x 36.4 mm, plus the 2.4 mm lid.
+Hardware (v0.8 adds): 4 x M2 x 4 screws (screen), battery-holder screws to suit its 2.8 mm holes
+          (M3 x 6 self-tapping screws cut their own thread in a 2.8 mm hole), ~150 mm of
+          1 mm x 5 mm foam tape (radar sides, back and top).
 Hardware: 8 x M3 heat-set inserts (4.1 mm holes), 4 x M3x8 (lid), 4 x M3x6 (board),
           1 x 1/4-20 heat-set insert up to 13 mm long (8.4 mm hole) for a tripod.
           Sensor pod: 2 x M3x8 + 2 more M3 heat-set inserts (in the lid's risers).  Sensor boards and pod roof: 16 x M2.5x6 brass screws.
@@ -82,8 +98,11 @@ Hardware: 8 x M3 heat-set inserts (4.1 mm holes), 4 x M3x8 (lid), 4 x M3x6 (boar
 CHANGING THE CASE
   All sizes are at the top of blipr_case.py. Edit a number, then run:
       python3 blipr_case.py
-  It rebuilds every STEP and STL in out/ in a few seconds. Plain Python 3 only;
-  csg.py (included) does the geometry, so no CAD program or extra packages are needed.
+  It rebuilds every STEP and STL in out/. csg.py (included) builds the lids, pod and cover.
+  The base starts from Sean's mesh in user_edits/ and the script applies BASE_EDITS to it, which needs
+      pip install trimesh manifold3d cadquery-ocp
+  To change the base in CAD: edit base.step, export an STL, put it in user_edits/ and point
+  BASE_SOURCE at it. tools/step_tools.py can report sizes of a STEP or diff two of them.
   Optional previews (needs numpy + matplotlib): python3 render.py
 
 NOTES
