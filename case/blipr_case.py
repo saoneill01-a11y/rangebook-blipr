@@ -405,6 +405,7 @@ BASE_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_edi
 # battery holder's power button, pressed through the left wall (centre measured from Sean's base)
 BUTTON_Y, BUTTON_Z, BUTTON_HOLE_D = 106.635, 11.9, 10.0
 BUTTON_SLOT_W = 14.0    # v0.8: a 14 x 10 mm slot with round ends (10 mm round was still too small; no room to go taller)
+HOLDER_PAD_D, HOLDER_PAD_TOP, HOLDER_HOLE_D = 10.0, 7.4, 2.8   # round battery-holder pads (top from the case bottom)
 BASE_EDITS = [
     # (what, "cut" or "add", box from inside coords: x0, y0, z0, x1, y1, z1)
     ("radar pocket 0.2 mm wider each side and 0.2 mm deeper, for 1 mm foam tape on its sides and back",
@@ -417,8 +418,24 @@ BASE_EDITS = [
       for x, y in ((6.4, 6.4), (6.4, 124.4), (112.4, 6.4), (112.4, 124.4))],
     *[("M3 insert hole in a board post, 7.5 mm deep (was 5)", "deepen", (x, y, FLOOR + POST_H))
       for x, y in ((48.4, 30.4), (48.4, 114.4), (112.4, 30.4), (112.4, 114.4))],
+    # the battery bay's border walls go (the holder screws to its 4 pads now); the pads stay as they are
+    ("battery-bay border: the 2 mm wall down the bay's right side", "remove_box", (36.4, 12.4, 38.4, 128.4)),
+    ("battery-bay border: the cross wall at the bay's front", "remove_box", (11.4, 12.4, 38.4, 14.4)),
+    ("battery-bay border: front cross wall above pad height (the bit under it keeps the front-left pad joined to the corner)",
+     "remove_box", (2.4, 12.4, 11.4, 14.4, 7.4)),
+    # the pads' rounded joins into those walls would be left as thin horns: trimmed so the pad edges run straight
+    ("front-left pad: horn where it met the cross wall", "remove_box", (11.4, 14.4, 14.0, 16.4)),
+    # the two right-hand pads stand alone once the walls are gone: rebuilt as plain round pads, same screw holes
+    ("front-right holder pad, round", "round_pad", (31.9, 20.7, (24.0, 13.0, 38.0, 26.0))),
+    ("rear-right holder pad, round", "round_pad", (31.9, 115.4, (24.0, 106.0, 38.0, 124.0))),
     ("tripod: move the boss to the balance point and shorten it", "tripod", None),
 ]
+
+
+def f32(v):
+    """A coordinate exactly as it is stored in an STL (float32), so new faces meet Sean's exactly."""
+    import numpy as np
+    return float(np.float32(v))
 
 
 def base_mesh():
@@ -426,6 +443,22 @@ def base_mesh():
     t = trimesh.load(BASE_SOURCE, force="mesh")
     m = mf.Manifold(mf.Mesh64(vert_properties=np.asarray(t.vertices, np.float64), tri_verts=np.asarray(t.faces, np.uint64)))
     for what, op, g in BASE_EDITS:
+        if op == "remove_box":
+            # a wall standing on the floor, footprint (x0, y0, x1, y1) in case coordinates, taken off down to the
+            # floor. Edges use Sean's float32 values so they land exactly on his faces (no slivers in the STL).
+            x0, y0, x1, y1 = (f32(v) for v in g[:4])
+            fl = f32(g[4] if len(g) > 4 else FLOOR)          # optional 5th value: cut from this height up
+            m = m - mf.Manifold.cube([x1 - x0, y1 - y0, 40.0 - fl]).translate([x0, y0, fl])
+            continue
+        if op == "round_pad":
+            # clear the old pad's footprint down to the floor, then a round pad of HOLDER_PAD_D with the same
+            # 2.8 mm screw hole, as tall as Sean's pads; heights use his float32 values so faces meet exactly
+            cx, cy, (x0, y0, x1, y1) = g
+            fl, top = f32(FLOOR), f32(HOLDER_PAD_TOP)
+            m = m - mf.Manifold.cube([x1 - x0, y1 - y0, 40.0 - fl]).translate([x0, y0, fl])
+            m = m + mf.Manifold.cylinder(top - fl + 0.4, HOLDER_PAD_D / 2, HOLDER_PAD_D / 2, 96).translate([cx, cy, fl - 0.4])
+            m = m - mf.Manifold.cylinder(top - fl + 1.0, HOLDER_HOLE_D / 2, HOLDER_HOLE_D / 2, 64).translate([cx, cy, fl])
+            continue
         if op == "deepen":
             # clear Sean's hole (and 0.5 mm below it) with a wider cut, fill it back up to his exact top face,
             # then cut the deeper hole: its walls never sit on top of his (STL rounding would pinch them)
@@ -448,11 +481,11 @@ def base_mesh():
             continue
         if op == "tripod":
             ox, oy = X(SEAN_TRIPOD_IX), Y(SEAN_TRIPOD_IY)
-            # cut edges stay 0.2-0.3 mm off Sean's faces so nothing nearly coincides (STL rounding would pinch it)
-            wall = mf.Manifold.cube([2.4, 20.0, Z(BAY_WALL_H) - 0.3]).translate([X(BAY_W) - 0.2, oy - 10.0, 0])   # bay wall kept
-            m = m - (mf.Manifold.cylinder(16.0, 7.3, 7.3, 96).translate([ox, oy, FLOOR + 0.2]) - wall)               # old boss off
-            m = m - mf.Manifold.cylinder(FLOOR + 1.5, 4.6, 4.6, 96).translate([ox, oy, -1.0])                         # old hole cleared ...
-            m = m + mf.Manifold.cylinder(FLOOR + 0.2, 4.6, 4.6, 96).translate([ox, oy, 0])                            # ... filled solid
+            # Sean's floor top is exactly f32(FLOOR): cutting from that very plane leaves no step or sliver
+            fl = f32(FLOOR)
+            m = m - mf.Manifold.cylinder(16.0, 7.3, 7.3, 96).translate([ox, oy, fl])                    # old boss off
+            m = m - mf.Manifold.cylinder(FLOOR + 1.5, 4.6, 4.6, 96).translate([ox, oy, -1.0])          # old hole cleared ...
+            m = m + mf.Manifold.cylinder(fl, 4.6, 4.6, 96).translate([ox, oy, 0])                      # ... filled to the floor top
             nx, ny = X(TRIPOD_IX), Y(TRIPOD_IY)
             m = m + mf.Manifold.cylinder(TRIPOD_BOSS_TOP - FLOOR + 0.4, TRIPOD_BOSS_D / 2, TRIPOD_BOSS_D / 2, 96).translate([nx, ny, FLOOR - 0.4])
             m = m - mf.Manifold.cylinder(TRIPOD_HOLE_DEPTH + 1.0, TRIPOD_HOLE_D / 2, TRIPOD_HOLE_D / 2, 96).translate([nx, ny, -1.0])

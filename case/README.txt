@@ -10,6 +10,9 @@ WHAT CHANGED IN v0.8 (base and lids; front cover, pod and roof are the same as v
     power switch: the holder's button turns BLIPR on and off.
   - Radar pocket: 0.2 mm wider each side and 0.2 mm deeper, for 1 mm x 5 mm foam tape on the radar's two
     sides and back. The module is pushed forward against the window by the foam; no crush ribs.
+  - Battery bay: the border walls (down its side and across its front) are gone; the holder screws to its
+    4 pads. The two pads that now stand alone are plain 10 mm round pads with the same 2.8 mm holes.
+    The floor where the tripod post used to be is flat again.
   - Every M3 heat-set insert hole is 7.5 mm deep (lid corner columns were 6, board posts 5, the pod's
     lid risers 6), so the common 7 mm long inserts fit as well as short ones. The pod risers under
     lid_sensors are 1 mm longer (7 mm) to keep plastic under their holes. INSERT_DEPTH in the script.
