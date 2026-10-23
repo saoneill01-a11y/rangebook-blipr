@@ -74,7 +74,8 @@ SW_IX, SW_Z, SW_W, SW_H = 50.0, 26.0, 7.0, 3.5               # slide-switch leve
 
 # --- tripod mount (1/4-20 heat-set insert) under the case
 TRIPOD_IX, TRIPOD_IY = 41.5, 62.0
-TRIPOD_HOLE_D = 8.4    # check your insert's recommended hole size
+TRIPOD_HOLE_D = 7.0    # v0.8: Sean's 1/4-20 inserts want a 7 mm hole, 9 mm deep
+TRIPOD_HOLE_DEPTH = 9.0
 TRIPOD_BOSS_D = 14.0
 TRIPOD_INNER_H = 11.5  # boss height above the floor (stays 0.5 mm under the board)
 
@@ -402,7 +403,11 @@ BASE_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_edi
 BASE_EDITS = [
     # (what, "cut" or "add", box from inside coords: x0, y0, z0, x1, y1, z1)
     ("radar pocket 0.2 mm wider each side and 0.2 mm deeper, for 1 mm foam tape on its sides and back",
-     "cut", (RADAR_CX - 13.3, HOLDER_T, RADAR_LEDGE, RADAR_CX + 13.3, HOLDER_T + 6.8, IH + 5)),
+     "cut", (RADAR_CX - 13.3, HOLDER_T - 0.02, RADAR_LEDGE, RADAR_CX + 13.3, HOLDER_T + 6.8, IH + 5)),
+    # cylinders: (what, "fill_cyl"/"cut_cyl", (ix, iy, diameter, z0, z1)) with z measured up from the case bottom
+    ("tripod hole: clear the old 8.4 mm x 13.4 mm hole's surfaces", "cut_cyl", (TRIPOD_IX, TRIPOD_IY, 9.0, -1.0, 13.6)),
+    ("tripod hole: fill it solid again", "fill_cyl", (TRIPOD_IX, TRIPOD_IY, 9.0, 0.0, 13.6)),
+    ("tripod hole: 7 mm x 9 mm deep for Sean's 1/4-20 inserts", "cut_cyl", (TRIPOD_IX, TRIPOD_IY, TRIPOD_HOLE_D, -1.0, TRIPOD_HOLE_DEPTH)),
 ]
 
 
@@ -410,7 +415,13 @@ def base_mesh():
     import numpy as np, trimesh, manifold3d as mf
     t = trimesh.load(BASE_SOURCE, force="mesh")
     m = mf.Manifold(mf.Mesh64(vert_properties=np.asarray(t.vertices, np.float64), tri_verts=np.asarray(t.faces, np.uint64)))
-    for what, op, (a, b, c, d, e, f) in BASE_EDITS:
+    for what, op, g in BASE_EDITS:
+        if op.endswith("_cyl"):
+            ix, iy, dia, z0, z1 = g
+            blk = mf.Manifold.cylinder(z1 - z0, dia / 2, dia / 2, 96).translate([X(ix), Y(iy), z0])
+            m = m + blk if op == "fill_cyl" else m - blk
+            continue
+        a, b, c, d, e, f = g
         blk = mf.Manifold.cube([d - a, e - b, f - c]).translate([X(a), Y(b), Z(c)])
         m = m - blk if op == "cut" else m + blk
     mm = m.to_mesh64()
