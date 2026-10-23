@@ -400,6 +400,8 @@ def export(solid, name, outdir):
 # the Teensy USB hole trimmed at the top. base() above is the older script version, kept for reference. Small changes
 # on top of his model are listed in BASE_EDITS and made with mesh booleans (needs: pip install trimesh manifold3d).
 BASE_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_edits", "base_from_sean_2026-10-22.stl")
+# battery holder's power button, pressed through the left wall (centre measured from Sean's base)
+BUTTON_Y, BUTTON_Z, BUTTON_HOLE_D = 106.635, 11.9, 10.0
 BASE_EDITS = [
     # (what, "cut" or "add", box from inside coords: x0, y0, z0, x1, y1, z1)
     ("radar pocket 0.2 mm wider each side and 0.2 mm deeper, for 1 mm foam tape on its sides and back",
@@ -407,6 +409,8 @@ BASE_EDITS = [
     # cylinders: (what, "fill_cyl"/"cut_cyl", (ix, iy, diameter, z0, z1)) with z measured up from the case bottom
     ("tripod hole: clear the old 8.4 mm x 13.4 mm hole's surfaces", "cut_cyl", (TRIPOD_IX, TRIPOD_IY, 9.0, -1.0, 13.6)),
     ("tripod hole: fill it solid again", "fill_cyl", (TRIPOD_IX, TRIPOD_IY, 9.0, 0.0, 13.6)),
+    # side-wall holes: (what, "cut_cyl_x", (y, z, diameter, x0, x1)) in case coordinates, axis along X
+    ("power-button hole in the left wall: 10 mm (Sean's was 8 mm, a little small)", "cut_cyl_x", (BUTTON_Y, BUTTON_Z, BUTTON_HOLE_D, -1.0, WALL + 0.6)),
     ("tripod hole: 7 mm x 9 mm deep for Sean's 1/4-20 inserts", "cut_cyl", (TRIPOD_IX, TRIPOD_IY, TRIPOD_HOLE_D, -1.0, TRIPOD_HOLE_DEPTH)),
 ]
 
@@ -416,6 +420,10 @@ def base_mesh():
     t = trimesh.load(BASE_SOURCE, force="mesh")
     m = mf.Manifold(mf.Mesh64(vert_properties=np.asarray(t.vertices, np.float64), tri_verts=np.asarray(t.faces, np.uint64)))
     for what, op, g in BASE_EDITS:
+        if op == "cut_cyl_x":
+            y, z, dia, x0, x1 = g
+            m = m - mf.Manifold.cylinder(x1 - x0, dia / 2, dia / 2, 96).rotate([0, 90, 0]).translate([x0, y, z])
+            continue
         if op.endswith("_cyl"):
             ix, iy, dia, z0, z1 = g
             blk = mf.Manifold.cylinder(z1 - z0, dia / 2, dia / 2, 96).translate([X(ix), Y(iy), z0])

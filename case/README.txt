@@ -10,6 +10,8 @@ WHAT CHANGED IN v0.8 (base and lids; front cover, pod and roof are the same as v
     power switch: the holder's button turns BLIPR on and off.
   - Radar pocket: 0.2 mm wider each side and 0.2 mm deeper, for 1 mm x 5 mm foam tape on the radar's two
     sides and back. The module is pushed forward against the window by the foam; no crush ribs.
+  - Power-button hole in the left wall: 10 mm across (Sean's 8 mm was a little small), same centre.
+    BUTTON_HOLE_D in the script.
   - Tripod hole under the base: 7 mm across and 9 mm deep (was 8.4 x 13.4), to suit Sean's 1/4-20
     heat-set inserts. TRIPOD_HOLE_D / TRIPOD_HOLE_DEPTH in the script if yours differ.
   - Every lid with a screen (lid_oled, lid_sensors) has Sean's screen mount: 4 pads in the pocket's corners,
