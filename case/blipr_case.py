@@ -29,7 +29,7 @@ x0, y0, z0 = WALL, WALL, FLOOR    # inside origin (front-left-bottom inside corn
 # --- lid screws: M3 heat-set inserts in corner columns
 COL = 8.0           # corner column size
 INSERT_D = 4.1      # M3 heat-set insert hole (check your insert's spec)
-INSERT_DEPTH = 6.0
+INSERT_DEPTH = 7.5   # v0.8: deep enough for the common 7 mm long M3 inserts (Sean's shorter ones fit too)
 SCREW_CLEAR = 3.4   # M3 clearance hole in lid
 
 # --- main perfboard (70 x 90) on 4 posts
@@ -101,7 +101,7 @@ RADAR_RIB_LEN, RADAR_RIB_T, RADAR_FOAM, RADAR_SQUEEZE = 18.0, 3.0, 1.0, 0.3
 # lid, clear of the battery bay (the 18650's steel can and the shield's boost converter upset a compass).
 POD_IX, POD_IY = 38.0, 34.0           # sensor pod centre on the lid (inside coords), v0.7: front corner on the far side
                                       # from the gun (-X), diagonally away from the screen; the IMU end (+X) stays clear of the battery bay
-POD_RISER_D, POD_RISER_H = 8.0, 6.0   # risers under the lid for the pod's two M3 heat-set inserts
+POD_RISER_D, POD_RISER_H = 8.0, 7.0   # v0.8: 1 mm longer so a 7.5 mm insert hole keeps a 1.9 mm floor (risers for the pod's M3 inserts)
 POD_W, POD_D, POD_H = 66.0, 50.0, 20.0   # W left-right, D front-back
 POD_WALL, POD_FLOOR = 1.6, 2.0
 POD_SCREW_DY = 19.0                   # M3 screws at +/- this from the pod centre (front-back), on the centre line
@@ -182,7 +182,7 @@ def base():
     # board post insert holes
     for hx in (HOLE_INSET, BOARD_W - HOLE_INSET):
         for hy in (HOLE_INSET, BOARD_D - HOLE_INSET):
-            cuts.append(cyl_z(X(BOARD_IX + hx), Y(BOARD_IY + hy), INSERT_D / 2, Z(POST_H - 5.0), Z(POST_H) + 1, SEG))
+            cuts.append(cyl_z(X(BOARD_IX + hx), Y(BOARD_IY + hy), INSERT_D / 2, Z(POST_H - INSERT_DEPTH), Z(POST_H) + 1, SEG))
     # front wall opening (radar window)
     cuts.append(box(X(RADAR_CX - FRONT_OPEN_W / 2), -1, Z(RADAR_CZ - FRONT_OPEN_H / 2), X(RADAR_CX + FRONT_OPEN_W / 2), y0 + 0.01, Z(RADAR_CZ + FRONT_OPEN_H / 2)))
     # cover slot (open at top) directly behind the front wall
@@ -265,7 +265,7 @@ def site_cuts(ztop):
 
 def lid(with_oled, sensors=False):
     s = rbox(0, 0, 0, OW, OD, LID_T, R_OUT)
-    if sensors:   # risers under the pod's two screws, so the inserts have 8.4 mm of plastic to grip
+    if sensors:   # risers under the pod's two screws, so the inserts have 9.4 mm of plastic to grip
         s = s.union(union_all([cyl_z(X(POD_IX), Y(POD_IY + dy), POD_RISER_D / 2, -POD_RISER_H, 0.3, SEG)
                                for dy in (-POD_SCREW_DY, POD_SCREW_DY)]))
     cuts = []
@@ -412,6 +412,11 @@ BASE_EDITS = [
     # side-wall holes: (what, "slot_x", (y, z, width, height, x0, x1)), a round-ended slot cut along X
     ("power-button slot in the left wall: 14 mm wide x 10 mm tall", "slot_x", (BUTTON_Y, BUTTON_Z, BUTTON_SLOT_W, BUTTON_HOLE_D, -1.0, WALL + 0.6)),
     # tripod: Sean's boss and floor hole come out, the floor is made whole, then a shorter boss goes in at the balance point
+    # M3 insert holes deepened to INSERT_DEPTH: (what, "deepen", (x, y, top z)) in case coordinates
+    *[("M3 insert hole in a lid corner column, 7.5 mm deep (was 6)", "deepen", (x, y, FLOOR + IH))
+      for x, y in ((6.4, 6.4), (6.4, 124.4), (112.4, 6.4), (112.4, 124.4))],
+    *[("M3 insert hole in a board post, 7.5 mm deep (was 5)", "deepen", (x, y, FLOOR + POST_H))
+      for x, y in ((48.4, 30.4), (48.4, 114.4), (112.4, 30.4), (112.4, 114.4))],
     ("tripod: move the boss to the balance point and shorten it", "tripod", None),
 ]
 
@@ -421,6 +426,18 @@ def base_mesh():
     t = trimesh.load(BASE_SOURCE, force="mesh")
     m = mf.Manifold(mf.Mesh64(vert_properties=np.asarray(t.vertices, np.float64), tri_verts=np.asarray(t.faces, np.uint64)))
     for what, op, g in BASE_EDITS:
+        if op == "deepen":
+            # clear Sean's hole (and 0.5 mm below it) with a wider cut, fill it back up to his exact top face,
+            # then cut the deeper hole: its walls never sit on top of his (STL rounding would pinch them)
+            x, y, top = g
+            vv = np.asarray(t.vertices)
+            near = vv[np.hypot(vv[:, 0] - x, vv[:, 1] - y) < INSERT_D / 2 + 0.3]
+            top = float(near[:, 2].max())                      # his top face, to the last digit
+            z0 = top - INSERT_DEPTH + 1.0
+            m = m - mf.Manifold.cylinder(top + 1.0 - z0, 3.0, 3.0, 96).translate([x, y, z0])
+            m = m + mf.Manifold.cylinder(top - z0, 3.0, 3.0, 96).translate([x, y, z0])
+            m = m - mf.Manifold.cylinder(INSERT_DEPTH + 1.0, INSERT_D / 2, INSERT_D / 2, 96).translate([x, y, top - INSERT_DEPTH])
+            continue
         if op == "slot_x":
             y, z, w, h, x0, x1 = g
             rr = h / 2

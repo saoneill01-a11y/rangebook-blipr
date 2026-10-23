@@ -10,6 +10,9 @@ WHAT CHANGED IN v0.8 (base and lids; front cover, pod and roof are the same as v
     power switch: the holder's button turns BLIPR on and off.
   - Radar pocket: 0.2 mm wider each side and 0.2 mm deeper, for 1 mm x 5 mm foam tape on the radar's two
     sides and back. The module is pushed forward against the window by the foam; no crush ribs.
+  - Every M3 heat-set insert hole is 7.5 mm deep (lid corner columns were 6, board posts 5, the pod's
+    lid risers 6), so the common 7 mm long inserts fit as well as short ones. The pod risers under
+    lid_sensors are 1 mm longer (7 mm) to keep plastic under their holes. INSERT_DEPTH in the script.
   - Power-button opening in the left wall: a 14 mm wide x 10 mm tall slot with round ends (Sean's 8 mm
     hole was too small; it can't go taller without hitting parts inside), same centre.
     BUTTON_SLOT_W / BUTTON_HOLE_D in the script.
@@ -30,7 +33,7 @@ WHAT CHANGED IN v0.7 (lids only; base, front cover, pod and roof are the same as
   - Sensor pod moved to the front corner on the far side, diagonally away from the screen. The IMU end
     of the pod still points to the +X side, clear of the battery bay. It doesn't touch the radar: the
     pod is above and behind the antenna, and the beam goes forward.
-  - Two 8 mm risers hang 6 mm under the lid at the pod's screw spots. Press an M3 heat-set insert into
+  - Two 8 mm risers hang under the lid (7 mm from v0.8) at the pod's screw spots. Press an M3 heat-set insert into
     each from the top (the pod hides them), then hold the pod down with 2 x M3x8. No nuts.
   - No ammo-probe jack hole (the probe isn't used: your ammo sits at air temperature).
   - BLIPR (Ballistic Launch Inspection Portable Radar) is cut into the lid, 12 mm tall, centred under the
