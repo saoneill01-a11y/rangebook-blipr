@@ -8,7 +8,7 @@ build guide's **Firmware** tab; this file is the quick reference.
 | `BliprTeensy/` | Teensy 4.1 | Samples the radar, finds shots, measures muzzle velocity, saves raw captures to the SD card |
 | `BliprBLE/` | ESP32-C3 SuperMini | Bluetooth link to your phone, the OLED screen, the battery gauge, the optional sensors |
 | `prebuilt/` | both | Ready-made files if the Arduino IDE gives you trouble (see below) |
-| `test/` | your computer | The shot simulator used to check the velocity math (not needed for the build) |
+| `test/` | your computer | The shot simulator (`sim_test.cpp`) and `replay.cpp`, which runs the SD card's raw recordings through the velocity code (not needed for the build) |
 | `PROTOCOL.md` | | The Bluetooth interface, for Range Book and for testing with nRF Connect |
 
 ## Arduino IDE setup (once)

@@ -2,3 +2,11 @@ __pycache__/
 *.pyc
 build/
 .DS_Store
+
+# shooting sessions and raw recordings stay on the laptop (large); keep good ones in recordings-kept/
+sessions/
+recordings/
+firmware/test/replay
+firmware/test/replay.exe
+firmware/test/sim_test
+firmware/test/a.out

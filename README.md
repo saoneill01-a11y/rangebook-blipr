@@ -7,11 +7,14 @@ the bench beside the rifle and sends each shot's muzzle velocity over Bluetooth 
 **Status:** designed, not built yet. Circuit board v1.1, firmware 0.2.3, case v0.8. Expect changes after the
 first build.
 
+**Working on it with Claude Code:** see [docs/claude-code-setup.md](docs/claude-code-setup.md). `CLAUDE.md` is what Claude Code reads when it starts in this folder.
+
 ## What's in here
 
 | Folder | What it is |
 |---|---|
-| `firmware/` | `BliprTeensy` (Teensy 4.1: samples the radar, finds shots, measures velocity, saves raw captures) and `BliprBLE` (ESP32-C3 SuperMini: Bluetooth, OLED, battery gauge, optional sensors, firmware updates over Bluetooth). `prebuilt/` has ready-made files; `PROTOCOL.md` is the Bluetooth interface; `test/` is the shot simulator. |
+| `firmware/` | `BliprTeensy` (Teensy 4.1: samples the radar, finds shots, measures velocity, saves raw captures) and `BliprBLE` (ESP32-C3 SuperMini: Bluetooth, OLED, battery gauge, optional sensors, firmware updates over Bluetooth). `prebuilt/` has ready-made files; `PROTOCOL.md` is the Bluetooth interface; `test/` has the shot simulator and `replay` (runs real SD-card recordings through the velocity code). |
+| `tools/` | `blipr_log.py` logs a shooting session from the USB serial port, `pull_shots.py` copies recordings off the SD card, `make_test_recordings.py` makes fake ones. |
 | `pcb/` | The 70 x 90 mm two-layer through-hole main board. `out/RBBLIPR_PCB_v1.1_gerbers.zip` is what you upload to PCBWay; `README.txt` has the ordering settings and soldering order. `design.py` is the netlist and placement, `route.py` runs Freerouting, `fab.py` writes the Gerbers and checks them. `test_plate/` is a 3D-printable plate with every hole, to test-fit parts before ordering. |
 | `case/` | The 3D-printed case (ASA recommended). `out/` has STL and STEP files for every part and preview pictures; `blipr_case.py` regenerates them all with plain Python (edit a size at the top, run it). `README.txt` has print settings and hardware. |
 | `pictures/` | The wiring pictures used in the build guide, the OLED animation previews, and the scripts that draw them. |
