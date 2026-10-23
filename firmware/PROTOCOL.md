@@ -39,7 +39,7 @@ No read (the radar saw something but couldn't measure it):
 ```
 `bat` percent (−1 = not wired), `bv` volts, `arm` listening for shots, `shots` last shot number, `t` Teensy is talking,
 `rdy` ready for the next shot, `sd` SD card found, `ovr` missed sample blocks (should stay 0), `fw`/`efw` Teensy / ESP32
-firmware, `sens` add-on sensors found (T = SHT45 temperature/humidity, P = BMP390 pressure, A = ammo probe,
+firmware, `sens` add-on sensors found (T = SHT45 temperature/humidity, P = pressure (DFRobot 10-DoF's BMP581, or a BMP390), A = ammo probe,
 C = compass, L = level), `cc` compass calibration (0 never, 1 calibrating now, 2 calibrated).
 
 ## Config

@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.2"
+#define FW_VERSION "0.2.3"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)

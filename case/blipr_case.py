@@ -99,18 +99,38 @@ RADAR_RIB_LEN, RADAR_RIB_T, RADAR_FOAM, RADAR_SQUEEZE = 18.0, 3.0, 1.0, 0.3
 # --- optional sensor kit (see the build guide's Sensors tab)
 # v0.4: the pod holds all three boards (SHT45, BMP390 and the compass/level IMU) and sits on the rear-right of the
 # lid, clear of the battery bay (the 18650's steel can and the shield's boost converter upset a compass).
-POD_IX, POD_IY = 38.0, 34.0           # sensor pod centre on the lid (inside coords), v0.7: front corner on the far side
+POD_BMP390 = False   # v0.8: False with the DFRobot 10-DoF board (SEN0696, its BMP581 does pressure); True keeps the BMP390
+POD_GROW_X = 9.0 if POD_BMP390 else 0.0   # with the BMP390 too, the pod grows this much on its +X (IMU) end
+POD_IX, POD_IY = 38.0 + POD_GROW_X / 2, 34.0   # (the SHT45 and BMP390 stay where they were on the lid)           # sensor pod centre on the lid (inside coords), v0.7: front corner on the far side
                                       # from the gun (-X), diagonally away from the screen; the IMU end (+X) stays clear of the battery bay
 POD_RISER_D, POD_RISER_H = 8.0, 7.0   # v0.8: 1 mm longer so a 7.5 mm insert hole keeps a 1.9 mm floor (risers for the pod's M3 inserts)
-POD_W, POD_D, POD_H = 66.0, 50.0, 20.0   # W left-right, D front-back
+POD_W, POD_D, POD_H = 66.0 + POD_GROW_X, (56.0 if POD_BMP390 else 50.0), 20.0   # W left-right, D front-back
 POD_WALL, POD_FLOOR = 1.6, 2.0
-POD_SCREW_DY = 19.0                   # M3 screws at +/- this from the pod centre (front-back), on the centre line
-POD_ROOF_SX, POD_ROOF_SY = 28.4, 20.4   # roof screws (M2.5 brass, self-threading) at the 4 inside corners
+POD_SCREW_DY = 19.0                   # M3 screws at +/- this from the pod centre (front-back) ...
+POD_SCREW_X = 0.0 if POD_BMP390 else -7.3   # ... and this far left/right of it (10-DoF layout: in the gap between the boards)
+POD_ROOF_SX, POD_ROOF_SY = POD_W / 2 - 4.6, POD_D / 2 - 4.6   # roof screws (M2.5 brass, self-threading) at the 4 inside corners
 POD_ROOF_PILOT, POD_ROOF_CLEAR, POD_ROOF_BOSS = 2.2, 2.9, 5.6
 POD_COL_R, POD_COL_FILLET = 2.0, 1.2   # rounded exposed edge of each corner column / fillets where it meets the walls
 POD_POST_W = 2.0          # uprights splitting the pod's vent slots (shorter bridges when printing)
-POD_BOARD_DX = 21.0                   # board centres at -21 (SHT45), 0 (BMP390), +21 (IMU): long sides front-to-back
-POD_CABLE_X, POD_CABLE_Y = -21.0, -19.0   # cable slot centre, pod coords (front-left corner, under nothing)
+POD_BOARD_DX = 21.0                   # STEMMA boards 21 mm apart, long sides front-to-back: SHT45, then BMP390
+POD_SHT_X = -21.0 - POD_GROW_X / 2     # SHT45 centre, pod coords (same place on the lid as before)
+POD_BMP_X = POD_SHT_X + POD_BOARD_DX   # BMP390 centre
+# DFRobot Gravity SEN0694 9-DoF IMU (BMI323 + BMM350): 27 x 32 mm, two 3 mm holes 20 mm apart along one 27 mm
+# edge, 3.5 mm in from it; Gravity plug on the opposite edge. Long side front-to-back, holes at the front,
+# plug at the back with room behind it for the cable to bend; two plain rest posts under the plug end.
+IMU_W, IMU_L = 27.0, 32.0
+IMU_HOLE_SPAN, IMU_HOLE_IN = 20.0, 3.5
+if POD_BMP390:
+    IMU_X = POD_BMP_X + 8.9 + 3.2 + IMU_W / 2      # 3.2 mm gap to the BMP390, as between the other boards
+    IMU_Y0 = -POD_D / 2 + POD_WALL + 6.8          # board's front edge: clear of the front corner columns
+else:
+    IMU_X = 11.0                                  # clear of the corner columns, and its plug clear of the pod-to-lid screw
+    IMU_Y0 = -POD_D / 2 + POD_WALL + 0.6          # front edge 0.6 mm off the front wall
+IMU_POST_D, IMU_PILOT_D, IMU_REST_D = 6.0, 2.5, 4.0   # M3 x 6 brass screws thread into 2.5 mm pilots
+if POD_BMP390:
+    POD_CABLE_X, POD_CABLE_Y = POD_SHT_X, -POD_D / 2 + 6.0    # front-left corner
+else:
+    POD_CABLE_X, POD_CABLE_Y = POD_SHT_X + 1.0, POD_D / 2 - 6.0   # back-left: nearer J4, beside the IMU's plug; 1 mm in off the column   # cable slot centre, pod coords (front-left corner, under nothing)
 POD_CABLE_W, POD_CABLE_D = 8.0, 7.0   # slot for the STEMMA QT cable through pod floor and lid
 NAME_TEXT = "BLIPR"
 NAME_H, NAME_STROKE, NAME_DEPTH = 12.0, 2.4, 0.6
@@ -266,12 +286,12 @@ def site_cuts(ztop):
 def lid(with_oled, sensors=False):
     s = rbox(0, 0, 0, OW, OD, LID_T, R_OUT)
     if sensors:   # risers under the pod's two screws, so the inserts have 9.4 mm of plastic to grip
-        s = s.union(union_all([cyl_z(X(POD_IX), Y(POD_IY + dy), POD_RISER_D / 2, -POD_RISER_H, 0.3, SEG)
+        s = s.union(union_all([cyl_z(X(POD_IX + POD_SCREW_X), Y(POD_IY + dy), POD_RISER_D / 2, -POD_RISER_H, 0.3, SEG)
                                for dy in (-POD_SCREW_DY, POD_SCREW_DY)]))
     cuts = []
     if sensors:
         for dy in (-POD_SCREW_DY, POD_SCREW_DY):   # M3 heat-set inserts, pressed in from the top, into the risers
-            cuts.append(cyl_z(X(POD_IX), Y(POD_IY + dy), INSERT_D / 2, LID_T - INSERT_DEPTH, LID_T + 1, SEG))
+            cuts.append(cyl_z(X(POD_IX + POD_SCREW_X), Y(POD_IY + dy), INSERT_D / 2, LID_T - INSERT_DEPTH, LID_T + 1, SEG))
         cx, cy = POD_IX + POD_CABLE_X, POD_IY + POD_CABLE_Y
         cuts.append(box(X(cx - POD_CABLE_W / 2), Y(cy - POD_CABLE_D / 2), -1, X(cx + POD_CABLE_W / 2), Y(cy + POD_CABLE_D / 2), LID_T + 1))
     for cx, cy in [(0, 0), (IW - COL, 0), (0, ID - COL), (IW - COL, ID - COL)]:
@@ -303,8 +323,9 @@ def lid(with_oled, sensors=False):
     return s
 
 
-def sensor_pod():
-    """Vented pod for the SHT45, BMP390 and IMU boards; sits on the lid. Printed upright, as it sits."""
+def sensor_pod(pieces=False):
+    """Vented pod for the SHT45, BMP390 and IMU boards; sits on the lid. Printed upright, as it sits.
+    pieces=True returns (shell, parts, holes) so they can be combined exactly with manifold3d (pod_mesh)."""
     hw, hd = POD_W / 2, POD_D / 2
     s = rbox(-hw, -hd, 0, hw, hd, POD_H, 3.0)
     s = s.subtract(rbox(-hw + POD_WALL, -hd + POD_WALL, POD_FLOOR, hw - POD_WALL, hd - POD_WALL, POD_H + 1, 1.6))
@@ -316,23 +337,29 @@ def sensor_pod():
         edges = [a0] + [a0 + step * (k + 1) + sgn * post / 2 for k in range(n_posts) for sgn in (-1, 1)] + [a1]
         return [(edges[i], edges[i + 1]) for i in range(0, len(edges), 2)]
     for z in (4.5, 8.0, 11.5, 15.0):
-        for x0, x1 in spans(-27, 27, 2):
+        for x0, x1 in spans(-(hw - 6.0), hw - 6.0, 3):   # v0.8 pod: 3 uprights on the long walls
             cuts.append(box(x0, -hd - 1, z, x1, -hd + POD_WALL + 0.4, z + 2))
             cuts.append(box(x0, hd - POD_WALL - 0.4, z, x1, hd + 1, z + 2))
-        for y0, y1 in spans(-17, 17, 1):
+        for y0, y1 in spans(-(hd - 8.0), hd - 8.0, 2):   # 2 on the short walls
             cuts.append(box(-hw - 1, y0, z, -hw + POD_WALL + 0.4, y1, z + 2))
             cuts.append(box(hw - POD_WALL - 0.4, y0, z, hw + 1, y1, z + 2))
     for dy in (-POD_SCREW_DY, POD_SCREW_DY):
-        cuts.append(cyl_z(0, dy, SCREW_CLEAR / 2, -1, POD_FLOOR + 1, SEG))
+        cuts.append(cyl_z(POD_SCREW_X, dy, SCREW_CLEAR / 2, -1, POD_FLOOR + 1, SEG))
     cuts.append(box(POD_CABLE_X - POD_CABLE_W / 2, POD_CABLE_Y - POD_CABLE_D / 2, -1, POD_CABLE_X + POD_CABLE_W / 2, POD_CABLE_Y + POD_CABLE_D / 2, POD_FLOOR + 1))
     s = s.subtract(union_all(cuts))
     # three sets of screw standoffs, long sides front-to-back, air underneath: SHT45 left, BMP390 middle,
     # IMU right (the end farthest from the battery), with an arrow in front of the IMU pointing to the front
     parts, holes = [], []
-    for dx in (-POD_BOARD_DX, 0.0, POD_BOARD_DX):
+    for dx in ((POD_SHT_X, POD_BMP_X) if POD_BMP390 else (POD_SHT_X,)):
         p, h = stemma_mount(dx, 0.0, POD_FLOOR, along_y=True)
         parts += p; holes += h
-    parts.append(front_arrow(POD_BOARD_DX, -19.0, POD_FLOOR, 0.6, 4.0))
+    hy = IMU_Y0 + IMU_HOLE_IN                       # IMU: 2 screw posts at the front, 2 rest posts at the plug end
+    for sx in (-1, 1):
+        px = IMU_X + sx * IMU_HOLE_SPAN / 2
+        parts.append(cyl_z(px, hy, IMU_POST_D / 2, POD_FLOOR - 0.3, POD_FLOOR + SQ_STANDOFF_H, SEG))
+        holes.append(cyl_z(px, hy, IMU_PILOT_D / 2, POD_FLOOR + 0.37, POD_FLOOR + SQ_STANDOFF_H + 1, 24))
+        parts.append(cyl_z(px, IMU_Y0 + IMU_L - IMU_HOLE_IN, IMU_REST_D / 2, POD_FLOOR - 0.3, POD_FLOOR + SQ_STANDOFF_H, SEG))
+    parts.append(front_arrow(IMU_X, IMU_Y0 + IMU_L / 2, POD_FLOOR, 0.6, 4.0))
     # corner columns for the roof screws: a block in each inside corner, full height, with a pilot hole.
     # Its exposed edge is rounded and it blends into both walls with small fillets.
     b, R, F = POD_ROOF_BOSS / 2, POD_COL_R, POD_COL_FILLET
@@ -356,7 +383,32 @@ def sensor_pod():
             holes.append(cyl_z(cx, cy, POD_ROOF_PILOT / 2, POD_H - 10.0, POD_H + 1, 24))
     # keep the cable slot through the floor clear of the front-left column's fillet
     holes.append(box(POD_CABLE_X - POD_CABLE_W / 2, POD_CABLE_Y - POD_CABLE_D / 2, -1, POD_CABLE_X + POD_CABLE_W / 2, POD_CABLE_Y + POD_CABLE_D / 2, POD_FLOOR + 0.6))
+    if pieces:
+        return s, parts, holes
     return s.union(union_all(parts)).subtract(union_all(holes))
+
+
+def solid_to_manifold(solid):
+    """A csg.py solid as a manifold3d Manifold (welded, triangulated)."""
+    import numpy as np, trimesh, manifold3d as mf
+    pts, faces, _ = clean_mesh(solid)
+    tris = [(f[0], f[i], f[i + 1]) for f in faces for i in range(1, len(f) - 1)]
+    t = trimesh.Trimesh(np.array(pts), np.array(tris), process=True)
+    return mf.Manifold(mf.Mesh64(vert_properties=np.asarray(t.vertices, np.float64), tri_verts=np.asarray(t.faces, np.uint64)))
+
+
+def pod_mesh():
+    """The pod built piece by piece in csg.py, then combined with manifold3d: one big BSP union of the floor,
+    posts and columns left hairline seams in the floor face. Returns a trimesh."""
+    import numpy as np, trimesh
+    shell, parts, holes = sensor_pod(pieces=True)
+    m = solid_to_manifold(shell)
+    for p in parts:
+        m = m + solid_to_manifold(p)
+    for h in holes:
+        m = m - solid_to_manifold(h)
+    mm = m.to_mesh64()
+    return trimesh.Trimesh(np.asarray(mm.vert_properties)[:, :3], np.asarray(mm.tri_verts))
 
 
 def sensor_pod_roof():
@@ -542,7 +594,7 @@ def export_mesh(t, name, outdir):
 
 
 def main():
-    outdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")
+    outdir = os.environ.get("BLIPR_OUT") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")
     os.makedirs(outdir, exist_ok=True)
     print("Outside size: %.1f x %.1f x %.1f mm (+%.1f mm lid)" % (OW, OD, FLOOR + IH, LID_T))
     parts = {"front_cover": front_cover, "front_cover_thin": lambda: front_cover(WINDOW_T_THIN), "lid_plain": lambda: lid(False), "lid_oled": lambda: lid(True), "base": base,
@@ -550,6 +602,11 @@ def main():
     only = sys.argv[1:]
     for name, fn in parts.items():
         if only and name not in only:
+            continue
+        if name == "sensor_pod":                # combined with manifold3d (see pod_mesh)
+            t = time.time()
+            export_mesh(pod_mesh(), "sensor_pod", outdir)
+            print("sensor_pod built in %.1f s" % (time.time() - t))
             continue
         if name == "base":                      # Sean's CAD model plus BASE_EDITS
             t = time.time()

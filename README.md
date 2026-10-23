@@ -4,7 +4,7 @@
 the bench beside the rifle and sends each shot's muzzle velocity over Bluetooth to
 [Range Book](https://github.com/saoneill01-a11y/rangebook). Nothing goes downrange.
 
-**Status:** designed, not built yet. Circuit board v1.1, firmware 0.2.2, case v0.8. Expect changes after the
+**Status:** designed, not built yet. Circuit board v1.1, firmware 0.2.3, case v0.8. Expect changes after the
 first build.
 
 ## What's in here

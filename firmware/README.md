@@ -1,4 +1,4 @@
-# Range Book BLIPR firmware v0.2.2
+# Range Book BLIPR firmware v0.2.3 (ESP32 0.2.3, Teensy 0.2.2)
 
 Firmware for Range Book BLIPR (Ballistic Launch Inspection Portable Radar), the DIY radar chronograph. Step-by-step setup and the bench tests are in the
 build guide's **Firmware** tab; this file is the quick reference.
@@ -21,6 +21,9 @@ build guide's **Firmware** tab; this file is the quick reference.
 4. Library Manager: install these, and accept the extra libraries each asks for (Adafruit GFX, Adafruit BusIO, Adafruit Unified Sensor):
    - **Adafruit SSD1306** (the screen)
    - **Adafruit SHT4x**, **Adafruit BMP3XX**, **Adafruit LSM6DS**, **Adafruit LIS3MDL** (the optional sensors)
+   - **DFRobot_Multi_DOF_IMU** and **DFRobot_RTU** (the DFRobot 10-DoF compass/level/pressure board). If Library Manager
+     doesn't list them, download each as a ZIP from github.com/DFRobot/DFRobot_Multi_DOF_IMU and github.com/DFRobot/DFRobot_RTU
+     (Code > Download ZIP) and add them with Sketch > Include Library > Add .ZIP Library.
    - **OneWire** (by Paul Stoffregen) and **DallasTemperature** (by Miles Burton) (the optional ammo probe)
 
    The sensor libraries are needed to compile even if you never fit the sensors; the firmware skips any sensor it doesn't find.
@@ -51,6 +54,17 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 - `time 1792480000`: set the clock (Range Book does this every time it connects), so raw recordings have the date and time
 
 ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
+
+## What changed in 0.2.3 (ESP32 only; the Teensy stays 0.2.2)
+
+- Sensor kit: the DFRobot Gravity 10-DoF IMU (SEN0696: BMI323 accelerometer, BMM350 compass, BMP581 pressure) is supported
+  and is now the recommended board. It replaces both the Adafruit LSM6DSOX + LIS3MDL board and the BMP390; the 9-DoF version
+  (SEN0694, no pressure) works too. It's found automatically at I2C 0x4A-0x4D (set its switch to I2C). Pressure comes from it
+  when it's there, otherwise from a BMP390. The older Adafruit boards still work.
+- The firmware assumes the DFRobot board sits in the sensor pod as the case files have it: holes at the front, plug at the
+  back, parts up. On the first minute sitting still it works out which way its accelerometer reports gravity and remembers it.
+- `COMPASS REVERSE 1` (Turns backwards in Range Book) now works with any compass, including one with a level sensor: if the
+  heading goes down when you turn the unit clockwise, turn it on, then Match my phone again.
 
 ## What changed in 0.2.2
 

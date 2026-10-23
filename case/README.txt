@@ -13,6 +13,9 @@ WHAT CHANGED IN v0.8 (base and lids; front cover, pod and roof are the same as v
   - Battery bay: the border walls (down its side and across its front) are gone; the holder screws to its
     4 pads. The two pads that now stand alone are plain 10 mm round pads with the same 2.8 mm holes.
     The floor where the tripod post used to be is flat again.
+  - Sensor pod for the DFRobot Gravity 10-DoF IMU (SEN0696), which replaces both the Adafruit IMU and
+    the BMP390: same 66 x 50 mm pod, two boards, cable slot moved to the back (nearer J4), pod screws
+    moved 7.3 mm into the gap between the boards (the lid's inserts moved with them).
   - Every M3 heat-set insert hole is 7.5 mm deep (lid corner columns were 6, board posts 5, the pod's
     lid risers 6), so the common 7 mm long inserts fit as well as short ones. The pod risers under
     lid_sensors are 1 mm longer (7 mm) to keep plastic under their holes. INSERT_DEPTH in the script.
@@ -77,16 +80,20 @@ PRINT FILES (out/)
   front_cover_thin.stl / .step       same cover with a 0.5 mm window (print at 0.1 mm layers)
 
   SENSOR KIT PARTS (build guide: Sensors tab)
-  lid_sensors.stl / .step            lid_oled plus the pod's 2 insert risers and its cable slot (front
+  lid_sensors.stl / .step            lid_oled plus the pod's 2 insert risers and its cable slot (pod's back
                                      corner, far side). Print top-face down; the risers point up.
-  sensor_pod.stl / .step             vented pod, 66 x 50 x 20 mm, for all three boards side by side, long
-                                     sides front-to-back: SHT45 at the far-side end, BMP390 in the middle,
-                                     IMU at the +X end (a small arrow in front of it points to the front). Each
-                                     board sits on 4 posts, 5 mm tall, and is held by 4 M2.5 x 6 mm brass screws that thread
-                                     straight into the posts. A column in each inside corner takes
-                                     a roof screw. Print upright.
-                                     The vent slots have 2 mm uprights (2 on the long sides, 1 on the
-                                     short sides), so no bridge is longer than 17 mm; no supports needed.
+  sensor_pod.stl / .step             vented pod, 66 x 50 x 20 mm, for two boards side by side (v0.8):
+                                     the SHT45 at the far-side end on 4 posts (4 x M2.5 x 6 brass screws), and
+                                     the DFRobot Gravity 10-DoF IMU (SEN0696: compass, level and BMP581 pressure)
+                                     at the +X (gun-side) end. Its two 3 mm holes are at the front, on 6 mm posts
+                                     taking 2 x M3 x 6 brass screws; two plain rest posts hold up its plug end,
+                                     which faces you, with 14 mm behind it for the plug and wires. A small arrow
+                                     under it points to the front. The cable slot is in the back corner on the
+                                     far side, nearest J4. The two pod-to-lid screws sit in the gap between the
+                                     boards (screw the pod down before fitting the IMU board).
+                                     A column in each inside corner takes a roof screw. Print upright.
+                                     The vent slots have 2 mm uprights (3 on the long sides, 2 on the short
+                                     sides), so no bridge is longer than 17 mm; no supports needed.
   sensor_pod_roof.stl / .step        shade roof; print flat face down; light-coloured filament. Held by 4 M2.5 x 6 mm
                                      brass screws into the pod's corner columns (its lip is notched to clear them)
 
@@ -97,8 +104,13 @@ PRINT FILES (out/)
   Use brass (or nylon) screws, not steel: the IMU's compass is a few millimetres from its screws, and
   steel ones would bend the field it measures.
 
-  Cables: a 150 mm STEMMA QT-to-pins cable from J4 on the main board up through the lid slot to the
-  SHT45, then 100 mm cables SHT45 -> BMP390 -> IMU. Use brass or nylon screws to hold the pod on the
+  Cables (v0.8): J4 -> SHT45 -> DFRobot 10-DoF, one chain. A 150 mm STEMMA QT-to-pins cable from J4 on
+  the main board up through the lid slot, along the SHT45 to its front socket; then from the SHT45's back
+  socket to the DFRobot's Gravity cable: a STEMMA QT-to-male-pins cable (Adafruit 4209) plugs into its
+  wires if they end in female sockets, or splice a cut 100 mm STEMMA QT cable to them. Match by the
+  DFRobot's pin labels: red -> +, black -> -, yellow SCL -> C/R, blue SDA -> D/T. Set its I2C/UART
+  switch to I2C and A0/A1 to 0 (address 0x4A). The BMP390 is no longer needed (the BMP581 replaces it);
+  POD_BMP390 = True in the script brings back the 3-board pod (75 x 56 mm) if you'd rather keep it. Use brass or nylon screws to hold the pod on the
   lid too if you have them (steel ones 20 mm or more from the compass are calibrated out, but brass is simpler).
 
 Outside size: 118.8 x 130.8 x 36.4 mm, plus the 2.4 mm lid.
@@ -107,7 +119,7 @@ Hardware (v0.8 adds): 4 x M2 x 4 screws (screen), battery-holder screws to suit 
           1 mm x 5 mm foam tape (radar sides, back and top).
 Hardware: 8 x M3 heat-set inserts (4.1 mm holes), 4 x M3x8 (lid), 4 x M3x6 (board),
           1 x 1/4-20 heat-set insert, up to 9 mm long (7.15 mm hole, 9 mm deep) for a tripod.
-          Sensor pod: 2 x M3x8 + 2 more M3 heat-set inserts (in the lid's risers).  Sensor boards and pod roof: 16 x M2.5x6 brass screws.
+          Sensor pod: 2 x M3x8 + 2 more M3 heat-set inserts (in the lid's risers).  SHT45 and pod roof: 8 x M2.5x6 brass screws; DFRobot IMU: 2 x M3x6 brass screws.
 
 CHANGING THE CASE
   All sizes are at the top of blipr_case.py. Edit a number, then run:

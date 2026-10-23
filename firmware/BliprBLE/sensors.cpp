@@ -5,6 +5,7 @@
 #include <Adafruit_BMP3XX.h>
 #include <Adafruit_LSM6DSOX.h>
 #include <Adafruit_LIS3MDL.h>
+#include <DFRobot_Multi_DOF_IMU.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <math.h>
@@ -15,6 +16,11 @@ static Adafruit_SHT4x sht;
 static Adafruit_BMP3XX bmp;
 static Adafruit_LSM6DSOX imu;
 static Adafruit_LIS3MDL mag;
+// DFRobot Gravity 9/10-DoF IMU (SEN0694 / SEN0696): BMI323 accelerometer + BMM350 compass (+ BMP581 pressure on
+// the 10-DoF), read through the board's own processor at 0x4A..0x4D. It replaces the Adafruit IMU and the BMP390.
+static DFRobot_Multi_DOF_IMU_I2C* dfi = nullptr;
+static bool haveDf = false, haveDfP = false;
+static float dfAccSign = 0;   // +1 or -1 once known: which way its accelerometer reports gravity (worked out at rest)
 static OneWire* ow = nullptr;
 static DallasTemperature* dallas = nullptr;
 static bool haveSht = false, haveBmp = false, haveImu = false, haveMag = false, haveProbe = false;
@@ -46,6 +52,14 @@ static float rawHeading = 0;
 static float hx = 0, hy = 0;
 static float ax_ = 0, ay_ = 0, az_ = 9.8f;
 
+// The DFRobot board sits in the pod with its two holes at the front and its plug at the back, parts up.
+// Its printed axes: X toward the edge with the row of header pads, Y toward the plug, Z into the board.
+// In the pod that is X = toward the far (battery) side, Y = back, Z = down, so in BLIPR's axes
+// (X forward, Y left = toward the gun side, Z up): x = -Y, y = -X, z = -Z.
+static void dfToBlipr(const DFRobot_Multi_DOF_IMU::sSensorData_t& d, float out[3]) {
+  out[0] = -d.y; out[1] = -d.x; out[2] = -d.z;
+}
+
 static bool i2cPresent(uint8_t a) {
   Wire.beginTransmission(a);
   return Wire.endTransmission() == 0;
@@ -68,11 +82,30 @@ static void probeI2C() {
       }
     }
   }
-  if (!haveImu) {
+  if (!haveDf) {
+    for (uint8_t a : {(uint8_t)0x4A, (uint8_t)0x4B, (uint8_t)0x4C, (uint8_t)0x4D}) {
+      if (!i2cPresent(a)) continue;
+      // try it as the 10-DoF (with pressure) first, then as the 9-DoF
+      for (auto model : {DFRobot_Multi_DOF_IMU::eSensorModel10DOF, DFRobot_Multi_DOF_IMU::eSensorModel9DOF}) {
+        delete dfi;
+        dfi = new DFRobot_Multi_DOF_IMU_I2C(model, &Wire, a);
+        if (dfi->begin()) {
+          dfi->setSensorMode(DFRobot_Multi_DOF_IMU::eNormalMode);
+          dfi->setAccelRange(DFRobot_Multi_DOF_IMU::eAccelRange2G);
+          haveDf = true;
+          haveDfP = (model == DFRobot_Multi_DOF_IMU::eSensorModel10DOF);
+          break;
+        }
+      }
+      if (haveDf) break;
+      delete dfi; dfi = nullptr;
+    }
+  }
+  if (!haveImu && !haveDf) {
     for (uint8_t a : {(uint8_t)0x6A, (uint8_t)0x6B})
       if (i2cPresent(a) && imu.begin_I2C(a, &Wire)) { haveImu = true; break; }
   }
-  if (!haveMag) {
+  if (!haveMag && !haveDf) {
     for (uint8_t a : {(uint8_t)0x1C, (uint8_t)0x1E}) {
       if (i2cPresent(a) && mag.begin_I2C(a, &Wire)) {
         mag.setPerformanceMode(LIS3MDL_ULTRAHIGHMODE);
@@ -109,6 +142,7 @@ void begin(int pinOneWire) {
   hdgOffset = pref.getFloat("off", 0);
   hdgReverse = pref.getBool("rev", false);
   imuRot = pref.getInt("irot", 0);
+  dfAccSign = pref.getFloat("dfas", 0);
   env.compassCal = pref.getBool("cal", false) ? 2 : 0;
   probeI2C();
   probeOneWire();
@@ -119,14 +153,67 @@ const EnvReading& get() { return env; }
 String letters() {
   String s;
   if (haveSht) s += "T";
-  if (haveBmp) s += "P";
+  if (haveBmp || haveDfP) s += "P";
   if (haveProbe) s += "A";
-  if (haveMag) s += "C";
-  if (haveImu) s += "L";
+  if (haveMag || haveDf) s += "C";
+  if (haveImu || haveDf) s += "L";
   return s;
 }
 
 static float wrap360(float d) { while (d < 0) d += 360; while (d >= 360) d -= 360; return d; }
+
+// accelerometer reading in BLIPR's axes (m/s^2): smooths it and works out the level
+static void useAccel(float rx, float ry, float rz) {
+  rotXY(rx, ry);
+  ax_ = 0.8f * ax_ + 0.2f * rx;
+  ay_ = 0.8f * ay_ + 0.2f * ry;
+  az_ = 0.8f * az_ + 0.2f * rz;
+  // pitch: nose up positive; roll: right side down positive (board X axis = forward)
+  env.pitch = atan2f(ax_, sqrtf(ay_ * ay_ + az_ * az_)) * 57.2958f;
+  env.roll = atan2f(ay_, az_) * 57.2958f;
+  env.hasLevel = true;
+}
+
+// compass reading in BLIPR's axes (uT, before calibration): calibration, tilt compensation, heading
+static void useMag(const float v[3], bool tiltComp) {
+  if (calibrating) {
+    for (int i = 0; i < 3; i++) {
+      if (calSamples == 0 || v[i] < mMin[i]) mMin[i] = v[i];
+      if (calSamples == 0 || v[i] > mMax[i]) mMax[i] = v[i];
+    }
+    calSamples++;
+  }
+  float c[3];
+  for (int i = 0; i < 3; i++) c[i] = (v[i] - mOff[i]) * mScl[i];
+  rotXY(c[0], c[1]);
+  // Board axes: X forward (toward the radar's aim), Y left, Z up; at rest the accelerometer reads +g on Z.
+  // Heading = angle of the magnetic field's horizontal part, measured clockwise from the forward direction
+  // to north, so 0 = pointing north, 90 = east. Tilt compensation: "horizontal" comes from the
+  // accelerometer's up vector (if fitted), otherwise the board is assumed level.
+  float u[3] = {0, 0, 1};
+  if (tiltComp) {
+    float n = sqrtf(ax_ * ax_ + ay_ * ay_ + az_ * az_);
+    if (n > 1.0f) { u[0] = ax_ / n; u[1] = ay_ / n; u[2] = az_ / n; }
+  }
+  float mu = c[0] * u[0] + c[1] * u[1] + c[2] * u[2];
+  float mh[3] = {c[0] - mu * u[0], c[1] - mu * u[1], c[2] - mu * u[2]};   // field, horizontal part
+  float fh[3] = {1 - u[0] * u[0], -u[0] * u[1], -u[0] * u[2]};          // forward, horizontal part
+  float lh[3] = {u[1] * fh[2] - u[2] * fh[1], u[2] * fh[0] - u[0] * fh[2], u[0] * fh[1] - u[1] * fh[0]};  // up x forward = left
+  float north = mh[0] * fh[0] + mh[1] * fh[1] + mh[2] * fh[2];
+  float left = mh[0] * lh[0] + mh[1] * lh[1] + mh[2] * lh[2];
+  // north to the left of where it points means it points east of north
+  float h = atan2f(left, north) * 57.2958f;
+  // TURNS BACKWARDS: for a compass whose axes come out mirrored (a magnetometer on its own mounted
+  // upside down, or a board whose compass chip is turned relative to its accelerometer). The app's
+  // check: turn the unit clockwise and the heading should go up.
+  if (hdgReverse) h = -h;
+  h = wrap360(h);
+  rawHeading = h;
+  hx = 0.85f * hx + 0.15f * cosf(h / 57.2958f);
+  hy = 0.85f * hy + 0.15f * sinf(h / 57.2958f);
+  env.heading = wrap360(atan2f(hy, hx) * 57.2958f + hdgOffset);
+  env.hasHeading = true;
+}
 
 void update() {
   static uint32_t tSlow = 0, tFast = 0, tProbe = 0, tAmmo = 0;
@@ -137,60 +224,38 @@ void update() {
   // accelerometer + compass, 10 times a second
   if (now - tFast >= 100) {
     tFast = now;
-    if (haveImu) {
-      sensors_event_t a, g, t;
-      if (imu.getEvent(&a, &g, &t)) {
-        float rx = a.acceleration.x, ry = a.acceleration.y;
-        rotXY(rx, ry);
-        ax_ = 0.8f * ax_ + 0.2f * rx;
-        ay_ = 0.8f * ay_ + 0.2f * ry;
-        az_ = 0.8f * az_ + 0.2f * a.acceleration.z;
-        // pitch: nose up positive; roll: right side down positive (board X axis = forward)
-        env.pitch = atan2f(ax_, sqrtf(ay_ * ay_ + az_ * az_)) * 57.2958f;
-        env.roll = atan2f(ay_, az_) * 57.2958f;
-        env.hasLevel = true;
-      }
-    }
-    if (haveMag) {
-      sensors_event_t m;
-      if (mag.getEvent(&m)) {
-        float v[3] = {m.magnetic.x, m.magnetic.y, m.magnetic.z};
-        if (calibrating) {
-          for (int i = 0; i < 3; i++) {
-            if (calSamples == 0 || v[i] < mMin[i]) mMin[i] = v[i];
-            if (calSamples == 0 || v[i] > mMax[i]) mMax[i] = v[i];
+    if (haveDf) {
+      DFRobot_Multi_DOF_IMU::sSensorData_t da, dg, dm;
+      if (dfi->get9dofData(&da, &dg, &dm)) {
+        float acc[3], mg[3];
+        dfToBlipr(da, acc);
+        dfToBlipr(dm, mg);
+        for (int i = 0; i < 3; i++) acc[i] *= 9.80665f;   // g -> m/s^2, as the Adafruit board reports
+        // Some firmware reports gravity as +1 g up, some as -1 g. Learn which while it sits roughly
+        // level (the first time only), so "up" comes out right either way.
+        if (dfAccSign == 0) {
+          static int votes = 0;
+          float n = sqrtf(acc[0] * acc[0] + acc[1] * acc[1] + acc[2] * acc[2]);
+          if (n > 8.0f && n < 11.5f && fabsf(acc[2]) > 0.9f * n) {
+            votes += acc[2] > 0 ? 1 : -1;
+            if (abs(votes) >= 20) { dfAccSign = votes > 0 ? 1 : -1; pref.putFloat("dfas", dfAccSign); }
           }
-          calSamples++;
         }
-        float c[3];
-        for (int i = 0; i < 3; i++) c[i] = (v[i] - mOff[i]) * mScl[i];
-        rotXY(c[0], c[1]);
-        // Board axes: X forward (toward the radar's aim), Y left, Z up; at rest the accelerometer reads +g on Z.
-        // Heading = angle of the magnetic field's horizontal part, measured clockwise from the forward direction
-        // to north, so 0 = pointing north, 90 = east. Tilt compensation: "horizontal" comes from the
-        // accelerometer's up vector (if fitted), otherwise the board is assumed level.
-        float u[3] = {0, 0, 1};
-        if (haveImu) {
-          float n = sqrtf(ax_ * ax_ + ay_ * ay_ + az_ * az_);
-          if (n > 1.0f) { u[0] = ax_ / n; u[1] = ay_ / n; u[2] = az_ / n; }
+        float sg = dfAccSign == 0 ? 1 : dfAccSign;
+        useAccel(sg * acc[0], sg * acc[1], sg * acc[2]);
+        useMag(mg, true);
+      } else { haveDf = false; haveDfP = false; env.hasLevel = false; env.hasHeading = false; }
+    } else {
+      if (haveImu) {
+        sensors_event_t a, g, t;
+        if (imu.getEvent(&a, &g, &t)) useAccel(a.acceleration.x, a.acceleration.y, a.acceleration.z);
+      }
+      if (haveMag) {
+        sensors_event_t m;
+        if (mag.getEvent(&m)) {
+          float v[3] = {m.magnetic.x, m.magnetic.y, m.magnetic.z};
+          useMag(v, haveImu);
         }
-        float mu = c[0] * u[0] + c[1] * u[1] + c[2] * u[2];
-        float mh[3] = {c[0] - mu * u[0], c[1] - mu * u[1], c[2] - mu * u[2]};   // field, horizontal part
-        float fh[3] = {1 - u[0] * u[0], -u[0] * u[1], -u[0] * u[2]};          // forward, horizontal part
-        float lh[3] = {u[1] * fh[2] - u[2] * fh[1], u[2] * fh[0] - u[0] * fh[2], u[0] * fh[1] - u[1] * fh[0]};  // up x forward = left
-        float north = mh[0] * fh[0] + mh[1] * fh[1] + mh[2] * fh[2];
-        float left = mh[0] * lh[0] + mh[1] * lh[1] + mh[2] * lh[2];
-        // north to the left of where it points means it points east of north
-        float h = atan2f(left, north) * 57.2958f;
-        // REVERSE is only for a magnetometer with no accelerometer, mounted upside down. With the
-        // accelerometer fitted, "up" comes from gravity, so an upside-down board already reads right.
-        if (hdgReverse && !haveImu) h = -h;
-        h = wrap360(h);
-        rawHeading = h;
-        hx = 0.85f * hx + 0.15f * cosf(h / 57.2958f);
-        hy = 0.85f * hy + 0.15f * sinf(h / 57.2958f);
-        env.heading = wrap360(atan2f(hy, hx) * 57.2958f + hdgOffset);
-        env.hasHeading = true;
       }
     }
   }
@@ -203,7 +268,17 @@ void update() {
       if (sht.getEvent(&hum, &tmp)) { env.tempC = tmp.temperature; env.rh = hum.relative_humidity; env.hasTH = true; }
       else { haveSht = false; env.hasTH = false; }
     }
-    if (haveBmp) {
+    bool gotP = false;
+    if (haveDfP) {
+      DFRobot_Multi_DOF_IMU::sSensorData_t da, dg, dm;
+      float pa = 0;
+      if (dfi->get10dofData(&da, &dg, &dm, &pa, false) && pa > 30000 && pa < 110000) {
+        env.hPa = pa / 100.0f;   // the library gives pascals
+        env.hasP = true;
+        gotP = true;
+      } else { haveDfP = false; }
+    }
+    if (haveBmp && !gotP) {
       if (bmp.performReading()) {
         env.hPa = bmp.pressure / 100.0f;
         env.hasP = true;

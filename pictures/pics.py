@@ -52,13 +52,13 @@ def overview():
         wire(ax, a, b, kind, via=[(a[0], a[1] + 4 + k * 1.2), (70 + k * 2.2, a[1] + 4 + k * 1.2), (100 + k * 2.2, 74 - k * 0.8), (b[0] - 6, b[1] + 10 - k)], lw=2.0)
     note(ax, 52, 112, "OLED pin order differs between makers:\ngo by the labels printed on yours.", size=7.2)
     # --- sensors
-    label(ax, 52, 63, "SENSOR KIT (optional): all three in the pod on the lid", size=7.6, bold=True)
-    for i, (nm, col) in enumerate((("SHT45\ntemp + humidity", "#2457a5"), ("BMP390\npressure", "#2457a5"), ("IMU\ncompass + level", "#3a3a3a"))):
-        board(ax, 8 + i * 32, 42, 26, 16, col, r=1, z=2)
-        label(ax, 21 + i * 32, 50, nm, size=6.6, color="white", bold=True)
-    for i in range(2):
-        wire(ax, (34 + i * 32, 50), (40 + i * 32, 50), "#555", lw=2.4)
-    label(ax, 53, 38.5, "joined with STEMMA QT cables", size=6.6, color="#555")
+    label(ax, 52, 63, "SENSOR KIT (optional): both boards in the pod on the lid", size=7.6, bold=True)
+    for i, (nm, col, w) in enumerate((("SHT45\ntemp + humidity", "#2457a5", 26), ("DFRobot 10-DoF\ncompass, level\n+ pressure", "#1a1a1a", 34))):
+        x = 8 + i * 36
+        board(ax, x, 42, w, 16, col, r=1, z=2)
+        label(ax, x + w / 2, 50, nm, size=6.4, color="white", bold=True)
+    wire(ax, (34, 50), (44, 50), "#555", lw=2.4)
+    label(ax, 47, 38.5, "SHT45's 2nd socket \u2192 the DFRobot's Gravity cable", size=6.4, color="#555")
     wire(ax, (21, 42), pads["J4-1"], "SDA", via=[(21, 34), (110, 34), (140, pads["J4-1"][1])], lw=3.0, text="QT cable \u2192 J4 SENSORS", tpos=0.3)
     # --- ammo jack
     ax.add_patch(Circle((20, 15), 4.6, fc="#222", ec="#000", zorder=3))
@@ -356,17 +356,18 @@ def esp_side():
     # sensor chain
     label(ax, 130, 124, "Sensor kit: one chain of STEMMA QT cables", size=8.5, bold=True, ha="left")
     board(ax, 130, 95, 18, 12, "#1f6b3c", r=1, z=2); label(ax, 139, 101, "J4\nSENSORS", size=6.2, color="white", bold=True)
-    for i, (nm, col) in enumerate((("SHT45", "#2457a5"), ("BMP390", "#2457a5"), ("IMU", "#333"))):
-        board(ax, 158 + i * 30, 94, 22, 14, col, r=1, z=2)
-        label(ax, 169 + i * 30, 101, nm, size=7.4, color="white", bold=True)
+    for i, (nm, col, w) in enumerate((("SHT45", "#2457a5", 22), ("DFRobot\n10-DoF", "#1a1a1a", 28))):
+        x = 158 + i * 34
+        board(ax, x, 94, w, 14, col, r=1, z=2)
+        label(ax, x + w / 2, 101, nm, size=7.0, color="white", bold=True)
     for k, kind in enumerate(("GND", "3V3", "SDA", "SCL")):
         wire(ax, (148, 98 + k * 1.7), (158, 98 + k * 1.7), kind, lw=1.6, straight=True)
-    for i in range(2):
-        for k, kind in enumerate(("GND", "3V3", "SDA", "SCL")):
-            wire(ax, (180 + i * 30, 98 + k * 1.7), (188 + i * 30, 98 + k * 1.7), kind, lw=1.4, straight=True)
-    label(ax, 153, 90.5, "150 mm, up\nthrough the lid", size=6.2, color="#555"); label(ax, 184, 90.5, "100 mm", size=6.2, color="#555"); label(ax, 214, 90.5, "100 mm", size=6.2, color="#555")
+    for k, kind in enumerate(("GND", "3V3", "SDA", "SCL")):
+        wire(ax, (180, 98 + k * 1.7), (192, 98 + k * 1.7), kind, lw=1.4, straight=True)
+    label(ax, 153, 90.5, "150 mm, up\nthrough the lid", size=6.2, color="#555"); label(ax, 186, 90.5, "QT to its\nGravity cable", size=6.0, color="#555")
+    label(ax, 190, 76.5, "DFRobot pins: + red, \u2212 black,\nC/R yellow (SCL), D/T blue (SDA)", size=6.2, ha="left", color="#333", va="top")
     label(ax, 139, 86, "J4 order: GND, 3V3, SDA, SCL = cable colours black, red, blue, yellow\n(3V3 is drawn orange here, like everywhere in these pictures)", size=6.6, ha="left", color="#333", va="top")
-    label(ax, 199, 112, "all three in the vented pod on the lid (IMU at the end away from the battery)", size=6.2, color="#555")
+    label(ax, 199, 112, "both in the vented pod on the lid (the DFRobot board at the gun-side end)", size=6.2, color="#555")
     save(fig, OUT + "/09_gauge_sensors_jack.png")
 
 # ------------------------------------------------------------------ 10. telling the parts apart
