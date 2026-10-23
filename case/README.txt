@@ -10,10 +10,14 @@ WHAT CHANGED IN v0.8 (base and lids; front cover, pod and roof are the same as v
     power switch: the holder's button turns BLIPR on and off.
   - Radar pocket: 0.2 mm wider each side and 0.2 mm deeper, for 1 mm x 5 mm foam tape on the radar's two
     sides and back. The module is pushed forward against the window by the foam; no crush ribs.
-  - Power-button hole in the left wall: 10 mm across (Sean's 8 mm was a little small), same centre.
-    BUTTON_HOLE_D in the script.
-  - Tripod hole under the base: 7 mm across and 9 mm deep (was 8.4 x 13.4), to suit Sean's 1/4-20
-    heat-set inserts. TRIPOD_HOLE_D / TRIPOD_HOLE_DEPTH in the script if yours differ.
+  - Power-button opening in the left wall: a 14 mm wide x 10 mm tall slot with round ends (Sean's 8 mm
+    hole was too small; it can't go taller without hitting parts inside), same centre.
+    BUTTON_SLOT_W / BUTTON_HOLE_D in the script.
+  - Tripod mount: moved 7 mm toward the battery side, to the estimated balance point with everything in
+    (the cell and holder make that side heavier). Its post inside is shorter (top 10.6 mm above the
+    case bottom), leaving 3.8 mm under the circuit board: trim the solder tails of R19-R22, C26, J3 and
+    J4 to 2 mm or less. The hole is 7.15 mm across and 9 mm deep for Sean's 1/4-20 heat-set inserts
+    (7.0 was too tight). TRIPOD_IX/IY, TRIPOD_HOLE_D, TRIPOD_HOLE_DEPTH in the script.
   - Every lid with a screen (lid_oled, lid_sensors) has Sean's screen mount: 4 pads in the pocket's corners,
     1 mm proud of the underside, with 1.7 mm pilot holes for 4 x M2 x 4 screws (tested and fits).
   - Every lid has a radar hold-down rib underneath (18 x 3 mm, 5.3 mm long). It stops 0.7 mm above the
@@ -96,7 +100,7 @@ Hardware (v0.8 adds): 4 x M2 x 4 screws (screen), battery-holder screws to suit 
           (M3 x 6 self-tapping screws cut their own thread in a 2.8 mm hole), ~150 mm of
           1 mm x 5 mm foam tape (radar sides, back and top).
 Hardware: 8 x M3 heat-set inserts (4.1 mm holes), 4 x M3x8 (lid), 4 x M3x6 (board),
-          1 x 1/4-20 heat-set insert, up to 9 mm long (7 mm hole, 9 mm deep) for a tripod.
+          1 x 1/4-20 heat-set insert, up to 9 mm long (7.15 mm hole, 9 mm deep) for a tripod.
           Sensor pod: 2 x M3x8 + 2 more M3 heat-set inserts (in the lid's risers).  Sensor boards and pod roof: 16 x M2.5x6 brass screws.
 
 CHANGING THE CASE

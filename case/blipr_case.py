@@ -73,9 +73,11 @@ CHG_IX, CHG_W, CHG_Z0, CHG_Z1 = BAY_W / 2, 16.0, 0.5, 12.5    # battery charge p
 SW_IX, SW_Z, SW_W, SW_H = 50.0, 26.0, 7.0, 3.5               # slide-switch lever slot
 
 # --- tripod mount (1/4-20 heat-set insert) under the case
-TRIPOD_IX, TRIPOD_IY = 41.5, 62.0
-TRIPOD_HOLE_D = 7.0    # v0.8: Sean's 1/4-20 inserts want a 7 mm hole, 9 mm deep
+TRIPOD_IX, TRIPOD_IY = 48.6, 62.0   # v0.8: at the estimated balance point with everything in (battery side is heavier)
+TRIPOD_HOLE_D = 7.15   # v0.8: Sean's 1/4-20 inserts want 7.15 mm (7.0 was too tight), 9 mm deep
 TRIPOD_HOLE_DEPTH = 9.0
+TRIPOD_BOSS_TOP = 10.6  # v0.8: boss top, measured up from the case bottom (1.6 mm over the 9 mm hole; ~3.8 mm under the board)
+SEAN_TRIPOD_IX, SEAN_TRIPOD_IY = 41.5, 62.0   # where the boss is in Sean's base model (removed and rebuilt above)
 TRIPOD_BOSS_D = 14.0
 TRIPOD_INNER_H = 11.5  # boss height above the floor (stays 0.5 mm under the board)
 
@@ -402,16 +404,15 @@ def export(solid, name, outdir):
 BASE_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_edits", "base_from_sean_2026-10-22.stl")
 # battery holder's power button, pressed through the left wall (centre measured from Sean's base)
 BUTTON_Y, BUTTON_Z, BUTTON_HOLE_D = 106.635, 11.9, 10.0
+BUTTON_SLOT_W = 14.0    # v0.8: a 14 x 10 mm slot with round ends (10 mm round was still too small; no room to go taller)
 BASE_EDITS = [
     # (what, "cut" or "add", box from inside coords: x0, y0, z0, x1, y1, z1)
     ("radar pocket 0.2 mm wider each side and 0.2 mm deeper, for 1 mm foam tape on its sides and back",
      "cut", (RADAR_CX - 13.3, HOLDER_T - 0.02, RADAR_LEDGE, RADAR_CX + 13.3, HOLDER_T + 6.8, IH + 5)),
-    # cylinders: (what, "fill_cyl"/"cut_cyl", (ix, iy, diameter, z0, z1)) with z measured up from the case bottom
-    ("tripod hole: clear the old 8.4 mm x 13.4 mm hole's surfaces", "cut_cyl", (TRIPOD_IX, TRIPOD_IY, 9.0, -1.0, 13.6)),
-    ("tripod hole: fill it solid again", "fill_cyl", (TRIPOD_IX, TRIPOD_IY, 9.0, 0.0, 13.6)),
-    # side-wall holes: (what, "cut_cyl_x", (y, z, diameter, x0, x1)) in case coordinates, axis along X
-    ("power-button hole in the left wall: 10 mm (Sean's was 8 mm, a little small)", "cut_cyl_x", (BUTTON_Y, BUTTON_Z, BUTTON_HOLE_D, -1.0, WALL + 0.6)),
-    ("tripod hole: 7 mm x 9 mm deep for Sean's 1/4-20 inserts", "cut_cyl", (TRIPOD_IX, TRIPOD_IY, TRIPOD_HOLE_D, -1.0, TRIPOD_HOLE_DEPTH)),
+    # side-wall holes: (what, "slot_x", (y, z, width, height, x0, x1)), a round-ended slot cut along X
+    ("power-button slot in the left wall: 14 mm wide x 10 mm tall", "slot_x", (BUTTON_Y, BUTTON_Z, BUTTON_SLOT_W, BUTTON_HOLE_D, -1.0, WALL + 0.6)),
+    # tripod: Sean's boss and floor hole come out, the floor is made whole, then a shorter boss goes in at the balance point
+    ("tripod: move the boss to the balance point and shorten it", "tripod", None),
 ]
 
 
@@ -420,6 +421,25 @@ def base_mesh():
     t = trimesh.load(BASE_SOURCE, force="mesh")
     m = mf.Manifold(mf.Mesh64(vert_properties=np.asarray(t.vertices, np.float64), tri_verts=np.asarray(t.faces, np.uint64)))
     for what, op, g in BASE_EDITS:
+        if op == "slot_x":
+            y, z, w, h, x0, x1 = g
+            rr = h / 2
+            cut = mf.Manifold.cube([x1 - x0, w - h, h]).translate([x0, y - (w - h) / 2, z - rr])
+            for dy in (-(w - h) / 2, (w - h) / 2):
+                cut = cut + mf.Manifold.cylinder(x1 - x0, rr, rr, 96).rotate([0, 90, 0]).translate([x0, y + dy, z])
+            m = m - cut
+            continue
+        if op == "tripod":
+            ox, oy = X(SEAN_TRIPOD_IX), Y(SEAN_TRIPOD_IY)
+            # cut edges stay 0.2-0.3 mm off Sean's faces so nothing nearly coincides (STL rounding would pinch it)
+            wall = mf.Manifold.cube([2.4, 20.0, Z(BAY_WALL_H) - 0.3]).translate([X(BAY_W) - 0.2, oy - 10.0, 0])   # bay wall kept
+            m = m - (mf.Manifold.cylinder(16.0, 7.3, 7.3, 96).translate([ox, oy, FLOOR + 0.2]) - wall)               # old boss off
+            m = m - mf.Manifold.cylinder(FLOOR + 1.5, 4.6, 4.6, 96).translate([ox, oy, -1.0])                         # old hole cleared ...
+            m = m + mf.Manifold.cylinder(FLOOR + 0.2, 4.6, 4.6, 96).translate([ox, oy, 0])                            # ... filled solid
+            nx, ny = X(TRIPOD_IX), Y(TRIPOD_IY)
+            m = m + mf.Manifold.cylinder(TRIPOD_BOSS_TOP - FLOOR + 0.4, TRIPOD_BOSS_D / 2, TRIPOD_BOSS_D / 2, 96).translate([nx, ny, FLOOR - 0.4])
+            m = m - mf.Manifold.cylinder(TRIPOD_HOLE_DEPTH + 1.0, TRIPOD_HOLE_D / 2, TRIPOD_HOLE_D / 2, 96).translate([nx, ny, -1.0])
+            continue
         if op == "cut_cyl_x":
             y, z, dia, x0, x1 = g
             m = m - mf.Manifold.cylinder(x1 - x0, dia / 2, dia / 2, 96).rotate([0, 90, 0]).translate([x0, y, z])
