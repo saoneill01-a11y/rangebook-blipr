@@ -457,7 +457,8 @@ BASE_SOURCE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_edi
 # battery holder's power button, pressed through the left wall (centre measured from Sean's base)
 BUTTON_Y, BUTTON_Z, BUTTON_HOLE_D = 106.635, 11.9, 10.0
 BUTTON_SLOT_W = 14.0    # v0.8: a 14 x 10 mm slot with round ends (10 mm round was still too small; no room to go taller)
-HOLDER_PAD_D, HOLDER_PAD_TOP, HOLDER_HOLE_D = 10.0, 7.4, 2.8   # round battery-holder pads (top from the case bottom)
+HOLDER_PAD_D, HOLDER_PAD_TOP, HOLDER_HOLE_D = 8.0, 7.4, 2.9   # round battery-holder pads (top from the case bottom)
+# v0.9: 8 mm across (10 mm pads hit parts on the underside of the holder board), 2.9 mm holes (2.8 was too tight)
 BASE_EDITS = [
     # (what, "cut" or "add", box from inside coords: x0, y0, z0, x1, y1, z1)
     ("radar pocket 0.2 mm wider each side and 0.2 mm deeper, for 1 mm foam tape on its sides and back",
@@ -480,6 +481,10 @@ BASE_EDITS = [
     # the two right-hand pads stand alone once the walls are gone: rebuilt as plain round pads, same screw holes
     ("front-right holder pad, round", "round_pad", (31.9, 20.7, (24.0, 13.0, 38.0, 26.0))),
     ("rear-right holder pad, round", "round_pad", (31.9, 115.4, (24.0, 106.0, 38.0, 124.0))),
+    # v0.9: the two left pads (Sean's own, joined to the wall) rebuilt the same way, so all four are 8 mm with 2.9 mm
+    # holes. Their clearing boxes stop at the wall's inside face (x 2.4) and short of the rear corner column (y 118.8).
+    ("front-left holder pad, round (v0.9)", "round_pad", (6.9, 20.7, (2.4, 14.4, 13.4, 27.2))),
+    ("rear-left holder pad, round (v0.9)", "round_pad", (6.9, 115.4, (2.4, 108.9, 11.4, 118.7))),
     ("tripod: move the boss to the balance point and shorten it", "tripod", None),
 ]
 

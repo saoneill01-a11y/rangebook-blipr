@@ -1,7 +1,13 @@
-Range Book BLIPR - case files, v0.8
+Range Book BLIPR - case files, v0.9
 
 SIDES: "+X side" is the side wall with the Teensy's USB hole. On the bench it faces the gun and you
 (you sit behind it, across the gun, with the chronograph at about 1 o'clock). The "far side" is the other one.
+
+WHAT CHANGED IN v0.9 (base only; every other part is the same as v0.8)
+  - Battery-holder pads: all four are now 8 mm round pads (were 10 mm; the plastic hit parts on the underside of
+    the holder board), with 2.9 mm screw holes (were 2.8: the screws went in tighter than they needed to).
+    The two left pads, which were part of Sean's model and joined to the wall, are rebuilt the same way as the
+    right two. Same positions and the same 7.4 mm height. HOLDER_PAD_D / HOLDER_HOLE_D in the script.
 
 WHAT CHANGED IN v0.8 (base and lids; front cover, pod and roof are the same as v0.7)
   - The base is now Sean's own CAD edit (user_edits/base_from_sean_2026-10-22.stl), used as the master:
