@@ -64,7 +64,7 @@ The spreadsheet has prices and links; this table adds the reference names (R1, C
 | R10, R17 | 330 Ω | 2 | ADC input filter |
 | C1, C2 | 1 µF ceramic | 2 | Regulator in/out |
 | C14, C17, C21, C24 | 1 µF ceramic | 4 | Gain-leg capacitors |
-| C3 | 100 µF electrolytic, 10 V or higher | 1 | **new**, regulator output |
+| C3 | 100 µF electrolytic, 10 V or higher, 6.3 mm across (16 V or 25 V types; a 50 V one is 8 mm and crowds C4) | 1 | **new**, regulator output |
 | C4, C7, C10 | 10 µF electrolytic, 10 V or higher | 3 | **new** |
 | C5, C8, C9, C11 | 100 nF ceramic | 4 | Decoupling |
 | C12, C15, C19, C22 | 10 nF ceramic | 4 | Input coupling |
