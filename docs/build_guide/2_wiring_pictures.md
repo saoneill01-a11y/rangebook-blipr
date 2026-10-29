@@ -8,13 +8,15 @@ How to read them: each coloured line is one wire (or one solder trail on perfboa
 
 &#91;image: How everything connects\]
 
-## 2. Power switch and battery
+## 2. Power and battery (no separate switch)
 
-&#91;image: Battery shield, R25 at the cell tab, DPDT switch and J1\]
+&#91;image: Battery holder wired straight to J1, R25 at the cell tab\]
 
 ## 3. Radar
 
 &#91;image: Radar K-LC5 to J2, four wires\]
+
+The plug on the radar goes on pin 1 to pin 1 only: pins 2 (power) and 4 (ground) mirror each other, so a plug turned round swaps them. Mark pin 1 on the module and the plug, and solder the other ends straight into J2.
 
 ## 4. Teensy 4.1
 
@@ -44,7 +46,7 @@ This is the chip side, the way the module sits on the board. The pin names are p
 
 ## 10. Battery gauge, sensor kit, ammo jack
 
-&#91;image: Battery gauge, sensors and ammo jack\]
+&#91;image: Battery gauge, sensor kit (SHT45 and DFRobot 10-DoF) and ammo jack\]
 
 ## 11. Telling the parts apart
 

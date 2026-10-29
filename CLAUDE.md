@@ -28,14 +28,14 @@ Board packages (arduino-cli): add `https://www.pjrc.com/teensy/package_teensy_in
 `https://espressif.github.io/arduino-esp32/package_esp32_index.json`, then install `teensy:avr` and
 `esp32:esp32` version 3.3.x.
 
-Libraries: Adafruit SSD1306 (+ GFX, BusIO), Adafruit SHT4x, Adafruit BMP3XX, Adafruit LSM6DS, Adafruit LIS3MDL,
-Adafruit Unified Sensor, OneWire, DallasTemperature, DFRobot_Multi_DOF_IMU and DFRobot_RTU (the last two from
-github.com/DFRobot if Library Manager doesn't have them: `arduino-cli lib install --git-url ...` with
+Libraries (Library Manager names, one `arduino-cli lib install "<name>"` each: a name it can't find stops the
+rest of a combined install): "Adafruit SSD1306" (+ GFX, BusIO), "Adafruit SHT4x Library", "Adafruit BMP3XX Library",
+"Adafruit LSM6DS", "Adafruit LIS3MDL", "Adafruit Unified Sensor", "OneWire", "DallasTemperature", plus
+DFRobot_Multi_DOF_IMU and DFRobot_RTU from github.com/DFRobot (`arduino-cli lib install --git-url ...` with
 `library.enable_unsafe_install` on, or `--zip-path`).
 
-- Teensy: FQBN `teensy:avr:teensy41` with USB type **Serial + MTP Disk (Experimental)** (defines
-  `USB_MTPDISK_SERIAL`). Find the option's exact name with `arduino-cli board details -b teensy:avr:teensy41`
-  (it's a `usb=` option) and write it under "This computer" below. Plain Serial works too, without drive mode.
+- Teensy: FQBN `teensy:avr:teensy41:usb=serialmtp` (USB type **Serial + MTP Disk (Experimental)**, defines
+  `USB_MTPDISK_SERIAL`). Plain Serial (`usb=serial`) works too, without drive mode.
 - ESP32: FQBN `esp32:esp32:nologo_esp32c3_super_mini` with **USB CDC On Boot: Enabled** (the default for this board, so no option is needed).
 - Build: `arduino-cli compile --fqbn <fqbn> firmware/BliprTeensy` (or `firmware/BliprBLE`);
   upload with `arduino-cli upload -p <port> --fqbn <fqbn> <sketch>`.
@@ -80,6 +80,13 @@ Before flashing a change:
 3. Only then flash, and tell Sean what changed in one or two sentences.
 `replay --peaks out.csv` gives every frame's peak (time, Doppler frequency, m/s, SNR, used) for plotting.
 
+Known weakness (pre-build review, Oct 29, 2026, https://claude.ai/artifact/XTZ8YEr7pFUwjrV5oKxFYJ): a steady
+tone inside the velocity window (converter, clock or Bluetooth interference), even one smaller than the noise,
+forms a long flat track that beats the real bullet, so every shot reads the tone's speed. Planned fix, to tune on
+the first real recordings: ignore lines already present in the pre-trigger frames, and accept only tracks that
+slow down. The same review estimates the bullet echo may be marginal for this radar; check real echo strength in
+the first recordings before tuning anything else.
+
 ## Git
 
 Commit as Sean (his normal git identity). Keep `recordings/` and `sessions/` out of git (they're large);
@@ -88,5 +95,5 @@ piece of work so nothing lives only on the laptop.
 
 ## This computer
 
-(Claude Code: fill this in during the first session: OS, serial port names for the Teensy and ESP32, the
-Teensy `usb=` option name, anything that needed a workaround.)
+(Claude Code: fill this in during the first session: OS, serial port names for the Teensy and ESP32,
+anything that needed a workaround.)

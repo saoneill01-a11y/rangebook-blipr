@@ -12,9 +12,9 @@ How it works, in one pass: the RFbeam K-LC5 radar sends out a 24 GHz signal and 
 
 **What this guide covers:** the hardware. That means the circuit, soldering, wiring, the 3D-printed case, and electrical checks with a multimeter at each stage. **What comes later:** the firmware for the Teensy and ESP32, and the web app connection. Until the firmware exists, the checkpoints in this guide confirm the hardware is built right; the first real test with a moving target happens once the test firmware is written.
 
-**Case files (v0.1 draft):** `base`, `lid_oled` / `lid_plain`, and `front_cover`, each as STEP and STL, plus `blipr_case.py`, the parametric script that generates them. The case is built from datasheet and typical sizes, so expect one round of adjustments after you measure your actual parts (see the last section).
+**Case files (v0.9):** `base`, `lid_oled` / `lid_plain`, and `front_cover`, each as STEP and STL, plus `blipr_case.py`, the parametric script that generates them. The case is built from datasheet and typical sizes, so expect one round of adjustments after you measure your actual parts (see the last section).
 
-**Firmware (v0.1.0):** setup and bench tests are on the Firmware tab.
+**Firmware (Teensy 0.2.2, ESP32 0.2.3):** setup and bench tests are on the Firmware tab.
 
 ## Tools, supplies and safety
 
@@ -30,7 +30,7 @@ You need a temperature-controlled soldering iron, a multimeter, and calipers; ev
 | Hobby knife | Cutting the Teensy's VIN/VUSB trace |
 | Solder-tip for heat-set inserts (or the plain iron tip) | Setting the M3 and 1/4-20 inserts |
 | 26–28 AWG stranded wire in at least 4 colors | Point-to-point wiring (red = power, black = ground, other colors = signals) |
-| Hot glue, thin double-sided foam tape | Holding the battery shield, switch and OLED |
+| 1 mm thick × 5 mm wide foam tape (about 150 mm), 4 × M2 × 4 mm screws, 4 × M3 × 6 mm self-tapping screws | Holding the radar snug, the screen to the lid, and the battery holder to the base |
 | Isopropyl alcohol and an old toothbrush | Cleaning flux off the amplifier area |
 
 **Safety and handling**
@@ -55,7 +55,6 @@ The spreadsheet has prices and links; this table adds the reference names (R1, C
 | U3 | MCP1700-3302E/TO, 3.3 V low-dropout regulator (TO-92) | 1 | **new**, buy 2, about $0.40 at DigiKey |
 | — | DIP-8 IC sockets | 2 | **new**, so the op-amps can be swapped |
 | BT1 | 18650 battery shield (5 V + 3.3 V outputs) + 18650 cell | 1 |  |
-| SW1 | DPDT mini slide switch (two rows of 3 tabs) | 1 |  |
 | OLED | 0.96" SSD1306 I2C display | 1 | Shows speed and battery level; white version reads best |
 | R1 | 10 Ω resistor | 1 | Op-amp supply filter |
 | R2, R3 | 10 kΩ | 2 | Mid-rail reference divider |
@@ -96,11 +95,11 @@ The circuit has three parts: clean power for the radar and amplifiers, two ident
 
 &#91;image: Schematic v0.5: power with battery sense, I-channel amplifier, Q-channel parts and module connections\]
 
-**Power.** The battery shield makes 5 V. The slide switch (SW1) turns everything on. 5 V feeds the Teensy, the ESP32 (through diode D1, which blocks power flowing back from the ESP32's USB port) and, through filter resistor R18, a separate low-noise 3.3 V regulator (U3) that powers only the radar and the amplifiers. Keeping the radar off the Teensy's own 3.3 V keeps digital noise out of the weakest signals in the build. R1 and C7 filter the op-amp supply a second time.
+**Power.** The battery holder makes 5 V, and its own button turns everything on and off (there is no separate switch). 5 V feeds the Teensy, the ESP32 (through diode D1, which blocks power flowing back from the ESP32's USB port) and, through filter resistor R18, a separate low-noise 3.3 V regulator (U3) that powers only the radar and the amplifiers. Keeping the radar off the Teensy's own 3.3 V keeps digital noise out of the weakest signals in the build. R1 and C7 filter the op-amp supply a second time.
 
 **Mid-rail reference (VREF).** The op-amps run from a single 3.3 V supply, so the signals swing around the middle, 1.65 V. R2 and R3 split the supply in half, and C10 and C11 hold it steady.
 
-**Battery level.** R19 and R20 halve the cell voltage (4.2 V full becomes 2.1 V) so the ESP32-C3 can read it on GPIO3 without exceeding its input limit. C26 steadies the reading. The divider connects through the second half of the power switch, so it draws nothing when the unit is off and can't feed voltage into a powered-down ESP32.
+**Battery level.** R19 and R20, with R25 at the cell, divide the cell voltage by 2.1 (4.2 V full becomes 2.0 V) so the ESP32-C3 can read it on GPIO3 without exceeding its input limit. C26 steadies the reading. With no separate switch the divider stays connected to the cell, so it draws about 18 µA even when BLIPR is off: a few months to drain a full cell. Take the cell out for longer storage. The 100 kΩ resistors keep the current into a powered-down ESP32 tiny, which is safe.
 
 **Amplifier.** Each channel is two identical stages, each boosting the signal about 22 times (about 500 total). In each stage:
 
@@ -118,8 +117,8 @@ Test each module on its own before it gets soldered into anything, then lay out 
 
 1. **Sort and check parts.** Measure every resistor with the multimeter before it goes in (10 Ω, 330 Ω, 470 Ω, 4.7 kΩ, 10 kΩ look alike). Bag the capacitors by value. Electrolytics have a stripe marking the **negative** lead, and the longer lead is positive.
 2. **Test the Teensy.** Plug it into your computer with a micro-USB data cable. The orange LED should blink (factory test program). If nothing happens, try another cable before blaming the board.
-3. **Cut the Teensy's VIN–VUSB link.** On the underside near the USB connector are two pads joined by a thin trace, labeled VIN and VUSB on PJRC's pinout card. Cut that trace with a hobby knife, a few light strokes. Confirm with the continuity beep: no beep between VIN and VUSB. This stops the battery and your computer's USB from fighting each other. From now on, the Teensy only runs when the chronograph's power switch is on, including when you program it.
-4. **Test the ESP32-C3.** Plug it into USB-C; a power LED should light. If its pin headers came loose, solder them on now (short side into the board).
+3. **Cut the Teensy's VIN–VUSB link.** Do the Firmware tab's bench tests first: they run the Teensy from USB alone, which stops working once this link is cut. On the underside near the USB connector are two pads joined by a thin trace, labeled VIN and VUSB on PJRC's pinout card. Cut that trace with a hobby knife, a few light strokes. Confirm with the continuity beep: no beep between VIN and VUSB. This stops the battery and your computer's USB from fighting each other. From now on, the Teensy only runs when the chronograph is turned on (the holder's button), including when you program it.
+4. **Test the ESP32-C3.** Plug it into USB-C; a power LED should light. If its pins aren't soldered on yet, fit them with the black plastic and the long pins on the side with the printed pin names (the underside), and solder them on the chip side, so the module can sit chip side up. While it's on USB, find the pin that reads 5 V to G with the meter and mark it: on the circuit board that pin goes in the back hole of the right-hand row, next to D1's square pad.
 5. **Check the perfboard holes.** Most 70 × 90 mm boards have a 2–3 mm hole in each corner about 3 mm in from both edges, which is what the case posts expect. If yours don't, mark centers 3 mm in from each edge and drill 3.2 mm.
 6. **Mark the layout zones** on the top of the perfboard with a fine marker, with the board positioned as it will sit in the case: the 70 mm side is the front edge, facing the radar.
 
@@ -128,16 +127,16 @@ Test each module on its own before it gets soldered into anything, then lay out 
 | Amplifier and power | Front 28 mm, full width | U3 and its capacitors, VREF divider, U1 (I channel) on the left half, U2 (Q channel) on the right half |
 | Teensy 4.1 | Lying left-to-right across the rear of the board, centered 75 mm back from the front edge, with its USB connector at the board's right edge (it lines up with the hole in the case's right wall) | Two 1×24 female headers, 15.2 mm (6 rows) apart |
 | ESP32-C3 | Left side, about 6–24 mm from the left edge, 34–57 mm back | Two 1×8 female headers; its antenna end toward the rear, away from the radar |
-| Keep clear underneath | Left 7 mm strip between 28 and 48 mm back | The tripod insert boss sits under here, so no solder tails |
+| Keep clear underneath | Left 13 mm strip, 30 to 44 mm back from the front edge | The tripod insert post sits 3.8 mm under here (case v0.8), so trim solder tails to 2 mm or less (on the circuit board: R19 to R22, C26, J3 and J4) |
 | Corners | 6 mm circle around each mounting hole | Screw heads and posts |
 
-7. **Solder the sockets.** Plug the female headers onto the Teensy's pins, set the whole assembly on the board in its zone, and solder the header pins from underneath. Doing it with the Teensy in place keeps the rows perfectly spaced. Remove the Teensy, then do the same for the ESP32. Solder the two DIP-8 sockets in the amplifier zone with their notches facing the same way (toward the left edge), and mark pin 1 next to each.
+7. **Solder the sockets.** Plug the female headers onto the Teensy's pins, set the whole assembly on the board in its zone, and solder the header pins from underneath. Doing it with the Teensy in place keeps the rows perfectly spaced. Remove the Teensy, then do the same for the ESP32. Solder the two DIP-8 sockets in the amplifier zone with their notches facing the same way (toward the left edge), and mark pin 1 next to each. On the circuit board the notches point right instead, as printed on it: put each chip's dot (pin 1) beside the square pad.
 
 ## Step 2: Build the power section
 
 Build and test power before anything expensive is plugged in; a wiring mistake here is the one most likely to damage the radar.
 
-&#91;image: Battery shield, R25 at the cell tab, DPDT switch and J1\]
+&#91;image: Battery holder wired straight to J1, R25 at the cell tab\]
 
 &#91;image: Power and VREF parts\]
 
@@ -148,27 +147,27 @@ All the wiring pictures, with notes, are also on the Wiring pictures tab.
 3. **Add the regulator capacitors.** R18 (10 Ω) from the +5V bus to U3's VIN. C1 (1 µF) and C4 (10 µF, stripe to GND) from U3's VIN to GND, right at U3. R18 and C4 together filter the shield's switching noise. C2 (1 µF) and C3 (100 µF, stripe to GND) from +3V3A to GND, close to U3's output.
 4. **Op-amp supply filter.** R1 (10 Ω) from +3V3A to +3V3OP. C7 (10 µF, stripe to GND) from +3V3OP to GND.
 5. **VREF divider.** R2 (10 kΩ) from +3V3OP to VREF, R3 (10 kΩ) from VREF to GND. C10 (10 µF, stripe to GND) and C11 (100 nF) from VREF to GND.
-6. **Battery shield and switch.** With **no cell in the shield**, solder a red wire to the shield's 5 V output pad and a black wire to its GND pad (use the solder pads or header pins, not the USB-A socket). The black wire goes to the GND bus. SW1 has two rows of three tabs; each row is one half of the switch (row A and row B). The red wire goes to an end tab of row A, and a second red wire goes from row A's middle tab to the +5V bus. Next, with the cell still out, tin the \*\*+\*\* end tab of the shield's battery holder and quickly solder one leg of a 10 kΩ resistor (\*\*R25\*\*) straight onto it. Cover it with heat-shrink and solder a wire (orange works well) to its other leg; that way a nicked wire can't short the cell. Run that wire to the end tab of row B on the same side you used in row A, then run a wire from row B's middle tab to the board. On the board, solder R19 (100 kΩ) from that wire to a point labeled \*\*BATT\_SENSE\*\*, then R20 (100 kΩ) and C26 (100 nF) from BATT\_SENSE to GND, and a wire from BATT\_SENSE to the ESP32-C3's GPIO3 pin. Make the switch and battery-holder wires about 10 cm long so the switch can reach the rear wall slot.
+6. **Battery holder.** First check the holder's output with the meter: cell in, holder on, red probe on its 5 V pad and black on GND must read about +5 V, not −5 V. Nothing on the board protects against these two swapped. Then take the cell out. With no cell in the holder, solder a red wire to the holder's 5 V output pad and a black wire to its GND pad (use the solder pads or header pins, not the USB-A socket). The red wire goes to the +5V bus (J1 +5V on the circuit board) and the black one to the GND bus. There is no separate switch: the holder's own button turns BLIPR on and off, so set the holder's mode switch to "power on" (it then stays on until you press the button). Next, with the cell still out, tin the **+** end tab of the holder and quickly solder one leg of a 10 kΩ resistor (**R25**) straight onto it. Cover it with heat-shrink and solder a wire (orange works well) to its other leg; that way a nicked wire can't short the cell. Run that wire to the board (J1 BAT). On the board, solder R19 (100 kΩ) from that wire to a point labeled **BATT\_SENSE**, then R20 (100 kΩ) and C26 (100 nF) from BATT\_SENSE to GND, and a wire from BATT\_SENSE to the ESP32-C3's GPIO3 pin. About 10 cm of wire reaches from the holder's mounts to the board.
 7. **Leave the Teensy, ESP32, op-amps and radar unplugged.**
 
 **Checkpoint 1: power rails (multimeter on DC volts, black probe on GND)**
 
-Insert the cell, then switch on. Some shields also need their button pressed once to turn on the output, and some switch themselves off after about 30 seconds with almost no load. That's normal at this stage; press the button again to re-measure.
+Insert the cell, then press the holder's button to turn it on. If the output switches itself off after about 30 seconds with almost no load, check the holder's mode switch is on "power on", or press the button again to re-measure.
 
 | Measure at | Expect | If not |
 | --- | --- | --- |
-| +5V bus | 4.9–5.2 V | Shield output off (press its button), switch wired to the wrong tab, or cell flat |
+| +5V bus | 4.9–5.2 V | Holder output off (press its button), or cell flat |
 | +3V3A bus | 3.25–3.35 V | **Switch off now.** Reads \~5 V or 0 V: U3 is in backwards or its pins are swapped. U3 hot to the touch: short on +3V3A |
 | +3V3OP bus | Same as +3V3A, within 0.05 V | R1 missing or the wrong value |
 | VREF bus | 1.60–1.70 V | R2/R3 wrong value or not connected to GND |
 
-Also measure \*\*BATT\_SENSE\*\*: it should read half the cell voltage (1.6–2.1 V), and 0 V with the switch off. Write down the cell voltage and the BATT\_SENSE reading; the firmware uses them to calibrate the battery gauge. All good? Switch off and remove the cell before soldering anything else.
+Also measure **BATT\_SENSE**: it should read the cell voltage divided by 2.1 (about 1.4–2.0 V). It reads the same with the unit off, because the gauge is wired straight to the cell. Write down the cell voltage and the BATT\_SENSE reading; the firmware uses them to calibrate the battery gauge. All good? Turn it off and remove the cell before soldering anything else.
 
 ## Step 3: Build the I and Q amplifier channels
 
 Build the I channel completely, check it, then copy it for Q. Short leads and parts packed tight around each socket matter more here than anywhere else in the build.
 
-**Socket pins (MCP6022, top view, notch to the left):** pin 1 is bottom-left beside the notch, counting counter-clockwise: 1, 2, 3, 4 along the bottom and 5, 6, 7, 8 along the top (8 is above 1).
+**Socket pins (MCP6022, top view, notch to the left):** pin 1 is bottom-left beside the notch, counting counter-clockwise: 1, 2, 3, 4 along the bottom and 5, 6, 7, 8 along the top (8 is above 1). On the circuit board the notch is on the right, so pin 1 is the square pad at the top right.
 
 &#91;image: MCP6022 pin map\]
 
@@ -204,7 +203,7 @@ Build the I channel completely, check it, then copy it for Q. Short leads and pa
 
 **Checkpoint 2: amplifier DC levels**
 
-Plug U1 and U2 into their sockets (notch matching the socket). Leave the radar, Teensy and ESP32 out. Insert the cell and switch on.
+Plug U1 and U2 into their sockets, each chip's dot at pin 1 (the square pad on the circuit board). Leave the radar, Teensy and ESP32 out. Insert the cell and switch on.
 
 | Measure at | Expect | If not |
 | --- | --- | --- |
@@ -216,7 +215,7 @@ Plug U1 and U2 into their sockets (notch matching the socket). Leave the radar, 
 
 All good? Switch off and pull the cell. The amplifier can't be tested further until the radar and test firmware are in.
 
-## Step 4: Wire the radar, Teensy, ESP32, OLED and switch
+## Step 4: Wire the radar, Teensy, ESP32 and OLED
 
 Everything left is point-to-point wiring; the table at the end of this section is the complete list to check off.
 
@@ -228,26 +227,26 @@ Everything left is point-to-point wiring; the table at the end of this section i
 
 &#91;image: ESP32-C3 pins used, chip side up\]
 
-&#91;image: Battery gauge, sensors and ammo jack\]
+&#91;image: Battery gauge, sensor kit (SHT45 and DFRobot 10-DoF) and ammo jack\]
 
-1. **Radar pigtail.** Take a 1×5 female header. Find pin 1 on the K-LC5 (marked on the module and in the outline drawing of RFbeam's datasheet) and mark the matching end of the header. Solder five wires about 8–10 cm long to the back of the header:
+1. **Radar pigtail.** Take a 1×5 female header. Find pin 1 on the K-LC5 (marked on the module and in the outline drawing of RFbeam's datasheet) and mark the matching end of the header. Mark pin 1 on the module too, with a paint pen. This plug is the one that can kill the radar: pins 2 (power) and 4 (ground) mirror each other, so a plug turned round swaps them, and no beep test catches it. It only ever goes on pin 1 to pin 1. Solder five wires about 8–10 cm long to the back of the header:
    - pin 1 → Q (one color), pin 3 → I (another color), pin 2 → +3V3A (red), pin 5 → nothing at all (VCO stays unconnected), pin 4 → **two** black ground wires.
    - Solder C5 (100 nF) directly across header pins 2 and 4 (on the circuit board, C5 is already beside J2). Insulate with heat-shrink or a dab of hot glue.
    - Twist the I wire with one ground wire and the Q wire with the other. Twisting pairs cuts pickup of digital noise.
-2. **Land the radar wires on the board.** I → **I-IN**, Q → **Q-IN**, red → +3V3A bus, both grounds → the GND bus right next to the amplifier. Keep this bundle away from the ESP32.
-3. **ESP32-C3.** It sits chip side up. Wire its **5V** pin to +5V through D1 (1N5817 diode, striped end toward the ESP32), **GND** to GND, **GPIO20** (its RX) through a 1 kΩ resistor (R23) to Teensy **pin 35** (TX8), and **GPIO21** (its TX) through R24 (1 kΩ) to Teensy **pin 34** (RX8). TX always goes to RX. Firmware 0.2.2 uses these pins; pins 0 and 1 are no longer used.
+2. **Land the radar wires on the board.** I → **I-IN**, Q → **Q-IN**, red → +3V3A bus, both grounds → the GND bus right next to the amplifier. On the circuit board, solder the four wires straight into J2's holes rather than using a plug there: a 4-way plug turned round on J2 would put 3.3 V on the radar's I output. Keep this bundle away from the ESP32.
+3. **ESP32-C3.** It sits chip side up. Wire its **5V** pin (the one you marked in Step 1) to +5V through D1 (1N5817 diode, striped end toward the ESP32), **GND** to GND, **GPIO20** (its RX) through a 1 kΩ resistor (R23) to Teensy **pin 35** (TX8), and **GPIO21** (its TX) through R24 (1 kΩ) to Teensy **pin 34** (RX8). TX always goes to RX. Firmware 0.2.2 uses these pins; pins 0 and 1 are no longer used.
 4. **Teensy power.** Teensy **VIN** to +5V and a Teensy **GND** pin to GND.
 5. **OLED.** OLED **VCC** to the ESP32-C3's **3V3** pin, **GND** to GND, **SDA** to ESP32 **GPIO6** and **SCL** to ESP32 **GPIO7**. These modules don't all put the pins in the same order, so go by the labels printed on yours. Use wires about 15 cm long, since the OLED mounts in the lid's back corner. It sits about 5 mm above the Teensy, so solder the wires straight to the OLED's pads (or bend its header pins flat); a straight header with plug-on wires won't fit.
 
 **Checkpoint 3: everything powered**
 
-Before the radar goes on, use the beep test to confirm header pin 2 connects to +3V3A and pin 4 to GND; a reversed header can destroy the module. Then plug in the Teensy and the ESP32, and the radar header onto the module (pin 1 to pin 1). Insert the cell and switch on.
+Before the radar goes on, use the beep test to confirm header pin 2 connects to +3V3A and pin 4 to GND. That only checks the wires: it can't tell if the plug is turned round on the radar, so check by eye that the two pin-1 marks meet. Then plug in the Teensy and the ESP32, and the radar plug onto the module. Put the meter on +3V3A, keep it there, and be ready to cut power at once (pull the cell if the holder's button needs a double press). Insert the cell and switch on: if +3V3A doesn't read 3.3 V within a second, or U3 gets warm, cut power.
 
 | Check | Expect | If not |
 | --- | --- | --- |
-| Teensy orange LED | Blinking (factory program) | No VIN power: check VIN wire, or the VIN–VUSB cut went wrong |
+| Teensy orange LED | Blinking, if it still has the factory program. With BLIPR firmware it stays dark between shots: READY on the screen (not NO RADAR) shows the Teensy is running | No VIN power: check VIN wire, or the VIN–VUSB cut went wrong |
 | ESP32 LED | On | 5V/GND wiring |
-| +5V bus with everything on | 4.8 V or more | Weak cell or thin wires to the switch |
+| +5V bus with everything on | 4.8 V or more | Weak cell or thin wires from the battery holder |
 | +3V3A bus with the radar on | 3.25–3.35 V; U3 warm at most | Radar header on backwards: **switch off at once** |
 | Radar I and Q at the header (pins 3 and 1) | Roughly 0.1–0.4 V DC | The datasheet gives a typical 0.2 V offset. 0 V or 3.3 V means a wiring fault |
 | A0 and A1 | Still 1.60–1.70 V | Radar wires shorted to a bus |
@@ -258,8 +257,7 @@ Passing all three checkpoints means the hardware is ready for test firmware.
 
 | From | To | Notes |
 | --- | --- | --- |
-| Shield 5V out | SW1 row A end tab |  |
-| SW1 row A middle tab | +5V bus |  |
+| Battery holder 5V out | +5V bus (J1 +5V on the circuit board) |  |
 | Shield GND | GND bus |  |
 | +5V bus | Teensy VIN; D1 → ESP32 5V; R18 → U3 VIN (C1, C4 at U3) |  |
 | U3 VOUT | +3V3A bus, C2, C3 |  |
@@ -277,15 +275,17 @@ Passing all three checkpoints means the hardware is ready for test firmware.
 | ESP32 3V3 pin | OLED VCC | Optional |
 | ESP32 GPIO6 / GPIO7 | OLED SDA / SCL | Optional |
 | All GND pins | GND bus | Teensy, ESP32, OLED, U1/U2 pin 4 |
-| Battery holder + tab | R25 (10 kΩ, right at the tab) → SW1 row B end tab; row B middle → R19 → BATT\_SENSE → ESP32 GPIO3 | R20 and C26 from BATT\_SENSE to GND |
+| Battery holder + tab | R25 (10 kΩ, right at the tab) → J1 BAT → R19 → BATT\_SENSE → ESP32 GPIO3 | R20 and C26 from BATT\_SENSE to GND |
 
 ## Step 5: Print and assemble the case
 
-The v0.1 case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and prints in four parts with no supports.
+The v0.9 case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and prints in four parts with no supports.
 
-&#91;image: The base from the front (radar window), from the rear (ports), and from above\]
+&#91;image: The base from the front (radar window), from the rear, and from above\]
 
-**What's where.** The radar sits in a pocket behind the front window, facing forward, with a thin replaceable cover in front of it. The battery shield goes in the long bay on the left, with its charge port at the rear wall. The main board screws onto four 12 mm posts on the right. The Teensy's USB port comes out of the right wall, and the power switch and charge port are on the rear wall. A 1/4-20 insert in the floor takes a tripod screw.
+&#91;image: Base v0.8: the battery holder's four pads and the tripod post; the left wall's USB-C hole and 14 × 10 mm button slot\]
+
+**What's where.** The radar sits in a pocket behind the front window, facing forward, held snug by foam tape, with a thin replaceable cover in front of it. The battery holder screws to four 8 mm round pads on the floor on the left (no walls around it; 2.9 mm screw holes); its USB-C charge port and its power button line up with two openings in the side wall (the button's is a 14 × 10 mm slot). The main board screws onto four 12 mm posts on the right, and the Teensy's USB port comes out of the right wall. A 1/4-20 insert in the floor takes a tripod screw. Case v0.9: the base is Sean's own CAD design, with the battery pads made 8 mm across (10 mm hit parts under the holder board) and their holes 2.9 mm (2.8 was too tight).
 
 | File | Print orientation | Settings (ASA) |
 | --- | --- | --- |
@@ -295,30 +295,32 @@ The v0.1 case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and prints in 
 
 ASA warps, so use an enclosure or a draft shield, a brim on the base, and a bed around 100 °C.
 
-&#91;image: Lid with OLED window and its underside pocket\]
+&#91;image: Lid with OLED window, and its underside: screen pocket with four M2 screw pads\]
+
+&#91;image: lid\_sensors underside: screen screw pads and the radar hold-down rib\]
 
 **Assembly order**
 
-1. **Inserts.** Press M3 heat-set inserts into the four corner columns (holes 4.1 mm, 6 mm deep) and the four board posts (4.1 mm, 5 mm deep). Press the 1/4-20 insert into the hole under the floor (8.4 mm, 13.4 mm deep). Push them in straight and slightly below flush, and let each cool before moving on.
-2. **Test-fit the radar.** Drop the module into its pocket from above, antenna face forward against the window frame, pins pointing back. It sits on a 3 mm ledge. Don't glue it yet; we may rotate it 90° after the first tests (the datasheet is unclear about which axis has the 80° beam, and the pocket is square for that reason).
-3. **Battery shield.** Slide it into the left bay with its charge port lined up with the rear-wall slot. Hold it with double-sided foam tape for now. Standoffs that match its mounting holes will be added once the shield arrives and is measured.
-4. **Switch.** Push the lever through the small rear slot from inside and hot-glue the switch body to the wall.
+1. **Inserts.** Press M3 heat-set inserts into the four corner columns and the four board posts (all holes 4.1 mm across and 7.5 mm deep, so inserts up to 7 mm long fit). Press the 1/4-20 insert into the hole under the floor (7.15 mm across, 9 mm deep). Push them in straight and slightly below flush, and let each cool before moving on.
+2. **Fit the radar.** Put 1 mm × 5 mm foam tape down the module's two sides and across its back, then press it into its pocket from above, antenna face forward against the window frame, pins pointing back. It sits on a 3 mm ledge and the foam holds it snug against the window. Put a 20 mm strip on its top edge too: a rib under the lid presses down on it. No glue, so it can be rotated 90° after the first tests if needed (the datasheet is unclear about which axis has the 80° beam).
+3. **Battery holder.** Set its mode switch to "power on" first. Screw it to the four mounts in the left bay with M3 × 6 mm self-tapping screws, its USB-C port and button lined up with the holes in the side wall. Drive the screws gently: they cut their own thread in the 2.8 mm holes.
+4. **Power button.** Nothing to fit: press the holder's own button through the hole in the side wall to turn BLIPR on and off.
 5. **Main board.** Screw the board onto the posts with four M3 × 6 mm screws, the Teensy's USB facing the right-wall opening.
 6. **Radar connection.** Plug the radar pigtail onto the module (pin 1 to pin 1). Dress the wires down along the pocket and away from the ESP32.
 7. **Front cover.** Slide it down into the slot behind the front wall, recessed side toward the radar and the wider frame edge at the top.
-8. **OLED.** Seat the module in the pocket under the lid's window and hold it with a few dabs of hot glue on the board edges, not on the glass.
-9. **Lid.** Four M3 × 8 mm screws into the corner inserts. The lid also holds the front cover down.
+8. **OLED.** Seat the module in the pocket under the lid's window and screw it to the four corner pads with M2 × 4 mm screws. Snug only: the pilot holes are plastic.
+9. **Lid.** Four M3 × 8 mm screws into the corner inserts. The lid also holds the front cover down, and the rib under it presses on the foam strip on top of the radar.
 
 &#91;image: Front cover as printed: the recessed area is the 0.9 mm window\]
 
-**Changing the case.** Every size lives at the top of `blipr_case.py`. Edit a number and run `python3 blipr_case.py`; it rebuilds all the STEP and STL files in a few seconds with plain Python. No CAD software is needed, and no extra packages. The STEP files open in Fusion, FreeCAD or Onshape as solids. Curved surfaces like the screw holes come through as many small flat faces, which is fine for measuring and simple edits.
+**Changing the case.** Every size lives at the top of `blipr_case.py`. Edit a number and run `python3 blipr_case.py`; it rebuilds all the STEP and STL files. From v0.8 the base starts from Sean's own CAD model (in user\_edits/) with a few edits made on top, which needs three Python packages: `pip install trimesh manifold3d cadquery-ocp`. The STEP files open in Fusion, FreeCAD or Onshape as solids. Curved surfaces like the screw holes come through as many small flat faces, which is fine for measuring and simple edits.
 
 ## When your parts arrive: measure, then adjust
 
 The case is built from datasheet and typical sizes, so one round of measuring before printing the final version will save reprints. Send me these numbers (a photo of each part next to calipers also helps), and I'll update the script and send new files.
 
-- [ ] **Battery shield with the cell in:** length, width, height; where the charge port sits (distance from the nearest edge, height above the bottom of the board); mounting hole positions, if any.
-- [ ] **Slide switch:** body length, width, height; lever width and travel; mounting hole spacing, if any.
+- [ ] **Battery holder:** does it sit on its four mounts with the USB-C port and button lined up with the side holes?
+- [ ] **Radar with its foam on:** does it press in snug without forcing, and does the lid close without lifting? Too tight: trim the foam. Loose: add a layer.
 - [ ] **OLED module:** board size; where the glass sits on the board (distance from each edge); which edge the pins are on.
 - [ ] **Radar module:** do the pins come out of the back face or an edge? Where is pin 1? Total thickness including pins.
 - [ ] **Perfboard:** actual size and mounting hole centers.
@@ -332,10 +334,10 @@ A quick first print of just the lid or the front cover is a cheap way to check y
 
 | Symptom | Likely cause |
 | --- | --- |
-| Nothing turns on | Cell flat or reversed; shield needs its button pressed; SW1 wired to the wrong tabs |
+| Nothing turns on | Cell flat or reversed; holder output off (press its button) |
 | Shield output switches off by itself | Too little load before the modules are fitted; normal until the Teensy and radar are connected |
 | Teensy doesn't run on battery | VIN not wired to +5V, or VIN–VUSB cut damaged a nearby trace |
-| Teensy not seen by the computer when plugged in | Expected with the switch off: it now only runs on battery power, so switch on to program it |
+| Teensy not seen by the computer when plugged in | Expected when BLIPR is off: it now only runs on battery power, so press the holder's button to turn it on before programming |
 | An op-amp output stuck at 0 V or 3.3 V | Missing or bridged feedback part; op-amp in backwards; the gain-leg capacitor shorted |
 | U3 hot | Short on +3V3A, or the radar header reversed |
 | Radar I/Q at 0 V | Radar not powered (check pin 2 at the header) or pin 1 orientation wrong |

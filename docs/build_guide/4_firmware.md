@@ -1,6 +1,6 @@
 # Firmware: setup and bench tests
 
-Today's goal is to load both programs, check that the Teensy measures a fake bullet correctly, and see shots arrive on your phone over Bluetooth. You don't need the radar, amplifier or battery for any of it. Everything is in **RB\_BLIPR\_firmware\_v0.2.2.zip**. Version 0.2.2 is needed for circuit board v1.1: the Teensy now talks to the ESP32 on pins 34 and 35 (Serial8), not 0 and 1. It also fixes the compass calibration and sets the radar frequency default to 24.150 GHz.
+Today's goal is to load both programs, check that the Teensy measures a fake bullet correctly, and see shots arrive on your phone over Bluetooth. You don't need the radar, amplifier or battery for any of it. Do it before you cut the Teensy's VIN–VUSB trace (build guide Step 1): these tests run the Teensy from USB alone, and once the trace is cut it only runs when BLIPR is switched on. Everything is in **RB\_BLIPR\_firmware\_v0.2.3.zip**. Version 0.2.2 or later is needed for circuit board v1.1 (0.2.3 adds the DFRobot 10-DoF sensor board; its Teensy part is still 0.2.2): the Teensy now talks to the ESP32 on pins 34 and 35 (Serial8), not 0 and 1. It also fixes the compass calibration and sets the radar frequency default to 24.150 GHz.
 
 ## What you need
 
@@ -18,7 +18,7 @@ Today's goal is to load both programs, check that the Teensy measures a fake bul
    - `https://www.pjrc.com/teensy/package_teensy_index.json`
    - `https://espressif.github.io/arduino-esp32/package_esp32_index.json`
 3. Boards Manager (left side bar): install **Teensy** (by Paul Stoffregen) and **esp32** (by Espressif, version 3.3.x).
-4. Library Manager: install **Adafruit SSD1306**. When it asks to install Adafruit GFX and Adafruit BusIO too, choose *Install all*. Then install Adafruit SHT4x, Adafruit BMP3XX, Adafruit LSM6DS, Adafruit LIS3MDL, OneWire and DallasTemperature the same way. The firmware needs them to compile even without the sensor kit; it skips any sensor that isn't plugged in.
+4. Library Manager: install **Adafruit SSD1306**. When it asks to install Adafruit GFX and Adafruit BusIO too, choose *Install all*. Then install Adafruit SHT4x, Adafruit BMP3XX, Adafruit LSM6DS, Adafruit LIS3MDL, OneWire and DallasTemperature the same way, and DFRobot\_Multi\_DOF\_IMU and DFRobot\_RTU for the DFRobot 10-DoF sensor board (if Library Manager doesn't list them, download each as a ZIP from github.com/DFRobot and add it with Sketch › Include Library › Add .ZIP Library). The firmware needs them to compile even without the sensor kit; it skips any sensor that isn't plugged in.
 
 ## 2. Load the Teensy
 
@@ -60,7 +60,7 @@ With nothing on A0/A1 the inputs pick up stray noise, so touching the board can 
 1. Open `BliprBLE/BliprBLE.ino` in a **second** IDE window, so each board keeps its own Serial Monitor.
 2. Tools menu: Board **Nologo ESP32C3 Super Mini** (or ESP32C3 Dev Module), **USB CDC On Boot: Enabled**, and its Port.
 3. Click Upload. If it can't connect: hold the **BOOT** button, tap **RESET**, let go of BOOT, and upload again. Tap RESET once it's done.
-4. Serial Monitor at **115200**: you should see *BLIPR ESP32-C3 firmware 0.2.2 ready*.
+4. Serial Monitor at **115200**: you should see *BLIPR ESP32-C3 firmware 0.2.3 ready*.
 
 ## 5. Connect the two boards
 
@@ -110,7 +110,7 @@ The bench tests above still work while plugged in, because `sim` and `arm` switc
 
 ## 10. Later updates to the Bluetooth board
 
-Once firmware 0.2.2 is on the ESP32 (with the USB-C cable, step 4), Range Book can update it over Bluetooth. In the chronograph settings, scroll to **Firmware** and tap **Update the Bluetooth board**. It takes about 2 minutes: keep the phone close with its screen on, and don't shoot until it's done. BLIPR's screen shows UPDATING and a progress bar, then restarts and reconnects by itself.
+Once firmware 0.2.2 or later is on the ESP32 (with the USB-C cable, step 4), Range Book can update it over Bluetooth. In the chronograph settings, scroll to **Firmware** and tap **Update the Bluetooth board**. It takes about 2 minutes: keep the phone close with its screen on, and don't shoot until it's done. BLIPR's screen shows UPDATING and a progress bar, then restarts and reconnects by itself.
 
 If the connection drops partway, nothing changes: BLIPR stays on its old firmware, and you try again. It only switches once the whole file has arrived and checks out, and if the new firmware doesn't start properly it goes back to the old one. The radar board (Teensy) is still updated with the USB cable.
 

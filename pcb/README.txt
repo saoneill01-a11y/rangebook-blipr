@@ -39,21 +39,34 @@ ORDERING ON PCBWAY (pcbway.com > PCB Instant Quote > Quick-order PCB > Add Gerbe
   anything looks wrong.
 
 ASSEMBLY ORDER (lowest parts first, so the board sits flat while you solder)
-  1. Cut the VIN-VUSB trace on the underside of the Teensy (see the build guide) before it goes in.
+  1. Cut the VIN-VUSB trace on the underside of the Teensy (see the build guide) before it goes in,
+     but only after the Firmware tab's bench tests: those run the Teensy from USB alone.
   2. Resistors (match the colour bands; picture 10 in the wiring pictures), then D1: its stripe goes
      to the right, on the SQUARE pad (the drawn band shows the same end). R23 and R24 are 1 k
      (brown, black, red).
-  3. Ceramic capacitors (no polarity), then the two DIP-8 sockets (notch matches the drawing).
+  3. Ceramic capacitors (no polarity), then the two DIP-8 sockets (notch matches the drawing: it
+     points RIGHT on this board, the opposite of the perfboard steps).
   4. U3 (MCP1700): flat face toward the board's front edge, legs GND - IN - OUT left to right.
      Its legs are closer together than the holes: spread the two outer legs a little.
   5. Electrolytic capacitors: the + leg goes in the SQUARE pad (the stripe on the can is the - side).
-  6. Headers J1 to J5 (or solder wires straight into them), then the female headers for the
+  6. Headers J1 to J5 (or solder wires straight into them; do that for J2, the radar, so nothing
+     there can be plugged in backwards), then the female headers for the
      Teensy (2 x 24) and ESP32 (2 x 8). Plug the modules into their headers while you solder the
      headers, so they come out straight. The ESP32 goes in chip side UP (USB socket and buttons
      on top), USB toward the back, its antenna end at the board's front edge.
-  7. Power test BEFORE plugging in the op-amps and modules (the build guide's Step 2 checkpoint):
+  7. Battery holder to J1 (no switch: the holder's own button is on/off). Before soldering its
+     wires, meter its 5V and GND pads with the cell in: +5 V, not -5 V. Nothing on the board
+     protects against those two swapped.
+  8. Power test BEFORE plugging in the op-amps and modules (the build guide's Step 2 checkpoint):
      +5 V at J1, 3.3 V at U3's OUT leg, about 1.65 V at VREF (the + leg of C10).
-  8. Op-amps into the sockets, Teensy and ESP32 in, then wire the radar, OLED and battery holder (no switch: the holder's own button is on/off).
+  9. Op-amps into the sockets (each chip's dot beside the SQUARE pad), Teensy and ESP32 in, then
+     wire the radar and OLED.
+
+THE RADAR PLUG
+  The radar's power (pin 2) and ground (pin 4) mirror each other around pin 3, so a 5-way plug
+  turned round on the radar swaps them, and no beep test can tell. Paint-mark pin 1 on the module
+  and on the plug, and watch +3V3A on the meter the first time it's powered: anything but 3.3 V,
+  or U3 warming, means cut power at once.
 
 CHECK BEFORE SOLDERING THE ESP32
   The SuperMini's pin names are printed on its UNDERSIDE, so from above they read mirrored.
@@ -63,6 +76,8 @@ CHECK BEFORE SOLDERING THE ESP32
     2. Turn it over to confirm: on the underside, with the USB still pointing away from you, the
        pin marked 5V is now on the LEFT, nearest the USB.
     3. On the board, the hole marked 5V is at the back of the RIGHT-hand row (beside D1's square pad).
+    4. Electrical check that doesn't depend on the labels: power the module from USB alone and
+       find the pin that reads 5 V to G with the meter. That is the pin for the 5V hole.
   With the module seated (not powered), beep from the module's 5V pin to D1's square pad and from
   its G pin to J1 pin 2. Both must beep. If either doesn't, stop and ask.
 
@@ -70,7 +85,9 @@ WHAT WAS CHECKED
   - Netlist matches schematic v0.5 (including the sensor kit parts R21, R22, J4, J5).
   - Design-rule check on tracks and pads: 0.25 mm clearance, 0 problems; every net fully connected.
     The ground pour keeps 0.35 mm from other copper and its thermal spokes at least 0.3 mm.
-    (PCBWay's minimum is 0.1 mm.) The one via is 0.3 mm drill / 0.6 mm pad.
+    (PCBWay's minimum is 0.1 mm.) The five vias are 0.3 mm drill / 0.6 mm pad.
+  - Oct 29, 2026: a second, independent check rebuilt every connection from the Gerber files
+    themselves and checked each part's pin order and polarity against its datasheet: all match.
   - Ground pour on the bottom with thermal reliefs; no pour, and no tracks between the pin rows,
     under the ESP32's antenna end.
   - The ESP32 pin order was checked against top and bottom photos of the real module.
