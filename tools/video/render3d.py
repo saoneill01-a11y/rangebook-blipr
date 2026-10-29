@@ -40,6 +40,7 @@ def job(args):
     Image.fromarray((np.clip(img, 0, 1) * 255).astype("uint8"), "RGBA").save(fn)
 
 if __name__ == "__main__":
+    os.makedirs(OUT, exist_ok=True)
     jobs = [("baseonly", 0)] + [("turn", i) for i in range(120)] + [("explode", i) for i in range(72)] + [("build", i) for i in range(210)]
     with Pool(2) as p:
         for n, _ in enumerate(p.imap_unordered(job, jobs)):

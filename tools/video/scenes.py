@@ -158,7 +158,7 @@ add("kit_small", "kit", "Parts: the small pieces", [
 ], visual=items_view([
     (PT.resistor, {"value": "4.7k"}, "resistor", "Resistors, 1/4 W", "24 on the board, +1 (R25) at the battery"),
     (PT.ceramic, {"code": "104"}, "ceramic", "Ceramic capacitors", "17: 1 µF, 100 nF, 10 nF, 1 nF"),
-    (PT.electrolytic_side, {}, "electrolytic_side", "Electrolytic capacitors", "3 × 10 µF, 1 × 100 µF"),
+    (PT.electrolytic_side, {}, "electrolytic_side", "Electrolytic capacitors", "3 × 10 µF, 1 × 100 µF (6.3 mm wide)"),
     (PT.opamp_chip, {}, "esp32", "MCP6022-E/P × 2", "plus 2 DIP-8 sockets"),
     (PT.to92, {}, "to92", "MCP1700-3302E", "3.3 V version, TO-92"),
     (PT.diode, {}, "diode", "1N5817 diode", "stripe = cathode"),
@@ -244,10 +244,10 @@ add("prep_teensy", "prep", "Cut the Teensy's VIN–VUSB trace", [
     "Turn it over. Near the USB connector are two pads, VIN and VUSB, joined by a thin trace.",
     "Cut that trace with a hobby knife. A few light strokes, not one hard one.",
     "Then check with the beep test. No beep between VIN and VUSB means it's cut.",
-    "This keeps the battery and your computer's USB from fighting. From now on, the Teensy only runs when BLIPR is switched on, even when you program it.",
+    "This keeps the battery and your computer's USB from fighting. From now on, the Teensy only runs when BLIPR is switched on, even when you program it. If you'd like to run the Firmware tab's bench tests on USB first, do them before you cut.",
 ], visual=drawing(DG.teensy_cut),
     notes=[(1, "Pads are on the underside, by the USB end"), (2, "Light strokes; don't nick nearby traces"), (3, "*No beep between VIN and VUSB = done"),
-           (4, "To program it later, turn BLIPR on")], pause=6, do="Pause and cut the trace")
+           (4, "To program it later, turn BLIPR on"), (4, "Bench tests on USB alone? Do them before the cut")], pause=6, do="Pause and cut the trace")
 
 # ================================================================== 5. CIRCUIT BOARD
 add("board_tour", "board", "Meet the board", [
@@ -357,13 +357,13 @@ add("board_cer", "board", "Ceramic capacitors", [
 
 add("board_sockets", "board", "The two chip sockets", [
     "Next, the two eight-pin sockets for the amplifier chips. Solder the sockets now. The chips go in later.",
-    "Each socket has a notch at one end. Line it up with the notch drawn on the board.",
+    "Each socket has a notch at one end. Line it up with the notch drawn on the board. On this board both notches point to the right.",
     "Solder two opposite corner pins first, check the socket sits flat, then do the rest.",
 ], visual=board_view(B, [(0, (46, 43, 60)), (1, (46, 43, 40))], place=[(0, -100, ALL_R + ["D1"] + ALL_CER, 0)],
                      sockets=[(0, 1.0, "U1"), (0, 1.4, "U2")],
                      overlays=[{"at": 1, "kind": "ring", "xy": (41.0, 43), "r": 26}, {"at": 1, "kind": "ring", "xy": (61.0, 43), "r": 26, "delay": 0.3},
                                {"at": 1, "kind": "tag", "xy": (36, 50.5), "text": "notch matches the drawing", "anchor": "c", "delay": 0.6}]),
-    notes=[(0, "Sockets only; chips go in after the power test"), (1, "!Notch matches the board drawing"), (2, "Two corners first, check flat, then the rest")],
+    notes=[(0, "Sockets only; chips go in after the power test"), (1, "!Notch matches the board drawing"), (1, "Both notches point RIGHT"), (2, "Two corners first, check flat, then the rest")],
     pause=5, do="Pause and solder the sockets")
 
 add("board_u3", "board", "The regulator, U3", [
@@ -413,14 +413,14 @@ add("board_fheaders", "board", "Sockets for the Teensy and ESP32", [
 add("board_esp", "board", "The ESP32 socket: check the direction", [
     "The ESP32 socket is the one place it's easy to go wrong, so slow down here.",
     "The ESP32 sits chip side up, with its USB socket toward the back, and its antenna at the board's front edge.",
-    "Its pin names are printed underneath, so from above they read the other way round. Don't match them by eye.",
-    "Seen from above, its five volt pin is the one nearest the USB on the right-hand edge.",
+    "Its pin names are printed underneath, so from above they read the other way round. Don't match them by eye. Its pins must stick out of that underside.",
+    "Seen from above, its five volt pin is the one nearest the USB on the right-hand edge. To be sure, power the ESP32 from USB on its own, and find the pin that reads five volts to G with your meter.",
     "Plug the ESP32 into its headers, seat it on the board without power, and do the beep test: its five volt pin to D1's square pad, and its G pin to J1 pin two.",
     "Both must beep. If either doesn't, stop, and check the direction before you solder. When it's soldered, lift the ESP32 back out for now.",
 ], visual=switch([(0, board_view(B, [(0, (17, 14, 44))], place=[(0, -100, ALL_R + ["D1"] + ALL_CER + ["U3"] + ELEC + ["J4"], 0)], sockets=DONE_SOCK,
                                    fheaders=[(1, 0.8, "U4"), (0, -100, "U5")], modules=[(1, 0.8, "U4")])),
                   (2, drawing(lambda ctx, c, x, y, w, h: DG.esp_orient(ctx, c, x, y, w, h)))]),
-    notes=[(1, "*Chip side UP, USB to the BACK"), (2, "!Names are printed underneath: read mirrored"), (3, "5V = right row, nearest the USB"),
+    notes=[(1, "*Chip side UP, USB to the BACK"), (2, "!Names are printed underneath: read mirrored"), (3, "5V = right row, nearest the USB"), (3, "*Confirm: on USB, 5V pin reads 5 V to G"),
            (4, "Beep: 5V pin → D1 square pad"), (4, "Beep: G pin → J1 pin 2"), (5, "Then lift the ESP32 out again")], pause=6, do="Pause: beep test, then solder")
 
 add("board_trim", "board", "Trim, clean and inspect", [
@@ -436,13 +436,13 @@ add("board_trim", "board", "Trim, clean and inspect", [
 
 # ================================================================== 6. POWER + CHECKS
 add("power_holder", "power", "Wire the battery holder", [
-    "Time for power. The battery holder has its own button, and that button is BLIPR's on and off switch.",
+    "Time for power. The battery holder has its own button, and that button is BLIPR's on and off switch. Before you solder anything, put the cell in, turn the holder on, and meter its pads. The red probe on the five volt pad must read plus five, not minus five. Nothing on the board protects against those two swapped. Then take the cell out.",
     "With no cell in the holder, solder a red wire to its five volt pad and a black wire to its ground pad. They go to J1 plus five volts and J1 ground.",
     "Now the battery gauge. Tin the holder's plus end tab, and quickly solder one leg of a ten k resistor, R25, straight onto it. Cover it with heat-shrink.",
     "Solder a wire to R25's other leg. Brown in our pictures. It goes to J1 BAT. With the resistor right at the tab, a nicked wire can't short the cell.",
     "Set the holder's mode switch to power on. About ten centimetres of wire reaches from the holder to the board.",
 ], visual=drawing(lambda ctx, c, x, y, w, h: DG.holder_wiring(ctx, c, x, y, w, h, steps=(1, 2, 3, 4))),
-    notes=[(0, "!No cell in the holder while soldering"), (1, "Red: 5V pad → J1 +5V"), (1, "Black: GND pad → J1 GND"),
+    notes=[(0, "!First: meter its pads, +5 V not −5 V"), (0, "Then cell out while soldering"), (1, "Red: 5V pad → J1 +5V"), (1, "Black: GND pad → J1 GND"),
            (2, "R25 (10 kΩ) soldered on the + tab, heat-shrink"), (3, "R25 → J1 BAT"), (4, "Mode switch: power on")],
     pause=6, do="Pause and wire the holder")
 
@@ -454,14 +454,14 @@ add("power_check1", "power", "Checkpoint 1: power rails", [
     "At U3's output leg, the right-hand leg, expect three point two five to three point three five.",
     "If it reads about five volts, or zero, turn it off now. U3 is in backwards, or it's the wrong version.",
     "At the plus leg of C10, expect about one point six five volts. That's the reference the amplifier works around.",
-    "And at the ESP32 socket hole marked three, expect about half the cell voltage. That's the battery gauge.",
+    "And at the ESP32 socket hole marked three, expect the cell voltage divided by two point one, about one point four to two volts. That's the battery gauge.",
     "All good? Turn it off and take the cell out.",
 ], visual=split(board_view(B, [(0, FULLS), (2, (24, 40, 92)), (3, (24, 36, 92)), (4, (40, 14, 60)), (6, (34, 16, 60)), (7, (20, 18, 60)), (8, FULLS)],
                            place=[(0, -100, ALL_R + ["D1"] + ALL_CER + ["U3"] + ELEC + ["J4"], 0)], sockets=DONE_SOCK, fheaders=DONE_FH,
                            extra=lambda ctx, c, b: _meter(ctx, c, b)),
                 drawing(lambda ctx, c, x, y, w, h: DG.readings(ctx, c, x + 10, y + 10, w - 20, h - 20, [
                     (3, "J1 +5V", "4.9–5.2 V"), (4, "U3 output leg", "3.25–3.35 V"), (6, "C10 + leg (VREF)", "1.60–1.70 V"),
-                    (7, "ESP32 hole “3” (gauge)", "½ cell, 1.6–2.1 V")]), PAPER), weights=[1.35, 1]),
+                    (7, "ESP32 hole “3” (gauge)", "cell ÷ 2.1: 1.4–2.0 V")]), PAPER), weights=[1.35, 1]),
     full=True, pause=6, do="Pause and measure")
 
 PROBE_STEPS = [(2, None, "0.00"), (3, ("J1", "1"), "5.04"), (4, ("U3", "3"), "3.30"), (6, ("C10", "1"), "1.65"), (7, ("U4", "A4"), "1.95")]
@@ -486,7 +486,7 @@ def _meter(ctx, c, b):
 
 add("power_opamps", "power", "Checkpoint 2: the amplifier chips", [
     "Now the two amplifier chips. Each has a notch or a dot at one end, marking pin one.",
-    "Line the notch up with the socket's notch, and press each chip in gently. Check no pins folded under.",
+    "Line the notch up with the socket's notch, so each chip's dot sits beside the square pad, and press it in gently. Check no pins folded under.",
     "Put the cell back in and turn it on. Measure on each chip, with the black probe on ground.",
     "Pin eight, three point three volts. Pins three and five, about one point six five. And the outputs, pins one and seven, also about one point six five.",
     "After a minute, touch each chip. They should not be warm. A warm chip is in backwards: turn off and take it out.",
@@ -496,7 +496,7 @@ add("power_opamps", "power", "Checkpoint 2: the amplifier chips", [
                                  chips=[(1, 0.6, "U1"), (1, 1.4, "U2")],
                                  overlays=[{"at": 1, "kind": "ring", "xy": (41.0, 43), "r": 24, "delay": 0.8}, {"at": 1, "kind": "ring", "xy": (61.0, 43), "r": 24, "delay": 1.6}])),
                   (2, drawing(lambda ctx, c, x, y, w, h: DG.opamp_volts(ctx, c, x, y, w, h, line0=2)))]),
-    notes=[(1, "*Notch to notch"), (3, "Pin 8: 3.25–3.35 V"), (3, "Pins 3, 5: 1.60–1.70 V"), (3, "Pins 1, 7: 1.60–1.70 V"), (4, "!Warm chip = backwards. Off at once.")],
+    notes=[(1, "*Notch to notch: dot by the square pad"), (3, "Pin 8: 3.25–3.35 V"), (3, "Pins 3, 5: 1.60–1.70 V"), (3, "Pins 1, 7: 1.60–1.70 V"), (4, "!Warm chip = backwards. Off at once.")],
     pause=6, do="Pause and check both chips")
 
 # ================================================================== 7. WIRING
@@ -532,25 +532,27 @@ def _hide_jack(ctx, P):
 
 
 add("wire_radar", "wiring", "The radar pigtail", [
-    "The radar plugs onto a short pigtail. Take a one-by-five female header and find pin one on the radar. It's marked on the module. Mark the same end of the header.",
+    "The radar plugs onto a short pigtail. Take a one-by-five female header and find pin one on the radar. It's marked on the module. Mark the same end of the header, and put a paint mark by pin one on the module too.",
     "Solder five wires, about eight to ten centimetres long, to the back of the header. Pin one is Q. Blue.",
     "Pin two is VCC, three point three volts. Orange.",
     "Pin three is I. Green.",
     "Pin four is ground. Use two black wires on this pin.",
     "Pin five gets no wire at all.",
     "Twist the I wire with one ground wire, and the Q wire with the other. That keeps out noise.",
-    "On the board, the wires go straight into J2: Q, VCC, I, and both grounds together into the GND hole.",
+    "On the board, solder the wires straight into J2, with no plug there: Q, VCC, I, and both grounds together into the GND hole.",
 ], visual=drawing(lambda ctx, c, x, y, w, h: DG.pigtail(ctx, c, x, y, w, h, line0=0)),
-    notes=[(0, "Pin 1 is marked on the radar"), (1, "1 → Q (blue)"), (2, "2 → VCC 3.3 V (orange)"), (3, "3 → I (green)"), (4, "4 → GND (two black)"),
-           (5, "!5 → nothing"), (6, "Twist I with a GND, Q with the other"), (7, "Both grounds share J2's GND hole")],
+    notes=[(0, "Mark pin 1 on the radar AND the header"), (1, "1 → Q (blue)"), (2, "2 → VCC 3.3 V (orange)"), (3, "3 → I (green)"), (4, "4 → GND (two black)"),
+           (5, "!5 → nothing"), (6, "Twist I with a GND, Q with the other"), (7, "Solder into J2: no plug there"), (7, "Both grounds share J2's GND hole")],
     pause=6, do="Pause and make the pigtail")
 
 add("wire_radar_check", "wiring", "Before the radar goes on", [
-    "Before the radar ever gets power, check the pigtail with the beep test. A reversed header can destroy the radar.",
-    "Header pin two must beep to U3's output leg. Header pin four must beep to ground.",
-    "Then, touch something grounded, and plug the header onto the radar's pins, pin one to pin one.",
+    "Before the radar ever gets power, check the pigtail with the beep test.",
+    "Header pin two must beep to U3's output leg. Header pin four must beep to ground. That proves the wires, but not which way round the plug goes on.",
+    "Then, touch something grounded, and plug the header onto the radar's pins, pin one to pin one, with the two marks together.",
+    "This is the one plug that can destroy the radar. Its power and ground pins mirror each other, so a plug turned round swaps them, and no beep test can tell. Always check that the two pin one marks meet.",
 ], visual=switch([(0, image_view(PIC + "03_radar.png", cams=[(0, (0, 100, 1472, 783))])), (1, drawing(DG.pigtail_check))]),
-    notes=[(1, "!Pin 2 → U3 output: beep"), (1, "!Pin 4 → GND: beep"), (2, "Pin 1 to pin 1")], pause=5, do="Pause and beep-test the pigtail")
+    notes=[(1, "Pin 2 → U3 output: beep"), (1, "Pin 4 → GND: beep"), (2, "*Pin 1 to pin 1: marks together"),
+           (3, "!Plug turned round = power and ground swapped"), (3, "No beep test catches it: check the marks")], pause=5, do="Pause and beep-test the pigtail")
 
 add("wire_oled", "wiring", "The screen", [
     "Now the screen. Four wires from J3 to the screen's pads.",
@@ -565,9 +567,9 @@ add("wire_oled", "wiring", "The screen", [
 add("wire_check3", "wiring", "Checkpoint 3: everything powered", [
     "Checkpoint three. Plug the Teensy and the ESP32 into their sockets, and the radar onto its pigtail.",
     "Put the microSD card in the Teensy's slot.",
-    "Insert the cell and turn it on. The Teensy's orange light should blink, and the ESP32's light should come on.",
-    "Check the three point three volt supply again with the radar on. Still three point two five to three point three five, and U3 no more than warm.",
-    "If it drops, or U3 gets hot, turn off at once. The radar header is on backwards.",
+    "Put your meter on U3's output leg first, and be ready to cut power. Then insert the cell and turn it on. The Teensy's orange light should blink, and the ESP32's light should come on.",
+    "With the radar on, the three point three volt supply should still read three point two five to three point three five, and U3 should be no more than warm.",
+    "If it doesn't, or U3 gets hot, cut power at once. Pull the cell if the button is slow. The radar plug is on backwards.",
     "Passing all three checkpoints means the hardware is ready for its firmware.",
 ], visual=split(board_view(B, [(0, FULLS)], place=[(0, -100, ALL_R + ["D1"] + ALL_CER + ["U3"] + ELEC + ["J4"], 0)], sockets=DONE_SOCK, fheaders=DONE_FH,
                            chips=[(0, -100, "U1"), (0, -100, "U2")], modules=[(0, 0.6, "U5"), (0, 1.4, "U4")],
@@ -711,7 +713,7 @@ add("case_align", "case", "Radar alignment matters", [
 add("case_board", "case", "Mount the main board", [
     "Lower the main board onto its four posts, with the Teensy's USB facing the opening in the right-hand wall.",
     "Screw it down with four M3 by six screws. The back-right screw sits close to the Teensy's header, so use a pan head no wider than five and a half millimetres there.",
-    "Plug the radar pigtail onto the radar, pin one to pin one, and run the wires down along the pocket, away from the ESP32.",
+    "Plug the radar pigtail onto the radar, pin one to pin one, with the two marks together, and run the wires down along the pocket, away from the ESP32.",
 ], visual=seq_view("build", [(0, 0.2, 60, 89, 1.4)], overlays=[
     {"at": 0, "kind": "tag", "xy": (840, 420), "text": "Teensy USB → right-wall hole", "delay": 1.6}, {"at": 0, "kind": "arrow", "from": (950, 440), "to": (968, 555), "delay": 1.9},
     {"at": 2, "kind": "ring", "xy": (479, 600), "r": 40}]),
