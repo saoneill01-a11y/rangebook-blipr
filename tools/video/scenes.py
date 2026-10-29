@@ -244,10 +244,11 @@ add("prep_teensy", "prep", "Cut the Teensy's VIN–VUSB trace", [
     "Turn it over. Near the USB connector are two pads, VIN and VUSB, joined by a thin trace.",
     "Cut that trace with a hobby knife. A few light strokes, not one hard one.",
     "Then check with the beep test. No beep between VIN and VUSB means it's cut.",
-    "This keeps the battery and your computer's USB from fighting. From now on, the Teensy only runs when BLIPR is switched on, even when you program it. If you'd like to run the Firmware tab's bench tests on USB first, do them before you cut.",
+    "This keeps the battery and your computer's USB from fighting. From now on, the Teensy only runs when BLIPR is switched on, even when you program it.",
+    "If you'd like to try the Firmware tab's bench tests on USB first, do them before you cut.",
 ], visual=drawing(DG.teensy_cut),
     notes=[(1, "Pads are on the underside, by the USB end"), (2, "Light strokes; don't nick nearby traces"), (3, "*No beep between VIN and VUSB = done"),
-           (4, "To program it later, turn BLIPR on"), (4, "Bench tests on USB alone? Do them before the cut")], pause=6, do="Pause and cut the trace")
+           (4, "To program it later, turn BLIPR on"), (5, "Bench tests on USB alone? Do them before the cut")], pause=6, do="Pause and cut the trace")
 
 # ================================================================== 5. CIRCUIT BOARD
 add("board_tour", "board", "Meet the board", [
@@ -436,14 +437,16 @@ add("board_trim", "board", "Trim, clean and inspect", [
 
 # ================================================================== 6. POWER + CHECKS
 add("power_holder", "power", "Wire the battery holder", [
-    "Time for power. The battery holder has its own button, and that button is BLIPR's on and off switch. Before you solder anything, put the cell in, turn the holder on, and meter its pads. The red probe on the five volt pad must read plus five, not minus five. Nothing on the board protects against those two swapped. Then take the cell out.",
+    "Time for power. The battery holder has its own button, and that button is BLIPR's on and off switch.",
+    "Before you solder anything, put the cell in, turn the holder on, and meter its pads. The red probe on the five volt pad must read plus five, not minus five.",
+    "Nothing on the board protects against those two swapped. Then take the cell out.",
     "With no cell in the holder, solder a red wire to its five volt pad and a black wire to its ground pad. They go to J1 plus five volts and J1 ground.",
     "Now the battery gauge. Tin the holder's plus end tab, and quickly solder one leg of a ten k resistor, R25, straight onto it. Cover it with heat-shrink.",
     "Solder a wire to R25's other leg. Brown in our pictures. It goes to J1 BAT. With the resistor right at the tab, a nicked wire can't short the cell.",
     "Set the holder's mode switch to power on. About ten centimetres of wire reaches from the holder to the board.",
-], visual=drawing(lambda ctx, c, x, y, w, h: DG.holder_wiring(ctx, c, x, y, w, h, steps=(1, 2, 3, 4))),
-    notes=[(0, "!First: meter its pads, +5 V not −5 V"), (0, "Then cell out while soldering"), (1, "Red: 5V pad → J1 +5V"), (1, "Black: GND pad → J1 GND"),
-           (2, "R25 (10 kΩ) soldered on the + tab, heat-shrink"), (3, "R25 → J1 BAT"), (4, "Mode switch: power on")],
+], visual=drawing(lambda ctx, c, x, y, w, h: DG.holder_wiring(ctx, c, x, y, w, h, steps=(3, 4, 5, 6))),
+    notes=[(1, "!First: meter its pads, +5 V not −5 V"), (2, "Then cell out while soldering"), (3, "Red: 5V pad → J1 +5V"), (3, "Black: GND pad → J1 GND"),
+           (4, "R25 (10 kΩ) soldered on the + tab, heat-shrink"), (5, "R25 → J1 BAT"), (6, "Mode switch: power on")],
     pause=6, do="Pause and wire the holder")
 
 add("power_check1", "power", "Checkpoint 1: power rails", [

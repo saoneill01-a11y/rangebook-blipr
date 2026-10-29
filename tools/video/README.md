@@ -1,6 +1,6 @@
 # BLIPR assembly video
 
-Scripts that make the narrated, step-by-step assembly video (about 32 minutes, 1080p) straight from the design
+Scripts that make the narrated, step-by-step assembly video (about 33 minutes, 1080p) straight from the design
 files in this repo: the board drawings come from `pcb/design.py`, the 3D case views from the STL files in
 `case/out/`, and the wiring pictures and screen animations from `pictures/out/`. Change the design, re-run, and
 the video follows. The finished MP4 is not kept in git (too large for GitHub).
@@ -13,14 +13,14 @@ the video follows. The finished MP4 is not kept in git (too large for GitHub).
 | 1:29 | What you need: parts, case hardware, tools, optional sensor kit |
 | 4:19 | Safety |
 | 4:56 | Get ready: sort parts, cut the Teensy's VIN–VUSB trace |
-| 6:01 | Circuit board: soldering, lowest parts first, ESP32 direction check |
-| 13:14 | Power checks: battery holder wiring, checkpoints 1 and 2 |
-| 15:55 | Wiring: radar pigtail, screen, checkpoint 3 |
-| 19:02 | Firmware: Arduino IDE, Teensy, ESP32, test shot from Range Book |
-| 21:52 | The case: printing, inserts, holder, radar, board, cover, screen, lid |
-| 26:20 | Sensor pod (optional) |
-| 28:21 | First test: power-up, level, compass, bench placement, first shot |
-| 30:30 | Troubleshooting |
+| 6:07 | Circuit board: soldering, lowest parts first, ESP32 direction check |
+| 13:34 | Power checks: battery holder wiring, checkpoints 1 and 2 |
+| 16:37 | Wiring: radar pigtail, screen, checkpoint 3 |
+| 20:13 | Firmware: Arduino IDE, Teensy, ESP32, test shot from Range Book |
+| 23:03 | The case: printing, inserts, holder, radar, board, cover, screen, lid |
+| 27:33 | Sensor pod (optional) |
+| 29:34 | First test: power-up, level, compass, bench placement, first shot |
+| 31:42 | Troubleshooting |
 
 Every hands-on step ends with a "Pause and …" bar so a viewer can stop and do it.
 
