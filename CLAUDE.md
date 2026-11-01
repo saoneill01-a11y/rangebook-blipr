@@ -137,5 +137,10 @@ piece of work so nothing lives only on the laptop.
 
 ## This computer
 
-(Claude Code: fill this in during the first session: OS, serial port names for the Teensy and ESP32,
-anything that needed a workaround.)
+- Mac (Apple silicon, macOS 26). Repo at `~/Library/CloudStorage/OneDrive-CSI/Claude Stuff/Claude Code/rangebook-blipr`
+  (inside OneDrive: if git acts oddly, set the folder to "Always keep on this device").
+- arduino-cli 1.5.1 (Homebrew), teensy:avr 1.62.0, esp32:esp32 3.3.12. DFRobot_Multi_DOF_IMU and DFRobot_RTU
+  are git clones in `~/Documents/Arduino/libraries/` (no unsafe-install setting needed).
+- Build into `~/Library/Caches/blipr-build/` (`--build-path`) so build files stay out of OneDrive.
+- Nov 1, 2026: both sketches compile (ESP32 777373 bytes); `sim_test` passes, 0/20 false shots.
+- Serial ports: not known yet (fill in when the boards are first plugged in).
