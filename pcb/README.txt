@@ -38,6 +38,13 @@ ORDERING ON PCBWAY (pcbway.com > PCB Instant Quote > Quick-order PCB > Add Gerbe
   1 to 2 weeks to your door. PCBWay checks the files before making them and emails you if
   anything looks wrong.
 
+ASSEMBLED BOARDS (PCBA)
+  out/pcba/ has what PCBWay needs to quote boards with the parts already soldered on (everything except
+  the wire headers J1-J5): BOM with part numbers, part positions, assembly drawing and README_PCBA.txt
+  with the quote-form answers. Rebuild them with python3 pcba_files.py.
+  NOTE on J4 (sensors): the BOM below lists a 1x4 MALE header, but the STEMMA QT-to-pins cable also ends
+  in male pins. Fit a 1x4 FEMALE header at J4 if you want that cable to plug in, or solder its wires straight in.
+
 ASSEMBLY ORDER (lowest parts first, so the board sits flat while you solder)
   1. Cut the VIN-VUSB trace on the underside of the Teensy (see the build guide) before it goes in,
      but only after the Firmware tab's bench tests: those run the Teensy from USB alone.
