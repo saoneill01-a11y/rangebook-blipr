@@ -20,7 +20,49 @@ Sean will make it public once BLIPR is proven.
 | `docs/` | This setup guide, ideas for later |
 
 The Range Book web app (the `chrono` branch of saoneill01-a11y/rangebook) is a separate repo. It ships the
-ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is not part of this repo.
+ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is not part of this repo
+(see "Range Book" below for its rules).
+
+## Working with Sean
+
+- Plain words, short answers. He asks good practical questions; answer the question, then stop.
+- **Show a mockup before any physical change** (case, PCB, wiring): a picture he can check first, then build
+  after he says yes. 2D views of the case are drawn from above with the front edge at the top (he caught a
+  mirrored mockup once; both axes are flipped to match how he holds it).
+- Ask before anything that costs money (orders, PCBWay) or can't be undone (force-push, deleting files,
+  wiping the SD card or settings).
+- Never change the PCB copper without asking; v1.1 is already made.
+
+## Range Book (only if Sean asks for app work)
+
+- BLIPR code in the app lives only on the `chrono` branch (version 2.44.x). `dev` and `main` are 2.43.x.
+- Merges go one way: `dev` into `chrono` after dev changes. **Never** merge chrono into dev or main, and
+  never release dev to main unless Sean says so. Sean calls chrono "private": keep BLIPR features off dev/main.
+- Test the server only against a copy of the data folder (`DATA_DIR=<copy>`), never his real data.
+- An ESP32 firmware release for Bluetooth updates: copy the built `BliprBLE-<ver>.bin` into
+  `public/blipr/` and update the `esp` entry in `public/blipr/firmware.json` (version, file, size in bytes, md5; the app image `BliprBLE.ino.bin`, not the merged file). The app
+  checks the md5, and the ESP32 rolls back if the new firmware doesn't confirm within 15 s.
+  Currently shipped: 0.2.3 (757440 bytes, md5 28fcaa5cb1bc6a1e4dba07b00c923024).
+
+## Where things stand (Nov 1, 2026)
+
+- **Nothing is built or tested on hardware yet.** All firmware so far has only run in simulation and on
+  fake recordings. Firmware: Teensy 0.2.2, ESP32 0.2.3.
+- PCB v1.1 bare boards ordered from PCBWay. Sean is also getting a PCBWay quote for assembled boards
+  (files and form answers in `pcb/out/pcba/`, made by `pcb/pcba_files.py`; PCBWay wants the assembly
+  drawing as PDF, not PNG). J1-J5 are left empty on those boards.
+- J4 (sensor cable): the parts list says a male 1x4 header, but the STEMMA QT-to-pins cable also ends in male pins
+  too, so fit a female 1x4 header or solder the wires (noted in `pcb/README.txt`).
+- Sensors: SHT45 plus the DFRobot Gravity 10-DoF (BMI323 + BMM350 + BMP581), which replaced the Adafruit
+  IMU and BMP390. The 10-DoF plugs into the SHT45's second Qwiic port, not the PCB. It's on its way.
+- Case v0.9 (`case/`, pod in the 10-DoF layout, `POD_BMP390 = False`). Tripod insert hole 7.15 x 9 mm at
+  the estimated balance point; M3 insert holes 7.5 mm deep; power button slot 14 x 10 mm.
+- Build guide: the shared doc https://claude.ai/artifact/Cg7tRsb5ndJPPZLUZa3bSN is the main copy (tabs:
+  build guide, firmware, sensors, circuit board, wiring). `docs/build_guide/` is a Markdown copy. Claude Code
+  probably can't edit the doc: change the Markdown copy and tell Sean which section of the doc to update.
+- Open questions: whether Range Book should let him change chronograph settings while BLIPR isn't
+  connected (never decided). Ideas for later, including pre-soldered boards for other builders, are in
+  `docs/ideas.md`.
 
 ## Build and flash
 
