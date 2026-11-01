@@ -8,7 +8,7 @@
 //
 // Wiring: GPIO20 (RX) <- 1 kOhm <- Teensy pin 35 (TX8)   GPIO21 (TX) -> 1 kOhm -> Teensy pin 34 (RX8)
 //         GPIO6 -> OLED SDA, GPIO7 -> OLED SCL, 3V3 -> OLED VCC, GND -> OLED GND
-//         GPIO3 <- BATT_SENSE (cell + -> 10k at the cell tab -> switch -> 100k -> BATT_SENSE -> 100k -> GND)
+//         GPIO3 <- BATT_SENSE (cell + -> 10k at the cell tab -> J1 BAT -> 100k -> BATT_SENSE -> 100k -> GND; no switch)
 //
 // Copyright (c) 2026 Sean O'Neill. AGPL-3.0-or-later (same as Range Book).
 
