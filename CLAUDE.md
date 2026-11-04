@@ -52,7 +52,7 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   (files and form answers in `pcb/out/pcba/`, made by `pcb/pcba_files.py`; PCBWay wants the assembly
   drawing as PDF, not PNG). J1-J5 are left empty on those boards.
 - J4 (sensor cable): the parts list says a male 1x4 header, but the STEMMA QT-to-pins cable also ends in male pins
-  too, so fit a female 1x4 header or solder the wires (noted in `pcb/README.txt`).
+  so fit a female 1x4 header or solder the wires (noted in `pcb/README.txt`).
 - Sensors: SHT45 plus the DFRobot Gravity 10-DoF (BMI323 + BMM350 + BMP581), which replaced the Adafruit
   IMU and BMP390. It arrived Nov 4: its own Gravity cable ends in female jumper sockets, so a STEMMA QT-to-male-pins
   cable from the SHT45's second port plugs into them (as the build guide says). A pin header on the 10-DoF won't fit:
