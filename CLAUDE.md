@@ -54,7 +54,9 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
 - J4 (sensor cable): the parts list says a male 1x4 header, but the STEMMA QT-to-pins cable also ends in male pins
   too, so fit a female 1x4 header or solder the wires (noted in `pcb/README.txt`).
 - Sensors: SHT45 plus the DFRobot Gravity 10-DoF (BMI323 + BMM350 + BMP581), which replaced the Adafruit
-  IMU and BMP390. The 10-DoF plugs into the SHT45's second Qwiic port, not the PCB. It's on its way.
+  IMU and BMP390. It arrived Nov 4: its own Gravity cable ends in female jumper sockets, so a STEMMA QT-to-male-pins
+  cable from the SHT45's second port plugs into them (as the build guide says). A pin header on the 10-DoF won't fit:
+  its pin row is on a long edge and straight pins plus sockets stand taller than the 20 mm pod.
 - Case v0.9 (`case/`, pod in the 10-DoF layout, `POD_BMP390 = False`). Tripod insert hole 7.15 x 9 mm at
   the estimated balance point; M3 insert holes 7.5 mm deep; power button slot 14 x 10 mm.
 - Build guide: the shared doc https://claude.ai/artifact/Cg7tRsb5ndJPPZLUZa3bSN is the main copy (tabs:
