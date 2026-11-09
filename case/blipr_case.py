@@ -486,6 +486,10 @@ BASE_EDITS = [
     ("front-left holder pad, round (v0.9)", "round_pad", (6.9, 20.7, (2.4, 14.4, 13.4, 27.2))),
     ("rear-left holder pad, round (v0.9)", "round_pad", (6.9, 115.4, (2.4, 108.9, 11.4, 118.7))),
     ("tripod: move the boss to the balance point and shorten it", "tripod", None),
+    # Teensy USB (right wall): the Teensy sits in 8.5 mm sockets, so its USB is ~27.5 mm up and Sean's hole
+    # (16-26.5 mm up) missed it. Fill his hole, then cut 13.5 x 8 mm, 24-32 mm up, for his 12 x 5.5 mm plug.
+    ("Teensy USB: fill the old hole", "add", (IW, 93.1, 13.1, IW + WALL, 107.1, 24.6)),
+    ("Teensy USB: new hole 13.5 x 8 mm, 24-32 mm up", "cut", (IW - 1, 93.1, 21.6, IW + WALL + 1, 106.6, 29.6)),
 ]
 
 

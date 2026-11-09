@@ -57,7 +57,7 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   IMU and BMP390. It arrived Nov 4: its own Gravity cable ends in female jumper sockets, so a STEMMA QT-to-male-pins
   cable from the SHT45's second port plugs into them (as the build guide says). A pin header on the 10-DoF won't fit:
   its pin row is on a long edge and straight pins plus sockets stand taller than the 20 mm pod.
-- Case v0.9 (`case/`, pod in the 10-DoF layout, `POD_BMP390 = False`). Tripod insert hole 7.15 x 9 mm at
+- Case v0.10 (`case/`; Teensy USB hole 24-32 mm up, Nov 8; pod in the 10-DoF layout, `POD_BMP390 = False`). Tripod insert hole 7.15 x 9 mm at
   the estimated balance point; M3 insert holes 7.5 mm deep; power button slot 14 x 10 mm.
 - Build guide: the shared doc https://claude.ai/artifact/Cg7tRsb5ndJPPZLUZa3bSN is the main copy (tabs:
   build guide, firmware, sensors, circuit board, wiring). `docs/build_guide/` is a Markdown copy. Claude Code
