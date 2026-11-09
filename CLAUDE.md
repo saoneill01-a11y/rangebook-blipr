@@ -49,7 +49,8 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
 - **Bench tests, Nov 8:** Teensy flashed with 0.2.2 (0 overruns, SD ok on a 32 GB A1 card; an 8 GB card wasn't
   read). Fake-bullet test passed: 2800/1100/3300 fps read 2800.1/1100.0/3299.9. Saving a shot took 2.2-3.6 s:
   check later whether a shot during a save is missed. ESP32 flashed with 0.2.3; Bluefy connects to RB BLIPR.
-  Teensy-ESP32 link test and the radar itself not tested yet. VIN-VUSB trace not cut yet.
+  Teensy-ESP32 link test passed (fake shots reach the ESP32 and Bluefy). Radar not tested yet. VIN-VUSB trace
+  cut and checked Nov 9: from now on the Teensy runs (and can be programmed) only with BLIPR switched on.
 - PCB v1.1 bare boards ordered from PCBWay. Sean is also getting a PCBWay quote for assembled boards
   (files and form answers in `pcb/out/pcba/`, made by `pcb/pcba_files.py`; PCBWay wants the assembly
   drawing as PDF, not PNG). J1-J5 are left empty on those boards.
