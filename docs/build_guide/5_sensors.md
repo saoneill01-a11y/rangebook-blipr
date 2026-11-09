@@ -50,7 +50,7 @@ The SHT45's posts suit Adafruit's 1.0 × 0.7 in boards, whose holes sit 0.1 in f
 
 1. On the main board, add a 1x4 female header wired, in this order: **GND, 3V3, GPIO6 (SDA), GPIO7 (SCL)**. These are the same four wires the OLED uses; tap them anywhere on those runs.
 2. Plug the 150 mm QT-to-pins cable into it: black to GND, red to 3V3, blue to SDA, yellow to SCL. Its QT end goes up through the lid's cable slot (at the back of the pod), along the side of the SHT45 and into its front socket.
-3. Inside the pod, a second QT-to-pins cable goes from the SHT45's back socket to the DFRobot board's own Gravity cable (plugged into the board). If the Gravity cable's wires end in female sockets, the pins plug straight in; if they're bare, cut a 100 mm STEMMA QT cable and splice it on with heat-shrink. Match by the DFRobot's pin labels: red to **+**, black to **−**, yellow (SCL) to **C/R**, blue (SDA) to **D/T**. Set the DFRobot's I2C/UART switch to I2C and leave A0 and A1 on 0.
+3. Inside the pod, a second QT-to-pins cable goes from the SHT45's back socket to the DFRobot board's own Gravity cable (plugged into the board). The Gravity cable's wires end in female sockets (checked when the board arrived on Nov 4), so the pins plug straight in. Don't fit a pin header on the DFRobot board instead: its pin row is on a long edge, and straight pins plus sockets stand taller than the 20 mm pod. Match by the DFRobot's pin labels: red to **+**, black to **−**, yellow (SCL) to **C/R**, blue (SDA) to **D/T**. Set the DFRobot's I2C/UART switch to I2C and leave A0 and A1 on 0.
 
 ## Mounting
 

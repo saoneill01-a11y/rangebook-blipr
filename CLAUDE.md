@@ -64,7 +64,8 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   the estimated balance point; M3 insert holes 7.5 mm deep; power button slot 14 x 10 mm.
 - Build guide: the shared doc https://claude.ai/artifact/Cg7tRsb5ndJPPZLUZa3bSN is the main copy (tabs:
   build guide, firmware, sensors, circuit board, wiring). `docs/build_guide/` is a Markdown copy. Claude Code
-  probably can't edit the doc: change the Markdown copy and tell Sean which section of the doc to update.
+  can edit the doc through the docs connector (load the docs skill first); keep the Markdown copy in step with it.
+  `docs/BLIPR Build Guide.docx` is a Word version (circuit board build), rebuilt by `docs/make_build_doc.py`.
 - Open questions: whether Range Book should let him change chronograph settings while BLIPR isn't
   connected (never decided). Ideas for later, including pre-soldered boards for other builders, are in
   `docs/ideas.md`.

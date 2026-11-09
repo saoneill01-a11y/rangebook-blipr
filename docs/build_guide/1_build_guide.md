@@ -10,11 +10,13 @@ How it works, in one pass: the RFbeam K-LC5 radar sends out a 24 GHz signal and 
 
 &#91;embedded content: signal path · 5 hops, plus power\]
 
-**What this guide covers:** the hardware. That means the circuit, soldering, wiring, the 3D-printed case, and electrical checks with a multimeter at each stage. **What comes later:** the firmware for the Teensy and ESP32, and the web app connection. Until the firmware exists, the checkpoints in this guide confirm the hardware is built right; the first real test with a moving target happens once the test firmware is written.
+**What this guide covers:** the hardware: the circuit, soldering, wiring, the 3D-printed case, and electrical checks with a multimeter at each stage. The firmware for the Teensy and ESP32 and the Range Book connection are on the Firmware tab; do its bench tests before soldering (Step 1). **The usual build is now the circuit board v1.1** (Circuit board tab): it replaces the perfboard and most of the wiring below. The steps still apply, and where the circuit board differs they say so.
 
-**Case files (v0.9):** `base`, `lid_oled` / `lid_plain`, and `front_cover`, each as STEP and STL, plus `blipr_case.py`, the parametric script that generates them. The case is built from datasheet and typical sizes, so expect one round of adjustments after you measure your actual parts (see the last section).
+**Case files (v0.11):** `base`, `lid_oled` / `lid_plain` / `lid_sensors`, and `front_cover`, each as STEP and STL, plus `blipr_case.py`, the parametric script that generates them. v0.11 has been checked against the real circuit board: the Teensy's USB hole is placed for the Teensy on its 8.5 mm sockets (see Step 5).
 
 **Firmware (Teensy 0.2.2, ESP32 0.2.3):** setup and bench tests are on the Firmware tab.
+
+**First build (Nov 2026):** circuit board v1.1. Both boards were flashed and passed the bench tests on Nov 8: fake bullets at 2800, 1100, 3300 and 2500 fps read 2800.1, 1100.0, 3299.9 and 2500.2, and the 2500 fps one arrived on the phone. A Word version of this guide is in the project (`docs/BLIPR Build Guide.docx`).
 
 ## Tools, supplies and safety
 
@@ -54,8 +56,10 @@ The spreadsheet has prices and links; this table adds the reference names (R1, C
 | U1, U2 | MCP6022-E/P dual op-amp (DIP-8) | 2 | Buy 4 |
 | U3 | MCP1700-3302E/TO, 3.3 V low-dropout regulator (TO-92) | 1 | **new**, buy 2, about $0.40 at DigiKey |
 | — | DIP-8 IC sockets | 2 | **new**, so the op-amps can be swapped |
-| BT1 | 18650 battery shield (5 V + 3.3 V outputs) + 18650 cell | 1 |  |
+| BT1 | 18650 battery holder (5 V output, its own power button) + name-brand 18650 cell | 1 |  |
 | OLED | 0.96" SSD1306 I2C display | 1 | Shows speed and battery level; white version reads best |
+| — | microSD card, 8–32 GB, name brand, A1 or Class 10, FAT32 or exFAT | 1 | In the Teensy. An 8 GB card that had been in another device wasn't read; a 32 GB A1 card worked |
+| — | Micro-USB and USB-C data cables | 1 each | Charge-only cables light the boards but the computer can't see them |
 | R1 | 10 Ω resistor | 1 | Op-amp supply filter |
 | R2, R3 | 10 kΩ | 2 | Mid-rail reference divider |
 | R4, R7, R11, R14 | 4.7 kΩ | 4 | Input bias resistors |
@@ -65,13 +69,14 @@ The spreadsheet has prices and links; this table adds the reference names (R1, C
 | C1, C2 | 1 µF ceramic | 2 | Regulator in/out |
 | C14, C17, C21, C24 | 1 µF ceramic | 4 | Gain-leg capacitors |
 | C3 | 100 µF electrolytic, 10 V or higher, 6.3 mm across (16 V or 25 V types; a 50 V one is 8 mm and crowds C4) | 1 | **new**, regulator output |
-| C4, C7, C10 | 10 µF electrolytic, 10 V or higher | 3 | **new** |
+| C4, C7, C10 | 10 µF electrolytic, 10 V or higher (25 V ones are smaller than 50 V) | 3 | **new** |
 | C5, C8, C9, C11 | 100 nF ceramic | 4 | Decoupling |
 | C12, C15, C19, C22 | 10 nF ceramic | 4 | Input coupling |
 | R23, R24 | 1 kΩ | 2 | new (v1.1): one in each serial line between the Teensy and ESP32 |
+| D1 | 1N5817 Schottky diode | 1 | ESP32's 5 V feed. The bag may say "IN5817": same part |
 | C18, C25 | 1 nF ceramic | 2 | ADC input filter |
 | — | 70 × 90 mm double-sided perfboard | 1 | Or the RB BLIPR circuit board v1.1 (Circuit board tab) |
-| — | Female headers 2.54 mm | 2×24, 2×8, 1×5, 1×4 | Teensy, ESP32, radar, OLED |
+| — | Female headers 2.54 mm | 2×24, 2×8, 1×5, 1×4 | Teensy, ESP32, radar plug, OLED. On the circuit board, J4 (sensor kit) needs a female 1×4 |
 | — | M3 heat-set inserts (about 4.6–5 mm OD) | 8 | **new**, 4 lid + 4 board posts |
 | — | M3 × 8 mm screws (lid), M3 × 6 mm screws (board) | 4 + 4 | **new** |
 | — | 1/4-20 heat-set insert, 13 mm long or shorter | 1 | Tripod mount |
@@ -115,11 +120,13 @@ R10 and C18 at the end form a small filter right at the Teensy pin, which keeps 
 
 Test each module on its own before it gets soldered into anything, then lay out the perfboard so the case lines up.
 
+**On the circuit board v1.1:** do items 1 to 4 here, then follow the Circuit board tab's soldering order instead of 5 to 7. The Teensy's VIN–VUSB cut (item 3) comes after the Firmware tab's bench tests.
+
 1. **Sort and check parts.** Measure every resistor with the multimeter before it goes in (10 Ω, 330 Ω, 470 Ω, 4.7 kΩ, 10 kΩ look alike). Bag the capacitors by value. Electrolytics have a stripe marking the **negative** lead, and the longer lead is positive.
-2. **Test the Teensy.** Plug it into your computer with a micro-USB data cable. The orange LED should blink (factory test program). If nothing happens, try another cable before blaming the board.
+2. **Test the Teensy.** Plug it into your computer with a micro-USB data cable. The orange LED should blink (factory test program). If nothing happens, try another cable before blaming the board. Then load the firmware and do the Firmware tab's bench tests.
 3. **Cut the Teensy's VIN–VUSB link.** Do the Firmware tab's bench tests first: they run the Teensy from USB alone, which stops working once this link is cut. On the underside near the USB connector are two pads joined by a thin trace, labeled VIN and VUSB on PJRC's pinout card. Cut that trace with a hobby knife, a few light strokes. Confirm with the continuity beep: no beep between VIN and VUSB. This stops the battery and your computer's USB from fighting each other. From now on, the Teensy only runs when the chronograph is turned on (the holder's button), including when you program it.
-4. **Test the ESP32-C3.** Plug it into USB-C; a power LED should light. If its pins aren't soldered on yet, fit them with the black plastic and the long pins on the side with the printed pin names (the underside), and solder them on the chip side, so the module can sit chip side up. While it's on USB, find the pin that reads 5 V to G with the meter and mark it: on the circuit board that pin goes in the back hole of the right-hand row, next to D1's square pad.
-5. **Check the perfboard holes.** Most 70 × 90 mm boards have a 2–3 mm hole in each corner about 3 mm in from both edges, which is what the case posts expect. If yours don't, mark centers 3 mm in from each edge and drill 3.2 mm.
+4. **Test the ESP32-C3.** Plug it into USB-C; a power LED should light. If its pins aren't soldered on yet, fit them with the black plastic and the long pins on the side with the printed pin names (the underside), and solder them on the chip side, so the module can sit chip side up. While it's on USB, find the pin that reads 5 V to G with the meter and mark it: on the circuit board that pin goes in the back hole of the right-hand row, next to D1's square pad. If the computer doesn't see it at all while its LED is on, the USB-C cable is charge-only: swap it.
+5. **Check the perfboard holes (perfboard only).** Most 70 × 90 mm boards have a 2–3 mm hole in each corner about 3 mm in from both edges, which is what the case posts expect. If yours don't, mark centers 3 mm in from each edge and drill 3.2 mm.
 6. **Mark the layout zones** on the top of the perfboard with a fine marker, with the board positioned as it will sit in the case: the 70 mm side is the front edge, facing the radar.
 
 | Zone | Where on the board (front edge = 0) | What goes there |
@@ -279,13 +286,17 @@ Passing all three checkpoints means the hardware is ready for test firmware.
 
 ## Step 5: Print and assemble the case
 
-The v0.9 case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and prints in four parts with no supports.
+The v0.11 case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and prints in four parts with no supports.
 
 &#91;image: The base from the front (radar window), from the rear, and from above\]
 
 &#91;image: Base v0.8: the battery holder's four pads and the tripod post; the left wall's USB-C hole and 14 × 10 mm button slot\]
 
-**What's where.** The radar sits in a pocket behind the front window, facing forward, held snug by foam tape, with a thin replaceable cover in front of it. The battery holder screws to four 8 mm round pads on the floor on the left (no walls around it; 2.9 mm screw holes); its USB-C charge port and its power button line up with two openings in the side wall (the button's is a 14 × 10 mm slot). The main board screws onto four 12 mm posts on the right, and the Teensy's USB port comes out of the right wall. A 1/4-20 insert in the floor takes a tripod screw. Case v0.9: the base is Sean's own CAD design, with the battery pads made 8 mm across (10 mm hit parts under the holder board) and their holes 2.9 mm (2.8 was too tight).
+&#91;image: Base v0.11 side walls from outside: the battery USB-C hole and power-button slot on the left wall, the Teensy USB hole 24-32 mm up on the right wall\]
+
+&#91;image: Base v0.11: the leftover stubs beside the two left battery pads cleared (before and after, from above, front at the top)\]
+
+**What's where.** The radar sits in a pocket behind the front window, facing forward, held snug by foam tape, with a thin replaceable cover in front of it. The battery holder screws to four 8 mm round pads on the floor on the left (no walls around it; 2.9 mm screw holes); its USB-C charge port and its power button line up with two openings in the side wall (the button's is a 14 × 10 mm slot). The main board screws onto four 12 mm posts on the right, and the Teensy's USB port comes out of the right wall. A 1/4-20 insert in the floor takes a tripod screw. The base is Sean's own CAD design. v0.9 made the battery pads 8 mm across with 2.9 mm holes. v0.10 raised the Teensy's USB hole to 24–32 mm above the case bottom (13.5 × 8 mm), to match the Teensy on its 8.5 mm sockets and fit a 12 × 5.5 mm plug. v0.11 cleared the leftover wall stubs beside the two left battery pads.
 
 | File | Print orientation | Settings (ASA) |
 | --- | --- | --- |
@@ -303,9 +314,9 @@ ASA warps, so use an enclosure or a draft shield, a brim on the base, and a bed 
 
 1. **Inserts.** Press M3 heat-set inserts into the four corner columns and the four board posts (all holes 4.1 mm across and 7.5 mm deep, so inserts up to 7 mm long fit). Press the 1/4-20 insert into the hole under the floor (7.15 mm across, 9 mm deep). Push them in straight and slightly below flush, and let each cool before moving on.
 2. **Fit the radar.** Put 1 mm × 5 mm foam tape down the module's two sides and across its back, then press it into its pocket from above, antenna face forward against the window frame, pins pointing back. It sits on a 3 mm ledge and the foam holds it snug against the window. Put a 20 mm strip on its top edge too: a rib under the lid presses down on it. No glue, so it can be rotated 90° after the first tests if needed (the datasheet is unclear about which axis has the 80° beam).
-3. **Battery holder.** Set its mode switch to "power on" first. Screw it to the four mounts in the left bay with M3 × 6 mm self-tapping screws, its USB-C port and button lined up with the holes in the side wall. Drive the screws gently: they cut their own thread in the 2.8 mm holes.
+3. **Battery holder.** Set its mode switch to "power on" first. Screw it to the four mounts in the left bay with M3 × 6 mm self-tapping screws, its USB-C port and button lined up with the holes in the side wall. Drive the screws gently: they cut their own thread in the 2.9 mm holes.
 4. **Power button.** Nothing to fit: press the holder's own button through the hole in the side wall to turn BLIPR on and off.
-5. **Main board.** Screw the board onto the posts with four M3 × 6 mm screws, the Teensy's USB facing the right-wall opening.
+5. **Main board.** Screw the board onto the posts with four M3 × 6 mm pan-head screws (no wider than 5.5 mm in the back-right corner, next to the Teensy socket), the Teensy's USB facing the right-wall opening.
 6. **Radar connection.** Plug the radar pigtail onto the module (pin 1 to pin 1). Dress the wires down along the pocket and away from the ESP32.
 7. **Front cover.** Slide it down into the slot behind the front wall, recessed side toward the radar and the wider frame edge at the top.
 8. **OLED.** Seat the module in the pocket under the lid's window and screw it to the four corner pads with M2 × 4 mm screws. Snug only: the pilot holes are plastic.
@@ -324,7 +335,7 @@ The case is built from datasheet and typical sizes, so one round of measuring be
 - [ ] **OLED module:** board size; where the glass sits on the board (distance from each edge); which edge the pins are on.
 - [ ] **Radar module:** do the pins come out of the back face or an edge? Where is pin 1? Total thickness including pins.
 - [ ] **Perfboard:** actual size and mounting hole centers.
-- [ ] **Teensy on its headers:** height from the perfboard surface to the top of the Teensy's USB connector.
+- [x] **Teensy on its headers:** height from the perfboard surface to the top of the Teensy's USB connector. Done on the first build: on its 8.5 mm sockets the USB sits about 27.5 mm above the case bottom, and v0.10 moved the hole to match.
 - [ ] **ESP32-C3:** length and width if it isn't 22.5 × 18 mm.
 - [ ] **Heat-set inserts:** outer diameter and length of the M3 and 1/4-20 inserts, and the seller's recommended hole size.
 
@@ -342,5 +353,7 @@ A quick first print of just the lid or the front cover is a cheap way to check y
 | U3 hot | Short on +3V3A, or the radar header reversed |
 | Radar I/Q at 0 V | Radar not powered (check pin 2 at the header) or pin 1 orientation wrong |
 | Screen says NO RADAR | The ESP32 isn't hearing the Teensy: check Teensy pin 35 → R23 → GPIO20, pin 34 → R24 → GPIO21 and the shared GND, and that the Teensy has power |
+| Computer doesn't see the ESP32 at all, though its LED is on | Charge-only USB-C cable: swap it. On a Mac, also look for an "Allow accessory to connect?" pop-up |
+| Teensy reports SD missing | It only looks at start-up: re-seat the card and replug. Still missing: a format it can't read, so try another card (8–32 GB, A1) |
 
 Next up, whenever you're ready: test firmware that records raw radar data to the SD card and shows a live signal, then the velocity calculation, then the Bluetooth link into your web app.

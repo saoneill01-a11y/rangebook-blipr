@@ -2,7 +2,7 @@
 
 A purpose-made board replaces the perfboard and almost all of the point-to-point wiring: every part solders into its own labelled holes, and the Teensy and ESP32 plug in. It is the same 70 × 90 mm with the same four M3 holes, so it fits the base you've printed. Five boards cost about $5 plus $15–$25 shipping from PCBWay.
 
-It's worth it here: the amplifier is about 40 parts and 100 connections, and on perfboard one wrong hop is hard to find. Each version passes a design-rule check (0.25 mm clearance, every net connected), and its files are read back and drawn independently. **Order v1.1, not v1.0.** Two independent reviews found that v1.0's ESP32 socket was mirrored, which would have put 5 V on one of its 3.3 V pins. v1.1 hasn't been built yet, so treat it as a first run.
+It's worth it here: the amplifier is about 40 parts and 100 connections, and on perfboard one wrong hop is hard to find. Each version passes a design-rule check (0.25 mm clearance, every net connected), and its files are read back and drawn independently. **Order v1.1, not v1.0.** Two independent reviews found that v1.0's ESP32 socket was mirrored, which would have put 5 V on one of its 3.3 V pins. The v1.1 boards have arrived and the first one is being built (Nov 2026); both modules passed the Firmware tab's bench tests on Nov 8.
 
 **What changed in v1.1:**
 
@@ -27,11 +27,11 @@ JLCPCB, OSH Park and Aisler take the same zip.
 
 The BOM in the zip (**RBBLIPR\_BOM.csv**) lists every part by reference. Solder in this order, lowest parts first:
 
-1. Resistors (colour bands on the Wiring pictures tab; R23 and R24 are 1 kΩ), then D1: stripe to the right, on the square pad.
+1. Resistors (colour bands on the Wiring pictures tab; R23 and R24 are 1 kΩ), then D1: stripe to the right, on the square pad. (D1 is a 1N5817; the bag may say "IN5817", the same part.)
 2. Ceramic capacitors (either way round), then the two 8-pin sockets, notch matching the drawing (pointing right).
 3. U3 (MCP1700): flat face toward the front edge, legs GND – IN – OUT left to right. Spread its outer legs a little to reach the holes.
-4. Electrolytic capacitors: + leg in the square pad.
-5. Headers J1–J5 (or solder the wires straight in; do that for J2, the radar, so nothing there can be plugged in backwards), then the female headers for the Teensy (2 × 24) and ESP32 (2 × 8). Plug the modules in while soldering their headers so they come out straight.
+4. Electrolytic capacitors: + leg in the square pad. C3 (100 µF): 16 V or 25 V, no wider than 6.3 mm. C4, C7, C10 (10 µF): 25 V ones, smaller than 50 V.
+5. Headers J1–J5 (or solder the wires straight in; do that for J2, the radar, so nothing there can be plugged in backwards), then the female headers for the Teensy (2 × 24) and ESP32 (2 × 8). Plug the modules in while soldering their headers so they come out straight. The Teensy sits on these 8.5 mm sockets, and the case's USB hole (v0.10 and later) is placed for that height. J4 (sensor kit) needs a female 1×4, since the sensor cable ends in male pins; J5 (ammo-probe jack) can stay empty.
 6. Battery holder to J1 (no switch: its button is on/off). Before soldering its wires, check its 5 V and GND pads with the meter: +5 V, not −5 V. Then the power test before the chips go in: 5 V at J1, 3.3 V at U3's OUT leg, about 1.65 V at the + leg of C10.
 7. Op-amps (each chip's dot beside the square pad), Teensy (VIN–VUSB trace cut first, after the Firmware tab's bench tests) and ESP32 in; then the radar and OLED wires, as on the Wiring pictures tab.
 

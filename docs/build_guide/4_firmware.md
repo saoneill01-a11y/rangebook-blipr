@@ -6,7 +6,7 @@ Today's goal is to load both programs, check that the Teensy measures a fake bul
 
 - Teensy 4.1 and a micro-USB **data** cable (some cables only charge)
 - ESP32-C3 SuperMini and a USB-C data cable
-- A microSD card (FAT32 or exFAT) pushed into the Teensy's slot
+- A microSD card, 8–32 GB, name brand, marked A1 or Class 10 (FAT32 or exFAT), pushed into the Teensy's slot with its gold contacts toward the board
 - 4 jumper wires, plus two 1 kΩ resistors if you have them
 - The free **nRF Connect** app on your phone (iPhone or Android)
 - The OLED, if it has arrived (optional today)
@@ -32,7 +32,7 @@ Range Book BLIPR, Teensy firmware 0.2.2
 Sample rate 600000 Hz (asked for 600000). SD card found.
 ```
 
-5. Type `stat` and press Enter. **overruns** should be 0.
+5. Type `stat` and press Enter. **overruns** should be 0. If the status says SD missing, unplug, re-seat the card and plug in again (it only looks at start-up). Still missing: try another card. On the first build an 8 GB card from another device wasn't read; a 32 GB A1 card worked.
 
 If the IDE won't build it, use the ready-made file instead. Open the Teensy Loader app, choose File › Open HEX File › `prebuilt/BliprTeensy.hex`, then press the Teensy's button.
 
@@ -59,7 +59,7 @@ With nothing on A0/A1 the inputs pick up stray noise, so touching the board can 
 
 1. Open `BliprBLE/BliprBLE.ino` in a **second** IDE window, so each board keeps its own Serial Monitor.
 2. Tools menu: Board **Nologo ESP32C3 Super Mini** (or ESP32C3 Dev Module), **USB CDC On Boot: Enabled**, and its Port.
-3. Click Upload. If it can't connect: hold the **BOOT** button, tap **RESET**, let go of BOOT, and upload again. Tap RESET once it's done.
+3. Click Upload. If it can't connect: hold the **BOOT** button, tap **RESET**, let go of BOOT, and upload again. Tap RESET once it's done. If the computer doesn't see the ESP32 at all while its red LED is on, the USB-C cable is charge-only: swap it (on a Mac, also look for an "Allow accessory to connect?" pop-up).
 4. Serial Monitor at **115200**: you should see *BLIPR ESP32-C3 firmware 0.2.3 ready*.
 
 ## 5. Connect the two boards
@@ -124,4 +124,4 @@ If the connection drops partway, nothing changes: BLIPR stays on its old firmwar
 
 - **Calibration.** Each radar module's exact frequency varies a little from unit to unit, which can shift readings by up to about 0.4% (around 10 fps at 2,700 fps). One session beside a known chronograph, such as someone's Garmin, will set the `cal` value.
 - **Tuned on simulated shots.** The shot detection was tested only against simulated shots: it read them within about 1 fps and rejected muzzle blast. Real captures from the SD card will be used to tune it.
-- **Not in Range Book yet.** The Range Book connection comes next, once this part works.
+- **First build (Nov 8).** Both boards passed every bench test: fake shots at 2800, 1100, 3300 and 2500 fps read within 0.3 fps, and the 2500 fps one reached the phone. Saving a shot to the card took 0.3–3.6 s; whether a shot that arrives during a save is missed is still to check.
