@@ -46,8 +46,10 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
 
 ## Where things stand (Nov 1, 2026)
 
-- **Nothing is built or tested on hardware yet.** All firmware so far has only run in simulation and on
-  fake recordings. Firmware: Teensy 0.2.2, ESP32 0.2.3.
+- **Bench tests, Nov 8:** Teensy flashed with 0.2.2 (0 overruns, SD ok on a 32 GB A1 card; an 8 GB card wasn't
+  read). Fake-bullet test passed: 2800/1100/3300 fps read 2800.1/1100.0/3299.9. Saving a shot took 2.2-3.6 s:
+  check later whether a shot during a save is missed. ESP32 flashed with 0.2.3; Bluefy connects to RB BLIPR.
+  Teensy-ESP32 link test and the radar itself not tested yet. VIN-VUSB trace not cut yet.
 - PCB v1.1 bare boards ordered from PCBWay. Sean is also getting a PCBWay quote for assembled boards
   (files and form answers in `pcb/out/pcba/`, made by `pcb/pcba_files.py`; PCBWay wants the assembly
   drawing as PDF, not PNG). J1-J5 are left empty on those boards.
@@ -145,4 +147,7 @@ piece of work so nothing lives only on the laptop.
   are git clones in `~/Documents/Arduino/libraries/` (no unsafe-install setting needed).
 - Build into `~/Library/Caches/blipr-build/` (`--build-path`) so build files stay out of OneDrive.
 - Nov 1, 2026: both sketches compile (ESP32 777373 bytes); `sim_test` passes, 0/20 false shots.
-- Serial ports: not known yet (fill in when the boards are first plugged in).
+- Serial ports: Teensy `/dev/cu.usbmodem208996901` (upload port `usb:130000`), ESP32 `/dev/cu.usbmodem1101`
+  (on the port Sean used; a charge-only USB-C cable showed nothing at all). The ESP32 prints its startup line
+  only once, before a monitor can reopen the port after an upload. Python tools: venv at `~/Library/Caches/blipr-venv`
+  (Python 3.12; trimesh, manifold3d, cadquery-ocp, pyserial). A Bluetooth scan from Python crashed (no permission).
