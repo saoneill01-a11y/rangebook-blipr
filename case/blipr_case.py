@@ -483,6 +483,13 @@ BASE_EDITS = [
     ("rear-right holder pad, round", "round_pad", (31.9, 115.4, (24.0, 106.0, 38.0, 124.0))),
     # v0.9: the two left pads (Sean's own, joined to the wall) rebuilt the same way, so all four are 8 mm with 2.9 mm
     # holes. Their clearing boxes stop at the wall's inside face (x 2.4) and short of the rear corner column (y 118.8).
+    # v0.11: leftovers beside the two left pads cleared down to the floor: the front cross wall's stub (up to the pad
+    # height) and the corner column's wider foot (to 10.4 mm up) in front; the column's foot and its two thin horns
+    # behind the rear pad (to 7.4 mm up). The columns keep their normal size and their insert holes.
+    # (the front cut stops 0.05 mm above the floor: cut flush with it, OpenCascade stalls writing the STEP file;
+    # 0.05 mm is a quarter of a print layer, so the slicer ignores it)
+    ("front-left corner: cross-wall stub and column foot", "remove_box", (2.4, 10.4, 11.6, 14.6, FLOOR + 0.05, 10.4)),
+    ("rear-left corner: column foot and horns behind the pad", "remove_box", (2.4, 118.6, 11.6, 119.9, FLOOR, 7.4)),
     ("front-left holder pad, round (v0.9)", "round_pad", (6.9, 20.7, (2.4, 14.4, 13.4, 27.2))),
     ("rear-left holder pad, round (v0.9)", "round_pad", (6.9, 115.4, (2.4, 108.9, 11.4, 118.7))),
     ("tripod: move the boss to the balance point and shorten it", "tripod", None),
@@ -509,7 +516,8 @@ def base_mesh():
             # floor. Edges use Sean's float32 values so they land exactly on his faces (no slivers in the STL).
             x0, y0, x1, y1 = (f32(v) for v in g[:4])
             fl = f32(g[4] if len(g) > 4 else FLOOR)          # optional 5th value: cut from this height up
-            m = m - mf.Manifold.cube([x1 - x0, y1 - y0, 40.0 - fl]).translate([x0, y0, fl])
+            top = f32(g[5]) if len(g) > 5 else 40.0          # optional 6th value: ... up to this height
+            m = m - mf.Manifold.cube([x1 - x0, y1 - y0, top - fl]).translate([x0, y0, fl])
             continue
         if op == "round_pad":
             # clear the old pad's footprint down to the floor, then a round pad of HOLDER_PAD_D with the same

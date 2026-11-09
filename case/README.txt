@@ -3,6 +3,11 @@ Range Book BLIPR - case files, v0.9
 SIDES: "+X side" is the side wall with the Teensy's USB hole. On the bench it faces the gun and you
 (you sit behind it, across the gun, with the chronograph at about 1 o'clock). The "far side" is the other one.
 
+WHAT CHANGED IN v0.11 (base only; every other part is the same as v0.10)
+  - Clean-up beside the two left battery-holder pads: the old front cross wall's stub, the wider foot of the
+    front-left corner column (up to 10.4 mm) and the foot and two thin horns of the rear-left column behind its pad
+    (up to 7.4 mm) are gone. Pads, screw holes and corner columns unchanged. Pictures: out/pad_cleanup_check.png.
+
 WHAT CHANGED IN v0.10 (base only; every other part is the same as v0.9)
   - Teensy USB hole in the right wall raised: 13.5 mm wide x 8 mm tall, 24-32 mm up from the case bottom
     (was 16-26.5 mm, which missed the USB with the Teensy in its 8.5 mm sockets: the USB sits ~27.5 mm up).
