@@ -51,6 +51,8 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   check later whether a shot during a save is missed. ESP32 flashed with 0.2.3; Bluefy connects to RB BLIPR.
   Teensy-ESP32 link test passed (fake shots reach the ESP32 and Bluefy). Radar not tested yet. VIN-VUSB trace
   cut and checked Nov 9: from now on the Teensy runs (and can be programmed) only with BLIPR switched on.
+  Battery gauge checked Nov 9 (no modules in): cell 3.58 V, ESP32 GPIO3 hole 1.70 V (ratio 2.106, as designed);
+  use this pair if the gauge needs calibrating.
 - PCB v1.1 bare boards ordered from PCBWay. Sean is also getting a PCBWay quote for assembled boards
   (files and form answers in `pcb/out/pcba/`, made by `pcb/pcba_files.py`; PCBWay wants the assembly
   drawing as PDF, not PNG). J1-J5 are left empty on those boards.
