@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.3"
+#define FW_VERSION "0.2.4"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -102,6 +102,7 @@ static int bright = 3;   // screen: 0 = off, 1 = dim .. 4 = brightest
 enum { THEME_CLASSIC, THEME_BIG, THEME_STATS, THEME_RETRO, THEME_COUNT };
 static int screenTheme = THEME_CLASSIC;
 static bool screenInv = false;
+static bool screenFlip = true;  // FLIP 1 (default): turned 180 degrees, the right way up as the screen sits in the case
 static bool shotAnim = false;   // ANIM 1: after each good shot a bullet flies across and writes the velocity
 static uint32_t animStart = 0;  // millis() when the shot animation started (0 = not running)
 
@@ -815,6 +816,13 @@ static void handleCommand(char* cmd) {
     prefs.putBool("inv", screenInv);
     oled.invertDisplay(screenInv);
     toTeensy("get");
+  } else if (!strcmp(word, "FLIP")) {
+    // FLIP 1: screen turned 180 degrees (the default, right way up in the case).  FLIP 0: the other way.
+    screenFlip = atoi(arg) != 0 || (arg[0] && toupper(arg[1]) == 'N');
+    prefs.putBool("flip", screenFlip);
+    oled.setRotation(screenFlip ? 2 : 0);
+    drawScreen();
+    toTeensy("get");
   } else if (!strcmp(word, "ANIM")) {
     // ANIM 1: play the bullet animation after each good shot.  ANIM 0: just show the number.
     shotAnim = atoi(arg) != 0 || (arg[0] && toupper(arg[1]) == 'N');   // also takes ON / OFF
@@ -874,6 +882,7 @@ void setup() {
   screenTheme = prefs.getInt("theme", THEME_CLASSIC);
   if (screenTheme < 0 || screenTheme >= THEME_COUNT) screenTheme = THEME_CLASSIC;
   screenInv = prefs.getBool("inv", false);
+  screenFlip = prefs.getBool("flip", true);
   analogReadResolution(12);
   analogSetPinAttenuation(PIN_BAT, ADC_11db);
 
@@ -881,6 +890,7 @@ void setup() {
   Wire.setClock(400000);
   oledOk = oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   if (oledOk) {
+    oled.setRotation(screenFlip ? 2 : 0);
     oled.clearDisplay();
     oled.setTextColor(SSD1306_WHITE);
     applyBrightness();

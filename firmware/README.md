@@ -53,7 +53,12 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 - `drive` / `drive off`: USB drive mode (below; it turns on by itself when you plug into a computer)
 - `time 1792480000`: set the clock (Range Book does this every time it connects), so raw recordings have the date and time
 
-ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
+ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `FLIP 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
+
+## What changed in 0.2.4 (ESP32 only; the Teensy stays 0.2.2)
+
+- The screen is turned 180 degrees so it reads the right way up in the case (it was upside down on the first build).
+  `FLIP 0` turns it back; the choice is remembered.
 
 ## What changed in 0.2.3 (ESP32 only; the Teensy stays 0.2.2)
 
