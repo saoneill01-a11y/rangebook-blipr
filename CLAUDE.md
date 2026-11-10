@@ -53,6 +53,14 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   cut and checked Nov 9: from now on the Teensy runs (and can be programmed) only with BLIPR switched on.
   Battery gauge checked Nov 9 (no modules in): cell 3.58 V, ESP32 GPIO3 hole 1.70 V (ratio 2.106, as designed);
   use this pair if the gauge needs calibrating.
+- **First power-up with the radar, Nov 10:** works (DC mid-scale, no clipping), but a steady tone at 105.8 kHz
+  (reads 2149 fps, 22-35 dB SNR) came from the battery holder's boost converter (real frequency ~494 kHz, aliased).
+  It stays with the radar unplugged or covered and with the ESP32 out; a USB power bank instead gave its own tones
+  (126/252 kHz). Likely path: the Teensy's unfiltered 5 V (its ADC reference). Fix ordered (arrives Wed Nov 11):
+  22 uH inductor in the holder's red wire + 470 uF and 1 uF across J1 (`pictures/out/power_filter.png`); retest with
+  `live` and `rec`. Backups: fs=500000 moves the holder tone to ~110 fps; the planned pre-trigger tone rejection.
+  The ESP32 also adds broadband noise (rms ~20 -> 8 counts with it out): look at that next. Right now the holder is
+  off J1 and a power bank is wired there instead. ESP32 0.2.4 (screen flipped 180) is flashed.
 - PCB v1.1 bare boards ordered from PCBWay. Sean is also getting a PCBWay quote for assembled boards
   (files and form answers in `pcb/out/pcba/`, made by `pcb/pcba_files.py`; PCBWay wants the assembly
   drawing as PDF, not PNG). J1-J5 are left empty on those boards.
