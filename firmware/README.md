@@ -55,6 +55,12 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 
 ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `FLIP 0|1`, `QUIET 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
 
+## What changed in Teensy 0.2.4
+
+- `set qc=<dB>`: the quick check's threshold (default 11; `qc=0` turns it off and records every trigger, for
+  collecting real shots while the check is tuned). Not saved: back to 11 after a restart.
+- Each shot's printout adds the quick check's result (line strength, frequency, frames).
+
 ## What changed in Teensy 0.2.3 and ESP32 0.2.7
 
 - Teensy: a quick check after every trigger (`rdsp::Processor::confirm`). About 18 ms after the trigger it looks for a

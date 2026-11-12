@@ -44,7 +44,7 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   checks the md5, and the ESP32 rolls back if the new firmware doesn't confirm within 15 s.
   Currently shipped: 0.2.3 (757440 bytes, md5 28fcaa5cb1bc6a1e4dba07b00c923024).
 
-## Where things stand (Nov 1, 2026)
+## Where things stand (Nov 11, 2026)
 
 - **Bench tests, Nov 8:** Teensy flashed with 0.2.2 (0 overruns, SD ok on a 32 GB A1 card; an 8 GB card wasn't
   read). Fake-bullet test passed: 2800/1100/3300 fps read 2800.1/1100.0/3299.9. Saving a shot took 2.2-3.6 s:
@@ -92,6 +92,21 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   0 dropped in ~75 s. The analysis can still lock onto steady lines (94 kHz = 1921 fps, 115 kHz = 2344 fps with the
   phone) if a real shot passes the quick check: keep the window clear of them (.22: 600-1800) until the pre-trigger line
   rejection is in `analyze()`. Next: live fire to see the real echo.
+- **Nov 11, 20:37-20:46, live fire outside (.22LR subsonic, ~1067 fps on the Rangecraft).** Phone connected: ~35
+  dropped triggers a second (the phone link stayed fast outside, though inside it went quiet); phone disconnected: ~1 a
+  second. Range Book resets the window to 300-4500 and can disarm on connect, and connecting/disconnecting the phone
+  makes a short ~2333 fps line that passes the quick check (3 false shots). **The string fired 20:43-20:45 (phone off,
+  quick check on) recorded no shots**: dropped triggers stayed at the background rate, so the .22 shots either didn't
+  trigger or the quick check dropped them (dropped triggers aren't saved; ask Sean how many he fired). Teensy 0.2.4
+  (flashed) adds `set qc=0` (quick check off, RAM only, back to 11 dB after a restart) and prints each shot's quick-check
+  line. With qc=0 and the ESP32 in, Bluetooth triggers (~1/s) keep BLIPR busy, so: **next session, start here:**
+  1. Pull the SD card into `recordings/` (saving seemed to stop at s00999 earlier: check `fileNo` / SD).
+  2. A .22 string with the ESP32 **out** (no Bluetooth noise), `set qc=0`, window 600-1800, to record real echoes.
+  3. Tune the quick check (and the broadband trigger) on those real echoes; check whether the shot even triggers.
+  4. ESP32 link: plug the ESP32's USB into the Mac to see "Bluetooth link: every X ms"; ask for the fast link only
+     during OTA; find out why the slow link didn't hold outside.
+  5. Range Book overriding the window/arm on connect; the pre-trigger line rejection in `analyze()`.
+  Teensy was left disarmed (arm=0 saved; the ESP32 arms it after setup), window 600-1800, save=1, fs=500000.
 - PCB v1.1 bare boards ordered from PCBWay. Sean is also getting a PCBWay quote for assembled boards
   (files and form answers in `pcb/out/pcba/`, made by `pcb/pcba_files.py`; PCBWay wants the assembly
   drawing as PDF, not PNG). J1-J5 are left empty on those boards.

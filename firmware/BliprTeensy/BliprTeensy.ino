@@ -30,7 +30,7 @@
 #endif
 #include "radar_dsp.h"
 
-#define FW_VERSION "0.2.3"
+#define FW_VERSION "0.2.4"
 
 // ---------------- pins and sizes ----------------
 static const int PIN_I = A0;      // pin 14
@@ -123,6 +123,7 @@ static int trigIdx = 0;              // sample within that block
 static uint32_t armedAtBlk = 0;
 static uint32_t holdoffUntil = 0;
 static uint32_t rejects = 0;         // triggers the quick check dropped
+static float qcDb = 11.0f;           // "set qc=": the quick check's line threshold (dB); 0 turns it off. Not saved: 11 after a restart.
 static rdsp::Confirm lastConf;       // the quick check of the capture being recorded
 static uint32_t shotNo = 0;
 static uint32_t fileNo = 0;
@@ -338,7 +339,10 @@ static void quickCheck() {
     memcpy(confQ + k * BLOCK, ringQ + from, BLOCK * 2);
   }
   rdsp::Params p = currentParams();
-  if (dsp.confirm(confI, confQ, CONF_BLK * BLOCK, CONF_PRE * BLOCK, p, &lastConf)) {
+  p.confirmDb = qcDb;
+  bool pass = dsp.confirm(confI, confQ, CONF_BLK * BLOCK, CONF_PRE * BLOCK, p, &lastConf);
+  if (qcDb <= 0) { pass = true; lastConf.hits = 99; }   // quick check off: record every trigger
+  if (pass) {
     state = CAPTURE;   // looks like a bullet: record the rest
     return;
   }
@@ -379,6 +383,7 @@ static void processCapture() {
   if (r.code == rdsp::OK) Serial.printf("  %.1f fps (%.2f m/s)", fps, r.v0Mps);
   Serial.printf("\n  points %d, span %.1f ms, SNR %.1f dB, scatter %.2f m/s, accel %.0f m/s^2, tracked %.1f-%.1f m, %lu ms to process\n",
                 r.npts, r.spanMs, r.snrDb, r.rmsMps, r.accel, r.d0, r.d1, (unsigned long)(tProc / 1000));
+  if (!wasManual) Serial.printf("  quick check: line %.1f dB at %.0f Hz in %d frames\n", lastConf.bestDb, lastConf.f, lastConf.hits);
   if (cfg.saveRaw || wasManual) {
     uint32_t t2 = millis();
     saveCapture(ringI, ringQ, n, p, r, p.t0Sec);
@@ -429,7 +434,7 @@ static bool setKey(const char* k, float v) {
   else if (!strcmp(k, "behind")) { if (!in(-2.0f, 2.0f)) return false; }
   else if (!strcmp(k, "cal")) { if (!in(-50000, 50000)) return false; }
   else if (!strcmp(k, "f0")) { if (!in(23.9e9f, 24.4e9f)) return false; }
-  else if (!strcmp(k, "snr") || !strcmp(k, "trig")) { if (!in(0, 60)) return false; }
+  else if (!strcmp(k, "snr") || !strcmp(k, "trig") || !strcmp(k, "qc")) { if (!in(0, 60)) return false; }
   else if (!strcmp(k, "fs")) { if (!in(100000, 1000000)) return false; }
   if (!strcmp(k, "vmin")) cfg.vminFps = v;
   else if (!strcmp(k, "vmax")) cfg.vmaxFps = v;
@@ -439,6 +444,7 @@ static bool setKey(const char* k, float v) {
   else if (!strcmp(k, "f0")) cfg.f0Hz = v;
   else if (!strcmp(k, "snr")) cfg.snrDb = v;
   else if (!strcmp(k, "trig")) cfg.trigDb = v;
+  else if (!strcmp(k, "qc")) qcDb = v;
   else if (!strcmp(k, "save")) cfg.saveRaw = v != 0;
   else if (!strcmp(k, "arm")) cfg.armed = v != 0;
   else if (!strcmp(k, "fs")) cfg.fsReq = (uint32_t)v;
