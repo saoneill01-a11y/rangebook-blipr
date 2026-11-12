@@ -61,6 +61,12 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   `live` and `rec`. Backups: fs=500000 moves the holder tone to ~110 fps; the planned pre-trigger tone rejection.
   The ESP32 also adds broadband noise (rms ~20 -> 8 counts with it out): look at that next. Right now the holder is
   off J1 and a power bank is wired there instead. ESP32 0.2.4 (screen flipped 180) is flashed.
+- **Nov 11, filter fitted** (22 uH in the holder's red wire, 470 uF + 1 uF on J1): the tone is gone with the radar
+  unplugged, but with the radar on it still reaches 12-13 dB, picked up through the air from the holder's converter
+  itself (gone with the holder held away; moving its wires or a grounded foil wall did nothing). **The Teensy is now
+  set to `fs=500000`** (saved setting; `defaults` puts it back to 600000): the holder tone lands at ~99 fps, below
+  vmin, and `rec` says "no signal". `sim_test 500000` reads every case as well as 600k (22LR +1.9 fps; weak echo
+  4/5 vs 2/5; 0/20 false shots). Noise floor with the radar on and the ESP32 out: rms ~7.5 counts. Next: ESP32 back in.
 - PCB v1.1 bare boards ordered from PCBWay. Sean is also getting a PCBWay quote for assembled boards
   (files and form answers in `pcb/out/pcba/`, made by `pcb/pcba_files.py`; PCBWay wants the assembly
   drawing as PDF, not PNG). J1-J5 are left empty on those boards.

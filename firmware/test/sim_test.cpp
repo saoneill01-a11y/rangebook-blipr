@@ -53,7 +53,7 @@ static void synth(const Shot& s, double fs, int n, int t0Sample, std::vector<uin
 }
 
 int main(int argc, char** argv) {
-  const double fs = 600000.0;  // the firmware default
+  const double fs = argc > 1 ? atof(argv[1]) : 600000.0;  // the firmware default; "sim_test 500000" tries another rate
   const int n = 78 * 1024;
   const int t0Sample = 12 * 1024 + 300;
   static rdsp::Processor proc;
