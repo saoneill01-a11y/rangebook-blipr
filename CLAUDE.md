@@ -97,7 +97,7 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   second. Range Book resets the window to 300-4500 and can disarm on connect, and connecting/disconnecting the phone
   makes a short ~2333 fps line that passes the quick check (3 false shots). **The string fired 20:43-20:45 (phone off,
   quick check on) recorded no shots**: dropped triggers stayed at the background rate, so the .22 shots either didn't
-  trigger or the quick check dropped them (dropped triggers aren't saved; ask Sean how many he fired). Teensy 0.2.4
+  trigger or the quick check dropped them (dropped triggers aren't saved). Sean fired 4 shots about 5 s apart. Teensy 0.2.4
   (flashed) adds `set qc=0` (quick check off, RAM only, back to 11 dB after a restart) and prints each shot's quick-check
   line. With qc=0 and the ESP32 in, Bluetooth triggers (~1/s) keep BLIPR busy, so: **next session, start here:**
   1. Pull the SD card into `recordings/` (saving seemed to stop at s00999 earlier: check `fileNo` / SD).
