@@ -78,6 +78,15 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   SD card has the captures). Teensy left disarmed with save=0, fs=500000. Plan: ESP32 quiet while armed (no screen
   redraws or sensor reads until a shot result arrives), Teensy trigger on in-band energy only, then the planned
   pre-trigger line rejection; bench-test armed with no shots (should stay silent) before live fire again.
+- **Later Nov 11:** ESP32 0.2.6 (quiet mode) flashed: the ~1134 fps false readings are gone, but armed with no shots
+  BLIPR still triggers ~2x a second on Bluetooth bursts (no phone: advertising; phone connected: also a steady
+  115 kHz line, 2344 fps at 16 dB). Bursts (s00522-s00999): ~18 dB broadband, +26 dB below 15 kHz, but in-band
+  bins reach 25-31 dB at 15-21 kHz; they last 1-2 blocks (2-4 ms). Range Book on connect pushes its own settings
+  (window 300-4500, arm 0). The .22 shot (19:35) isn't in any capture (no 46-54.5 kHz track): likely missed while
+  BLIPR was busy with a false trigger. The Teensy saves only up to s00999 (later captures weren't saved: check).
+  Next: Teensy quick-reject (a trigger must show a sustained in-band line for several ms before a full capture,
+  so bursts cost milliseconds, not ~0.6 s), Bluetooth slower while armed (longer connection interval), then the
+  pre-trigger line rejection in `radar_dsp.cpp`.
 - PCB v1.1 bare boards ordered from PCBWay. Sean is also getting a PCBWay quote for assembled boards
   (files and form answers in `pcb/out/pcba/`, made by `pcb/pcba_files.py`; PCBWay wants the assembly
   drawing as PDF, not PNG). J1-J5 are left empty on those boards.
