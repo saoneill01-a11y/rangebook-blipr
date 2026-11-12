@@ -240,7 +240,7 @@ static void keepFirmwareIfRunning() {
 // (These numbers follow Apple's connection-parameter rules, so iPhones accept them.)
 // 0.2.8: the phone doesn't always agree (outdoors it stayed at 30 ms), so the request is repeated until the phone
 // reports a link that slow; the slow numbers have more margin (90-120 ms, latency 6: wakes about every 0.8 s); and
-// the radio transmits at 0 dBm instead of +9 dBm while quiet (the phone is a few metres away).
+// the radio transmits at -12 dBm instead of +9 dBm while quiet (the phone sits on the bench within ~1.5 m).
 static uint8_t peerAddr[6];
 static volatile bool havePeer = false;
 static volatile uint32_t connectedAt = 0;
@@ -1071,7 +1071,7 @@ void loop() {
     }
     if ((int)slow != txLow) {
       txLow = slow;
-      esp_power_level_t lvl = slow ? ESP_PWR_LVL_N0 : ESP_PWR_LVL_P9;
+      esp_power_level_t lvl = slow ? ESP_PWR_LVL_N12 : ESP_PWR_LVL_P9;
       esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, lvl);
       esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, lvl);
       for (int h = 0; h < 3; h++) esp_ble_tx_power_set((esp_ble_power_type_t)(ESP_BLE_PWR_TYPE_CONN_HDL0 + h), lvl);

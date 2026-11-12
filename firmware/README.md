@@ -78,10 +78,11 @@ didn't always accept the slow Bluetooth link.
   that check off (not saved; back to 6 dB after a restart); captures set off by `sim` skip it (the bench tone
   doesn't fade). Nov 11 recordings: 611 read "ok" before (almost all Bluetooth and I2C lines), 40 now. The seven
   bench fake bullets (s00001-s00007) read the same to 0.1 fps; every simulated shot reads within 0.15 fps of before.
+- Teensy default speed window is now 600-3500 fps (was 300-4500; only after `defaults` or on a fresh board).
 - Teensy settings gained `band` (EEPROM layout version 2; older settings are kept and `band` added).
 - ESP32 0.2.8: the slow-link request is repeated (every 5 s, then every 30 s) until the phone reports a link of
   90 ms or more; the slow numbers have more margin (90-120 ms, latency 6, 6 s timeout). While quiet the radio
-  transmits at 0 dBm instead of +9 dBm. Quiet mode now also starts when a compass calibration or a failed
+  transmits at -12 dBm instead of +9 dBm (the phone sits on the bench, within about 1.5 m). Quiet mode now also starts when a compass calibration or a failed
   update ends after setup.
 - Not tested on the hardware yet. Tune `band`, `qc` and `fade` on the first real echoes (the review's estimate
   of the real .22 echo is rough: about 3 counts at 1 m, maybe 1-10).

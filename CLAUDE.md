@@ -118,7 +118,7 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   trigger (`set band=15`, saved; `band=0` = old trigger), quick check from the trigger frame, line rejection in
   `analyze()` (pre-trigger lines scored against their own level; a track that runs to the capture's end without
   fading, or starts past 8 m, is code 6 "interference", never sent; `set fade=0` off; skipped for `sim`). ESP32 0.2.8:
-  the slow-link request is repeated until the phone grants 90 ms or more (90-120 ms, latency 6), 0 dBm while quiet,
+  the slow-link request is repeated until the phone grants 90 ms or more (90-120 ms, latency 6), -12 dBm while quiet (phone on the bench, under 5 ft),
   quiet mode also after a compass calibration. Replay of the 999 Nov 11 recordings: false "ok" reads 611 -> 40, the
   bench fake bullets unchanged; sim: all cases as before, bursts trigger 0/50 (old trigger 50/50). The review's bench
   idea for conducted vs radiated: also count triggers with a USB power bank in the ESP32's own USB-C (the ESP32's

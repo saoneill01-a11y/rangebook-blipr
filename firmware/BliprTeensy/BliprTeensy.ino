@@ -89,8 +89,8 @@ static Settings cfg;
 static void setDefaults() {
   cfg.magic = SET_MAGIC;
   cfg.version = 2;
-  cfg.vminFps = 300;
-  cfg.vmaxFps = 4500;
+  cfg.vminFps = 600;   // Sean shoots 600-3500 fps (Nov 12)
+  cfg.vmaxFps = 3500;
   cfg.lateralM = 0.10f;
   cfg.behindM = 0.10f;
   cfg.calPpm = 0;
