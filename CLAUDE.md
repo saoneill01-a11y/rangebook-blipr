@@ -67,6 +67,17 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   set to `fs=500000`** (saved setting; `defaults` puts it back to 600000): the holder tone lands at ~99 fps, below
   vmin, and `rec` says "no signal". `sim_test 500000` reads every case as well as 600k (22LR +1.9 fps; weak echo
   4/5 vs 2/5; 0/20 false shots). Noise floor with the radar on and the ESP32 out: rms ~7.5 counts. Next: ESP32 back in.
+- **Nov 11 evening, ESP32 back in** (recordings in `recordings/2026-11-11_bench_noise/`, `tools/tones.py` lists the lines):
+  ESP32 0.2.5 runs I2C at 250 kHz (the 400/100 kHz bus showed as 2035 fps). A real 94.3 kHz line (1921 fps, 10-13 dB;
+  same frequency at fs 400/500/600k) comes from the ESP32 itself (stays with display and sensors unplugged, weaker
+  without the sensor cable). **First live fire (.22LR subsonic, ~1067 fps on Sean's Rangecraft)**, session
+  `sessions/2026-11-11_1934`: BLIPR armed false-triggered ~2x a second with no shots (432 triggers; not the SD saves,
+  not the Rangecraft): the trigger is broadband and fires on the ESP32's I2C bursts (screen redraw every 500 ms).
+  Triggered captures read a steady ~1134 fps line (likely 2x the I2C byte rate) and, with the Rangecraft on, ~1695 fps
+  (gone with it off: two 24 GHz radars side by side beat). Sean's real shot wasn't identified yet (fired ~19:35; the
+  SD card has the captures). Teensy left disarmed with save=0, fs=500000. Plan: ESP32 quiet while armed (no screen
+  redraws or sensor reads until a shot result arrives), Teensy trigger on in-band energy only, then the planned
+  pre-trigger line rejection; bench-test armed with no shots (should stay silent) before live fire again.
 - PCB v1.1 bare boards ordered from PCBWay. Sean is also getting a PCBWay quote for assembled boards
   (files and form answers in `pcb/out/pcba/`, made by `pcb/pcba_files.py`; PCBWay wants the assembly
   drawing as PDF, not PNG). J1-J5 are left empty on those boards.
