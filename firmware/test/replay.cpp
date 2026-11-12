@@ -9,7 +9,8 @@
 //   ./replay --csv out.csv files...                       also write the results to a CSV
 //   ./replay --peaks peaks.csv s00012.bin                 every frame's strongest peak (for plotting)
 //   ./replay --set snr=10 --set lat=0.12 files...         override a setting from the file header
-//     keys: fs f0 cal lat behind vmin vmax (fps) snr t0 mindist
+//     keys: fs f0 cal lat behind vmin vmax (fps) snr t0 mindist qc (quick-check dB) fade (dB/decade, 0 = off)
+//           lines (1/0: pre-trigger line rejection) band (in-band trigger level, dB)
 //
 // File format (written by saveCapture() in BliprTeensy.ino): a 512-byte text header holding one JSON
 // object, then n I samples, then n Q samples, each uint16 little-endian (12-bit ADC counts).
@@ -62,9 +63,12 @@ int main(int argc, char** argv) {
   FILE* pk = peaksPath ? fopen(peaksPath, "w") : nullptr;
   if (pk) fprintf(pk, "file,t_ms,f_hz,mps,snr_db,used\n");
 
-  printf("%-12s %5s %9s %9s %7s %4s %7s %6s %6s %8s %-16s %s\n", "file", "shot", "recorded", "replay", "diff", "pts", "span_ms",
-         "snr", "rms", "accel", "quick check", "result");
-  int ok = 0, total = 0, quickPass = 0, okRejected = 0;
+  printf("%-12s %5s %9s %9s %7s %4s %7s %6s %6s %8s %-16s %-12s %s\n", "file", "shot", "recorded", "replay", "diff", "pts", "span_ms",
+         "snr", "rms", "accel", "quick check", "band trig", "result");
+  int ok = 0, total = 0, quickPass = 0, okRejected = 0, bandFired = 0, bandAtTrig = 0;
+  double bandDb = 12;
+  for (auto& o : overrides) if (o.first == "band") bandDb = o.second;
+  static float avg[rdsp::NFFT / 2];
   double sum = 0, sum2 = 0, lo = 1e9, hi = -1e9;
   for (auto& path : files) {
     FILE* f = fopen(path.c_str(), "rb");
@@ -94,6 +98,8 @@ int main(int argc, char** argv) {
       else if (k == "lat") p.lateralM = v; else if (k == "behind") p.behindM = v;
       else if (k == "vmin") p.vminMps = v * 0.3048; else if (k == "vmax") p.vmaxMps = v * 0.3048;
       else if (k == "snr") p.snrMinDb = v; else if (k == "t0") p.t0Sec = v; else if (k == "mindist") p.minDistM = v;
+      else if (k == "qc") p.confirmDb = v; else if (k == "fade") p.fadeMinDb = v; else if (k == "lines") p.lineReject = v != 0;
+      else if (k == "band") {}
       else { fprintf(stderr, "unknown setting %s\n", k.c_str()); return 2; }
     }
     static rdsp::Peak peaks[rdsp::MAX_FRAMES];
@@ -104,17 +110,42 @@ int main(int argc, char** argv) {
     num(h, "pre", pre);
     rdsp::Confirm cf;
     bool quick = pre > 0 ? proc.confirm(I.data(), Q.data(), N, (int)pre, p, &cf) : true;
+    if (p.confirmDb <= 0) quick = true;
     char qtxt[32];
     snprintf(qtxt, sizeof(qtxt), "%s %d %.1fdB", quick ? "pass" : "reject", cf.hits, cf.bestDb);
+    // The in-band trigger (firmware 0.2.5 on) run over the recording block by block: learn on the first 8 blocks, then
+    // the first block that would have triggered, and the strongest level around the original trigger block.
+    int k0, k1;
+    rdsp::Processor::bandBins(p, k0, k1);
+    for (int k = 0; k < rdsp::NFFT / 2; k++) avg[k] = 0;
+    const int B = rdsp::NFFT / 2, nb = N / B, trigB = (int)(pre / B);
+    double dI = 0, dQ = 0;
+    for (int i = 0; i < 8 * B && i < N; i++) { dI += I[i]; dQ += Q[i]; }
+    dI /= 8 * B; dQ /= 8 * B;
+    int firstHit = -1;
+    float nearTrig = -99;
+    for (int b = 1; b < nb; b++) {
+      int kb;
+      float db = proc.bandScan(&I[(b - 1) * B], &Q[(b - 1) * B], &I[b * B], &Q[b * B], (float)dI, (float)dQ, k0, k1, avg,
+                               b < 8 ? 0.125f : 1.0f / 64, &kb);
+      if (b < 8) continue;
+      if (firstHit < 0 && db > bandDb) firstHit = b;
+      if (b >= trigB - 1 && b <= trigB + 3 && db > nearTrig) nearTrig = db;
+    }
+    if (firstHit >= 0) bandFired++;
+    if (firstHit >= trigB - 1 && firstHit <= trigB + 3) bandAtTrig++;
+    char btxt[32];
+    if (firstHit >= 0) snprintf(btxt, sizeof(btxt), "b%d %.1fdB", firstHit, nearTrig);
+    else snprintf(btxt, sizeof(btxt), "- %.1fdB", nearTrig);
     if (quick) quickPass++;
     if (!quick && r.code == rdsp::OK) okRejected++;
     double fps = r.v0Mps / 0.3048, recFps = recV0 / 0.3048;
     const char* base = strrchr(path.c_str(), '/');
     base = base ? base + 1 : path.c_str();
-    static const char* codes[] = {"ok", "no signal", "weak", "short", "noisy", "out of range"};
-    const char* res = (r.code >= 0 && r.code <= 5) ? codes[r.code] : "?";
-    printf("%-12s %5.0f %9.1f %9.1f %7.1f %4d %7.1f %6.1f %6.2f %8.0f %-16s %s%s\n", base, shot, recFps, fps,
-           (r.code == 0 && recCode == 0) ? fps - recFps : 0.0, r.npts, r.spanMs, r.snrDb, r.rmsMps, r.accel, qtxt, res,
+    static const char* codes[] = {"ok", "no signal", "weak", "short", "noisy", "out of range", "interference"};
+    const char* res = (r.code >= 0 && r.code <= 6) ? codes[r.code] : "?";
+    printf("%-12s %5.0f %9.1f %9.1f %7.1f %4d %7.1f %6.1f %6.2f %8.0f %-16s %-12s %s%s\n", base, shot, recFps, fps,
+           (r.code == 0 && recCode == 0) ? fps - recFps : 0.0, r.npts, r.spanMs, r.snrDb, r.rmsMps, r.accel, qtxt, btxt, res,
            (recCode >= 0 && (int)recCode != r.code) ? "  (board said something else)" : "");
     if (csv) fprintf(csv, "%s,%.0f,%s,%.0f,%.2f,%d,%.2f,%.2f,%d,%.2f,%.2f,%.3f,%.1f,%.3f,%.3f\n", base, shot, str(h, "fw").c_str(),
                      recCode, recFps, r.code, fps, (r.code == 0 && recCode == 0) ? fps - recFps : 0.0, r.npts, r.spanMs, r.snrDb,
@@ -132,6 +163,7 @@ int main(int argc, char** argv) {
     printf("\n%d of %d read. Average %.1f fps, SD %.1f, ES %.1f (low %.1f, high %.1f)\n", ok, total, avg, sd, hi - lo, lo, hi);
   } else printf("\n0 of %d read.\n", total);
   printf("Quick check: %d of %d passed; %d that read ok would have been thrown away.\n", quickPass, total, okRejected);
+  printf("In-band trigger (%.1f dB): fired in %d of %d recordings, %d of them at the original trigger.\n", bandDb, bandFired, total, bandAtTrig);
   if (csv) fclose(csv);
   if (pk) fclose(pk);
   return 0;

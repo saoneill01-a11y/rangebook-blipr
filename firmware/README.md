@@ -1,4 +1,4 @@
-# Range Book BLIPR firmware v0.2.3 (ESP32 0.2.3, Teensy 0.2.2)
+# Range Book BLIPR firmware (ESP32 0.2.8, Teensy 0.2.5)
 
 Firmware for Range Book BLIPR (Ballistic Launch Inspection Portable Radar), the DIY radar chronograph. Step-by-step setup and the bench tests are in the
 build guide's **Firmware** tab; this file is the quick reference.
@@ -48,12 +48,43 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 - `set vmin=1500 vmax=3500`: only accept speeds in this window (fps)
 - `set lat=0.10 behind=0.10`: radar's sideways offset from the bore and distance behind the muzzle (metres)
 - `set cal=0`: calibration in parts per million (+1000 reads 0.1 % faster)
+- `set band=15`: in-band trigger level (dB; `band=0` = the old whole-block trigger at `trig`); `set qc=11` quick check,
+  `set fade=6` interference check (both dB, 0 = off, not saved)
 - Settings outside sensible ranges are refused (for example `vmin` and `vmax` 100 to 5,500 fps with `vmin` below `vmax`, `f0` 23.9 to 24.4 GHz)
 - `arm` / `disarm`, `live`, `rec`, `sim 2800`, `test`, `defaults`, `reboot`
 - `drive` / `drive off`: USB drive mode (below; it turns on by itself when you plug into a computer)
 - `time 1792480000`: set the clock (Range Book does this every time it connects), so raw recordings have the date and time
 
 ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `FLIP 0|1`, `QUIET 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
+
+## What changed in Teensy 0.2.5 and ESP32 0.2.8
+
+From the second-opinion review of the first live fire (Nov 11): the trigger listened mostly where the Bluetooth noise
+is, the quick check started too late for a weak .22 echo, the analysis could lock onto steady lines, and the phone
+didn't always accept the slow Bluetooth link.
+
+- Teensy, **in-band trigger** (`set band=15`, saved; `band=0` goes back to the old whole-block trigger, which `trig`
+  still sets). Each block, the last 4 ms get an FFT and every frequency inside the velocity window is compared with
+  its own usual level and with its neighbours (`rdsp::Processor::bandScan`). A bullet is a new narrow line there;
+  Bluetooth bursts (broadband, mostly low-pitched) and steady lines aren't. Simulated: bursts that set off the old
+  trigger 50 of 50 times set off this one 0 of 50; a .22 echo of 5 counts at 1 m still triggers 19 of 20. On the 999
+  Nov 11 recordings (window 600-1800) it fired at the original burst trigger in 9. `stat` shows how long the check takes per block;
+  `live` shows its reading.
+- Teensy, **quick check starts at the trigger** (`CONFIRM_FIRST` 2 -> 0): a weak echo is strongest right at the
+  muzzle. Simulated .22 at 8 counts: passes 20 of 20 (was about 3 of 20).
+- Teensy, **line rejection in the analysis**: a line already there before the trigger is scored against its own
+  earlier level, so it can't pass for the bullet; a track that runs to the end of the capture without fading, or
+  that starts more than 8 m out, is "interference" (result code 6, not sent to the phone). `set fade=0` turns
+  that check off (not saved; back to 6 dB after a restart); captures set off by `sim` skip it (the bench tone
+  doesn't fade). Nov 11 recordings: 611 read "ok" before (almost all Bluetooth and I2C lines), 40 now. The seven
+  bench fake bullets (s00001-s00007) read the same to 0.1 fps; every simulated shot reads within 0.15 fps of before.
+- Teensy settings gained `band` (EEPROM layout version 2; older settings are kept and `band` added).
+- ESP32 0.2.8: the slow-link request is repeated (every 5 s, then every 30 s) until the phone reports a link of
+  90 ms or more; the slow numbers have more margin (90-120 ms, latency 6, 6 s timeout). While quiet the radio
+  transmits at 0 dBm instead of +9 dBm. Quiet mode now also starts when a compass calibration or a failed
+  update ends after setup.
+- Not tested on the hardware yet. Tune `band`, `qc` and `fade` on the first real echoes (the review's estimate
+  of the real .22 echo is rough: about 3 counts at 1 m, maybe 1-10).
 
 ## What changed in Teensy 0.2.4
 

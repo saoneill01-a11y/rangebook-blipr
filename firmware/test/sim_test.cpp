@@ -159,5 +159,112 @@ int main(int argc, char** argv) {
     printf("weak-echo bullet with steady line and burst: quick check passed %d / 20\n", pass);
     gLineAmp = 0; gBurstMs = 0;
   }
+
+  // ---- Trigger (firmware 0.2.5 on: in-band, rdsp::Processor::bandScan) compared with the old whole-block energy trigger ----
+  // Each capture is run block by block as the firmware does: learn on the first 8 blocks, then look for a trigger.
+  const double bandDb = argc > 2 ? atof(argv[2]) : 12.0, oldDb = 9.0;
+  static float avg[rdsp::NFFT / 2];
+  auto trig = [&](const std::vector<uint16_t>& I, const std::vector<uint16_t>& Q, const rdsp::Params& p, int fromB, int toB,
+                  int& bandHit, int& oldHit, float& bandMax) {
+    const int B = rdsp::NFFT / 2, nb = (int)I.size() / B;
+    int k0, k1;
+    rdsp::Processor::bandBins(p, k0, k1);
+    for (auto& a : avg) a = 0;
+    double floorE = 0;
+    bandHit = oldHit = -1; bandMax = -99;
+    for (int b = 1; b < nb && b <= toB; b++) {
+      double s2 = 0;
+      for (int i = 0; i < B; i++) { double a = I[b * B + i] - 2048.0, q = Q[b * B + i] - 2048.0; s2 += a * a + q * q; }
+      int kb;
+      float db = proc.bandScan(&I[(b - 1) * B], &Q[(b - 1) * B], &I[b * B], &Q[b * B], 2048, 2048, k0, k1, avg,
+                               b < 8 ? 0.125f : 1.0f / 64, &kb);
+      if (b < 8) { floorE = b == 1 ? s2 : 0.7 * floorE + 0.3 * s2; continue; }
+      if (b < fromB) { if (s2 < 2 * floorE) floorE = 0.99 * floorE + 0.01 * s2; continue; }
+      if (db > bandMax) bandMax = db;
+      if (bandHit < 0 && db > bandDb) bandHit = b;
+      if (oldHit < 0 && 10 * log10(s2 / floorE) > oldDb) oldHit = b;
+      if (s2 < 2 * floorE) floorE = 0.99 * floorE + 0.01 * s2;
+    }
+  };
+  printf("\nTrigger: in-band at %.1f dB vs the old whole-block trigger at %.0f dB (trials that fired within 2 blocks of the shot)\n", bandDb, oldDb);
+  printf("%-34s %8s %8s %9s %9s %9s\n", "22LR 1067 fps, noise 8 counts", "in-band", "old", "quick chk", "reads ok", "all three");
+  for (double amp : {3.0, 5.0, 8.0, 12.0, 20.0, 40.0}) {
+    int nb = 0, no = 0, nq = 0, nr = 0, nall = 0;
+    const int T = 20;
+    for (int tr = 0; tr < T; tr++) {
+      Shot s{1067 * 0.3048, -120, 0.10, 0.10, amp, 8, 0, 24.150e9, 0, 0};
+      std::vector<uint16_t> I, Q;
+      synth(s, fs, n, t0Sample, I, Q);
+      rdsp::Params p; p.fs = (float)fs; p.lateralM = 0.10f; p.behindM = 0.10f; p.t0Sec = (float)(t0Sample / fs);
+      p.vminMps = 600 * 0.3048f; p.vmaxMps = 1800 * 0.3048f;
+      int bh, oh; float bm;
+      trig(I, Q, p, 9, t0Sample / 1024 + 2, bh, oh, bm);
+      bool b = bh >= t0Sample / 1024, o = oh >= t0Sample / 1024;
+      bool q = proc.confirm(I.data(), Q.data(), n, trigSample, p);
+      bool r = proc.analyze(I.data(), Q.data(), n, p).code == rdsp::OK;
+      nb += b; no += o; nq += q; nr += r; nall += b && q && r;
+    }
+    char lab[40]; snprintf(lab, sizeof(lab), "  echo %.0f counts at 1 m", amp);
+    printf("%-34s %5d/%d %5d/%d %6d/%d %6d/%d %6d/%d\n", lab, nb, T, no, T, nq, T, nr, T, nall, T);
+  }
+  // No bullet: how often each trigger fires on 160 ms of noise with interference (window 300-4500 fps)
+  {
+    struct NB { const char* name; double lineAmp, burstMs, white, low; };
+    NB nbs[] = {{"noise only", 0, 0, 0, 0}, {"burst 3 ms", 0, 3, 40, 60}, {"burst 2 ms, strong", 0, 2, 80, 150},
+                {"steady line 94 kHz (12 counts)", 12, 0, 0, 0}, {"steady line 94 kHz + burst", 12, 3, 40, 60}};
+    printf("%-34s %8s %8s %12s\n", "no bullet, 160 ms captures", "in-band", "old", "in-band max");
+    for (auto& b : nbs) {
+      int nb2 = 0, no2 = 0;
+      float worst = -99;
+      for (int tr = 0; tr < 50; tr++) {
+        gLineHz = 94300; gLineAmp = b.lineAmp; gBurstMs = b.burstMs; gBurstWhite = b.white; gBurstLow = b.low;
+        Shot s{0, 0, 0.1, 0, 0, 8, 0, 24.150e9, 0, 0};
+        std::vector<uint16_t> I, Q;
+        synth(s, fs, n, t0Sample, I, Q);
+        rdsp::Params p; p.fs = (float)fs; p.vminMps = 300 * 0.3048f; p.vmaxMps = 4500 * 0.3048f;
+        int bh, oh; float bm;
+        trig(I, Q, p, 9, 1000, bh, oh, bm);
+        nb2 += bh >= 0; no2 += oh >= 0;
+        if (bm > worst) worst = bm;
+      }
+      printf("  %-32s %5d/50 %5d/50 %9.1f dB\n", b.name, nb2, no2, worst);
+    }
+    gLineAmp = 0; gBurstMs = 0;
+  }
+  // Line rejection in analyze(): a steady line inside the window, stronger than the bullet's far echo
+  {
+    int okB = 0, lineB = 0;
+    for (int tr = 0; tr < 20; tr++) {
+      gLineHz = 94300; gLineAmp = 6;
+      Shot s{2700 * 0.3048, -320, 0.12, 0.15, 250, 14, 1500, 24.150e9, 0, -2};
+      std::vector<uint16_t> I, Q;
+      synth(s, fs, n, t0Sample, I, Q);
+      rdsp::Params p; p.fs = (float)fs; p.lateralM = 0.12f; p.behindM = 0.15f; p.t0Sec = (float)(t0Sample / fs);
+      p.vminMps = 300 * 0.3048f; p.vmaxMps = 4500 * 0.3048f;
+      rdsp::Result r = proc.analyze(I.data(), Q.data(), n, p);
+      if (r.code == rdsp::OK && fabs(r.v0Mps / 0.3048 - 2700) < 10) okB++;
+      if (r.code == rdsp::OK && fabs(r.v0Mps / 0.3048 - 2700) >= 10) lineB++;
+    }
+    printf("weak-echo bullet with a steady 94 kHz line in the window: read the bullet %d / 20, read the line %d / 20\n", okB, lineB);
+    // a line that starts at the trigger and runs to the end (the phone connecting): must not read as a shot
+    int falseL = 0;
+    for (int tr = 0; tr < 20; tr++) {
+      gLineAmp = 0;
+      Shot s{0, 0, 0.1, 0, 0, 14, 0, 24.150e9, 0, 0};
+      std::vector<uint16_t> I, Q;
+      synth(s, fs, n, t0Sample, I, Q);
+      std::normal_distribution<double> g(0.0, 1.0);
+      double ph = 0;
+      for (int i = t0Sample; i < n; i++) {   // 114 kHz line, 20 counts, with a slow wander
+        ph += 2 * M_PI * (114000 + 30 * sin(i / fs * 40)) / fs;
+        I[i] = (uint16_t)std::min(4095.0, I[i] + 20 * cos(ph)); Q[i] = (uint16_t)std::min(4095.0, Q[i] + 20 * sin(ph));
+      }
+      rdsp::Params p; p.fs = (float)fs; p.t0Sec = (float)(t0Sample / fs); p.vminMps = 300 * 0.3048f; p.vmaxMps = 4500 * 0.3048f;
+      rdsp::Result r = proc.analyze(I.data(), Q.data(), n, p);
+      if (r.code == rdsp::OK) falseL++;
+    }
+    printf("a line starting at the trigger and running to the end (phone connecting): read as a shot %d / 20\n", falseL);
+    gLineAmp = 0;
+  }
   return 0;
 }

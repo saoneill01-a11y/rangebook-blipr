@@ -30,7 +30,7 @@
 #endif
 #include "radar_dsp.h"
 
-#define FW_VERSION "0.2.4"
+#define FW_VERSION "0.2.5"
 
 // ---------------- pins and sizes ----------------
 static const int PIN_I = A0;      // pin 14
@@ -81,13 +81,14 @@ struct Settings {
   uint32_t fsReq;            // requested sample rate
   uint8_t saveRaw;           // save every capture to SD
   uint8_t armed;             // listening for shots
+  float bandDb;              // in-band trigger: a line this far above its usual level (dB); 0 = old whole-block trigger (version 2 on)
 };
 static const uint32_t SET_MAGIC = 0x52434831;  // "RCH1"
 static Settings cfg;
 
 static void setDefaults() {
   cfg.magic = SET_MAGIC;
-  cfg.version = 1;
+  cfg.version = 2;
   cfg.vminFps = 300;
   cfg.vmaxFps = 4500;
   cfg.lateralM = 0.10f;
@@ -99,11 +100,18 @@ static void setDefaults() {
   cfg.fsReq = 600000;
   cfg.saveRaw = 1;
   cfg.armed = 1;
+  cfg.bandDb = 15;
 }
 static void saveSettings() { EEPROM.put(0, cfg); }
 static void loadSettings() {
   EEPROM.get(0, cfg);
-  if (cfg.magic != SET_MAGIC || cfg.version != 1) { setDefaults(); saveSettings(); }
+  if (cfg.magic == SET_MAGIC && cfg.version == 1) {   // settings from 0.2.4 and before: keep them, add the new one
+    cfg.version = 2;
+    cfg.bandDb = 15;
+    saveSettings();
+  }
+  if (cfg.magic != SET_MAGIC || cfg.version != 2) { setDefaults(); saveSettings(); }
+  if (!(cfg.bandDb >= 0 && cfg.bandDb <= 60)) { cfg.bandDb = 15; saveSettings(); }
 }
 
 // ---------------- state ----------------
@@ -116,6 +124,12 @@ static float dcI = 2048, dcQ = 2048; // running DC levels
 static float floorE = 0;             // noise floor (energy per block, both channels)
 static uint32_t floorN = 0;
 static float lastBlkDb = 0;          // last block energy over floor (dB) for "live"
+static float bandAvg[rdsp::NFFT / 2]; // in-band trigger: each frequency bin's usual level
+static float lastBandDb = 0, lastBandHz = 0;  // last in-band reading (for "live")
+static uint32_t bandUsMax = 0;       // longest in-band check (us), shown by "stat"
+static float fadeDb = 6.0f;          // "set fade=": steady-line test in the analysis (dB); 0 turns it off. Not saved.
+static bool simAtTrig = false;       // the capture was set off by the bench "sim" tone (it doesn't fade like an echo)
+static volatile bool simOn = false;  // the bench "sim" tone is playing
 enum State { LISTEN, CONFIRM, CAPTURE };
 static State state = LISTEN;
 static uint32_t trigBlk = 0;         // block where the shot started
@@ -191,7 +205,7 @@ static float blockEnergy(const uint16_t* b, float& dc) {
   return (float)s2;
 }
 
-// Find the first sample in the trigger block that clearly stands out.
+// Find the first sample in a block that clearly stands out (-1: none does).
 static int onsetIndex(uint32_t blk) {
   const uint16_t* bi = ringI + (blk % NBLK) * BLOCK;
   const uint16_t* bq = ringQ + (blk % NBLK) * BLOCK;
@@ -199,29 +213,62 @@ static int onsetIndex(uint32_t blk) {
   float lim = 5.0f * sigma + 3.0f;
   for (int i = 0; i < BLOCK; i++)
     if (fabsf(bi[i] - dcI) > lim || fabsf(bq[i] - dcQ) > lim) return i;
-  return 0;
+  return -1;
 }
 
+static rdsp::Params currentParams();
+
 // Check each newly completed block (both channels) for a shot.
+// 0.2.5 on (bandDb > 0): the in-band trigger. The last two blocks get an FFT and each frequency inside the velocity
+// window is compared with its own usual level and its neighbours' (rdsp::Processor::bandScan): a bullet is a new
+// narrow line there. Bluetooth bursts (broadband, mostly low-pitched) and steady lines (the ESP32, the phone link)
+// don't stand out that way. bandDb = 0 goes back to the old trigger: the whole block's energy over the noise floor.
 static void checkTrigger() {
   uint32_t ready = std::min(cntI, cntQ);
+  static int k0 = 0, k1 = 0;
+  static float lastFs = 0, lastVmin = 0, lastVmax = 0;
+  if (fsActual != lastFs || cfg.vminFps != lastVmin || cfg.vmaxFps != lastVmax) {   // window changed: new bins
+    rdsp::Processor::bandBins(currentParams(), k0, k1);
+    lastFs = fsActual; lastVmin = cfg.vminFps; lastVmax = cfg.vmaxFps;
+  }
+  const bool band = cfg.bandDb > 0;
   while (evalBlk < ready) {
     uint32_t b = evalBlk++;
     if (state != LISTEN) continue;
     float e = blockEnergy(ringI + (b % NBLK) * BLOCK, dcI) + blockEnergy(ringQ + (b % NBLK) * BLOCK, dcQ);
+    float bdb = -99;
+    if (band && b >= 1 && ready - b < NBLK - 4) {   // (skip blocks the ring has already overwritten)
+      int kb = 0;
+      uint32_t tb = micros();
+      bdb = dsp.bandScan(ringI + ((b - 1) % NBLK) * BLOCK, ringQ + ((b - 1) % NBLK) * BLOCK, ringI + (b % NBLK) * BLOCK,
+                         ringQ + (b % NBLK) * BLOCK, dcI, dcQ, k0, k1, bandAvg, floorN < 200 ? 0.125f : 1.0f / 64, &kb);
+      tb = micros() - tb;
+      if (tb > bandUsMax) bandUsMax = tb;
+      lastBandDb = bdb;
+      lastBandHz = kb * fsActual / rdsp::NFFT;
+    }
     if (floorN < 200) {           // learn the quiet level after power-up
       floorE = floorN ? 0.95f * floorE + 0.05f * e : e;
       floorN++;
       continue;
     }
     lastBlkDb = 10.0f * log10f(e / (floorE + 1e-9f) + 1e-9f);
-    bool ready2 = (b >= armedAtBlk + PRE_BLK) && millis() >= holdoffUntil;
-    if (ready2 && (manualRec || (cfg.armed && !driveMode && lastBlkDb > cfg.trigDb))) {
+    bool ready2 = (b >= armedAtBlk + PRE_BLK + 1) && millis() >= holdoffUntil;
+    bool hit = band ? bdb > cfg.bandDb : lastBlkDb > cfg.trigDb;
+    if (ready2 && (manualRec || (cfg.armed && !driveMode && hit))) {
       state = manualRec ? CAPTURE : CONFIRM;
       lastConf = rdsp::Confirm();
       lastConf.hits = 99;   // a manual recording isn't checked
+      simAtTrig = simOn;
       trigBlk = b;
-      trigIdx = manualRec ? 0 : onsetIndex(b);
+      trigIdx = 0;
+      if (!manualRec) {
+        // the shot starts where the first sample stands out (the muzzle blast, or the echo itself); the in-band
+        // trigger looks at two blocks, so it may have started in the earlier one
+        int o = band ? onsetIndex(b - 1) : -1;
+        if (o >= 0) { trigBlk = b - 1; trigIdx = o; }
+        else { o = onsetIndex(b); trigIdx = o >= 0 ? o : 0; }
+      }
       digitalWriteFast(PIN_LED, HIGH);
       return;
     }
@@ -234,7 +281,6 @@ static void checkTrigger() {
 // Plays a decelerating Doppler tone on PIN_SIM, as a bullet at simV0 fps would give
 // with the current radar position settings.
 static IntervalTimer simTimer;
-static volatile bool simOn = false;
 static volatile uint32_t simStartUs = 0;
 static float simV0 = 2800, simAcc = -300;
 static void simTick() {
@@ -308,6 +354,7 @@ static const char* codeText(int c) {
     case rdsp::TOO_SHORT: return "short";
     case rdsp::NOISY: return "noisy";
     case rdsp::OUT_OF_RANGE: return "out of range";
+    case rdsp::STEADY_LINE: return "interference";
   }
   return "?";
 }
@@ -322,6 +369,7 @@ static rdsp::Params currentParams() {
   p.snrMinDb = cfg.snrDb;
   p.lateralM = cfg.lateralM;
   p.behindM = cfg.behindM;
+  p.fadeMinDb = fadeDb;
   return p;
 }
 
@@ -362,6 +410,7 @@ static void processCapture() {
   const int n = CAP_BLK * BLOCK;
   rdsp::Params p = currentParams();
   p.t0Sec = (PRE_BLK * BLOCK + trigIdx) / fsActual;
+  if (simAtTrig) p.fadeMinDb = 0;   // the bench tone keeps the same strength all the way: don't call it interference
   uint32_t t1 = micros();
   int np = 0;
   rdsp::Result r = dsp.analyze(ringI, ringQ, n, p, peakLog, &np);
@@ -377,7 +426,7 @@ static void processCapture() {
            r.code, wasManual ? "rec" : codeText(r.code));
   // A capture that only just passed the quick check and then didn't measure is almost certainly not a shot: keep it
   // off the phone (it's still printed and saved here).
-  bool quiet = !wasManual && r.code != rdsp::OK && lastConf.hits < 3;
+  bool quiet = !wasManual && r.code != rdsp::OK && (lastConf.hits < 3 || r.code == rdsp::STEADY_LINE);
   if (!wasManual && !quiet) linkSend(body);
   Serial.printf("\n%s #%lu: %s%s", wasManual ? "Recording" : "Shot", (unsigned long)shotNo, codeText(r.code), quiet ? " (not sent)" : "");
   if (r.code == rdsp::OK) Serial.printf("  %.1f fps (%.2f m/s)", fps, r.v0Mps);
@@ -406,9 +455,9 @@ static void processCapture() {
 static void sendConfig(Print& out, bool toLink) {
   char body[190];
   snprintf(body, sizeof(body),
-           "C,vmin=%.0f,vmax=%.0f,lat=%.3f,behind=%.3f,cal=%.0f,f0=%.0f,snr=%.1f,trig=%.1f,fs=%lu,save=%d,arm=%d",
+           "C,vmin=%.0f,vmax=%.0f,lat=%.3f,behind=%.3f,cal=%.0f,f0=%.0f,snr=%.1f,trig=%.1f,fs=%lu,save=%d,arm=%d,band=%.1f",
            cfg.vminFps, cfg.vmaxFps, cfg.lateralM, cfg.behindM, cfg.calPpm, (double)cfg.f0Hz, cfg.snrDb, cfg.trigDb,
-           (unsigned long)cfg.fsReq, cfg.saveRaw, cfg.armed);
+           (unsigned long)cfg.fsReq, cfg.saveRaw, cfg.armed, cfg.bandDb);
   if (toLink) linkSend(body);
   else out.printf("%s\n", body + 2);
 }
@@ -419,9 +468,11 @@ static void sendStatus(bool toLink) {
            cfg.armed && !driveMode, (unsigned long)shotNo, fsActual, 10.0f * log10f(floorE / (2.0f * BLOCK) + 1e-9f),
            (unsigned long)overruns, sdOk ? 1 : 0, FW_VERSION, (unsigned long)bootId, state == LISTEN ? 1 : 0);
   if (toLink) linkSend(body);
-  else Serial.printf("armed %d%s, shots %lu, dropped triggers %lu, sample rate %.0f Hz, noise %.1f dB(counts^2), overruns %lu, SD %s, fw %s\n",
+  else Serial.printf("armed %d%s, shots %lu, dropped triggers %lu, sample rate %.0f Hz, noise %.1f dB(counts^2), overruns %lu, SD %s, fw %s, "
+                     "trigger %s (check %lu of %lu us per block)\n",
                      cfg.armed, driveMode ? " (paused: USB drive mode)" : "", (unsigned long)shotNo, (unsigned long)rejects, fsActual,
-                     10.0f * log10f(floorE / (2.0f * BLOCK) + 1e-9f), (unsigned long)overruns, sdOk ? "ok" : "missing", FW_VERSION);
+                     10.0f * log10f(floorE / (2.0f * BLOCK) + 1e-9f), (unsigned long)overruns, sdOk ? "ok" : "missing", FW_VERSION,
+                     cfg.bandDb > 0 ? "in-band" : "whole block", (unsigned long)bandUsMax, (unsigned long)(BLOCK * 1e6f / fsActual));
 }
 
 static bool setKey(const char* k, float v) {
@@ -434,7 +485,7 @@ static bool setKey(const char* k, float v) {
   else if (!strcmp(k, "behind")) { if (!in(-2.0f, 2.0f)) return false; }
   else if (!strcmp(k, "cal")) { if (!in(-50000, 50000)) return false; }
   else if (!strcmp(k, "f0")) { if (!in(23.9e9f, 24.4e9f)) return false; }
-  else if (!strcmp(k, "snr") || !strcmp(k, "trig") || !strcmp(k, "qc")) { if (!in(0, 60)) return false; }
+  else if (!strcmp(k, "snr") || !strcmp(k, "trig") || !strcmp(k, "qc") || !strcmp(k, "band") || !strcmp(k, "fade")) { if (!in(0, 60)) return false; }
   else if (!strcmp(k, "fs")) { if (!in(100000, 1000000)) return false; }
   if (!strcmp(k, "vmin")) cfg.vminFps = v;
   else if (!strcmp(k, "vmax")) cfg.vmaxFps = v;
@@ -445,6 +496,8 @@ static bool setKey(const char* k, float v) {
   else if (!strcmp(k, "snr")) cfg.snrDb = v;
   else if (!strcmp(k, "trig")) cfg.trigDb = v;
   else if (!strcmp(k, "qc")) qcDb = v;
+  else if (!strcmp(k, "band")) cfg.bandDb = v;
+  else if (!strcmp(k, "fade")) fadeDb = v;
   else if (!strcmp(k, "save")) cfg.saveRaw = v != 0;
   else if (!strcmp(k, "arm")) cfg.armed = v != 0;
   else if (!strcmp(k, "fs")) cfg.fsReq = (uint32_t)v;
@@ -459,7 +512,8 @@ static void printHelp() {
     "  get               show settings\n"
     "  set key=value ... change settings, e.g. set vmin=1500 vmax=3500\n"
     "                    keys: vmin vmax (fps), lat behind (m), cal (ppm), snr trig (dB),\n"
-    "                          save (0/1), arm (0/1), fs (Hz, needs restart), f0 (Hz)\n"
+    "                          save (0/1), arm (0/1), fs (Hz, needs restart), f0 (Hz),\n"
+    "                          band (in-band trigger dB, 0 = old trigger), qc fade (dB, 0 = off; not saved)\n"
     "  arm / disarm      listen for shots, or not\n"
     "  live              toggle a twice-a-second readout of the radar signal\n"
     "  rec               record 100 ms right now and save it\n"
@@ -599,8 +653,9 @@ static void liveReport() {
   }
   float f = dsp.peakHz(liveI, liveQ, mi, mq, fsActual, 500);
   float hw = rdsp::Processor::halfWavelength(currentParams());
-  Serial.printf("I: dc %4.0f rms %6.1f | Q: dc %4.0f rms %6.1f | clipped %4d | strongest %7.0f Hz = %6.1f m/s = %6.0f fps | block %+5.1f dB\n",
-                mi, sqrt(pi / rdsp::NFFT), mq, sqrt(pq / rdsp::NFFT), clip, f, f * hw, f * hw / 0.3048f, lastBlkDb);
+  Serial.printf("I: dc %4.0f rms %6.1f | Q: dc %4.0f rms %6.1f | clipped %4d | strongest %7.0f Hz = %6.1f m/s = %6.0f fps | block %+5.1f dB | in-band %+5.1f dB at %.0f fps\n",
+                mi, sqrt(pi / rdsp::NFFT), mq, sqrt(pq / rdsp::NFFT), clip, f, f * hw, f * hw / 0.3048f, lastBlkDb,
+                lastBandDb, lastBandHz * hw / 0.3048f);
 }
 
 // ---------------- setup / loop ----------------

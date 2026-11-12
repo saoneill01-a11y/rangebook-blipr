@@ -100,7 +100,9 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   trigger or the quick check dropped them (dropped triggers aren't saved). Sean fired 4 shots about 5 s apart. Teensy 0.2.4
   (flashed) adds `set qc=0` (quick check off, RAM only, back to 11 dB after a restart) and prints each shot's quick-check
   line. With qc=0 and the ESP32 in, Bluetooth triggers (~1/s) keep BLIPR busy, so: **next session, start here:**
-  1. Pull the SD card into `recordings/` (saving seemed to stop at s00999 earlier: check `fileNo` / SD).
+  0. **Flash Teensy 0.2.5 and ESP32 0.2.8 (built Nov 12, not on the boards yet; see below).** Check `stat` (trigger
+     "in-band", check time per block well under the block time) and `live` (in-band reading) before anything else.
+  1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
   1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,
      GPIO20 = RX from the Teensy, GPIO21 = TX to the Teensy; display/sensors not needed for the test), armed, no shots,
      phone connected and not. Bursts gone = they travel through the air (shield or move the ESP32 in the case);
@@ -111,6 +113,17 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      during OTA; find out why the slow link didn't hold outside.
   5. Range Book overriding the window/arm on connect; the pre-trigger line rejection in `analyze()`.
   Teensy was left disarmed (arm=0 saved; the ESP32 arms it after setup), window 600-1800, save=1, fs=500000.
+- **Nov 12: second opinion (Fable session) and fixes, built and tested on the computer only.** Review notes:
+  `sessions/2026-11-11_review_fixes/` holds the before/after `sim_test` and `replay` tables. Teensy 0.2.5: in-band
+  trigger (`set band=15`, saved; `band=0` = old trigger), quick check from the trigger frame, line rejection in
+  `analyze()` (pre-trigger lines scored against their own level; a track that runs to the capture's end without
+  fading, or starts past 8 m, is code 6 "interference", never sent; `set fade=0` off; skipped for `sim`). ESP32 0.2.8:
+  the slow-link request is repeated until the phone grants 90 ms or more (90-120 ms, latency 6), 0 dBm while quiet,
+  quiet mode also after a compass calibration. Replay of the 999 Nov 11 recordings: false "ok" reads 611 -> 40, the
+  bench fake bullets unchanged; sim: all cases as before, bursts trigger 0/50 (old trigger 50/50). The review's bench
+  idea for conducted vs radiated: also count triggers with a USB power bank in the ESP32's own USB-C (the ESP32's
+  diode then keeps BLIPR's 5 V out of the radio's current pulses); the jumper test alone is ambiguous if bursts stay.
+  Range Book side (stop pushing window/arm on connect) was handed to the Range Book session.
 - PCB v1.1 bare boards ordered from PCBWay. Sean is also getting a PCBWay quote for assembled boards
   (files and form answers in `pcb/out/pcba/`, made by `pcb/pcba_files.py`; PCBWay wants the assembly
   drawing as PDF, not PNG). J1-J5 are left empty on those boards.
@@ -157,8 +170,8 @@ DFRobot_Multi_DOF_IMU and DFRobot_RTU from github.com/DFRobot (`arduino-cli lib 
 Both run at 115200 baud. Teensy USB vendor ID 0x16C0, ESP32-C3 0x303A (`python tools/blipr_log.py --list`).
 Only one program can have a port open: stop the logger before uploading or opening a monitor.
 
-Teensy commands: `stat`, `get`, `set key=value` (vmin vmax fps, lat behind m, cal ppm, snr trig dB, save 0/1,
-arm 0/1, fs Hz, f0 Hz), `arm`/`disarm`, `live` (twice-a-second readout of the radar signal: noise, DC, clipping,
+Teensy commands: `stat`, `get`, `set key=value` (vmin vmax fps, lat behind m, cal ppm, snr trig band dB, save 0/1,
+arm 0/1, fs Hz, f0 Hz; qc and fade dB, not saved), `arm`/`disarm`, `live` (twice-a-second readout of the radar signal: noise, DC, clipping,
 strongest frequency), `rec` (record 100 ms now), `sim [fps]` (fake bullet on pin 2, amplifier disconnected),
 `test`, `time`, `defaults`, `drive [off]`, `reboot`. **Plugging the Teensy into a computer turns on USB drive
 mode, which pauses shots**: send `arm` (the logger does) before shooting.

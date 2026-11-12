@@ -30,7 +30,7 @@ No read (the radar saw something but couldn't measure it):
   the old boot, so `SYNC 0` after a new `b` only returns shots from the new one.
 - `v` muzzle velocity in **fps** (always fps; the app converts)
 - `a` deceleration (m/s²), `p` points in the track, `q` signal strength (dB), `r` scatter (m/s), `d0`/`d1` metres tracked
-- `why`: `weak`, `short`, `noisy`, `out of range`, `no signal`
+- `why`: `weak`, `short`, `noisy`, `out of range`, `no signal` (`interference`, Teensy 0.2.5 on, is never sent: it isn't a shot)
 - `"test":1` marks a made-up shot from the `TEST` command (it does not count in the screen's string statistics)
 
 ## Status
@@ -44,7 +44,7 @@ C = compass, L = level), `cc` compass calibration (0 never, 1 calibrating now, 2
 
 ## Config
 ```json
-{"vmin":300,"vmax":4500,"lat":0.100,"behind":0.100,"cal":0,"f0":24150000000,"snr":12.0,"trig":9.0,"fs":600000,"save":1,"arm":1,"units":"fps","batcal":1.0000,"bright":2,"anim":0,"theme":0,"inv":0,"hoff":0.0,"hrev":0,"hrot":0}
+{"vmin":300,"vmax":4500,"lat":0.100,"behind":0.100,"cal":0,"f0":24150000000,"snr":12.0,"trig":9.0,"fs":600000,"save":1,"arm":1,"band":15.0,"units":"fps","batcal":1.0000,"bright":2,"anim":0,"theme":0,"inv":0,"hoff":0.0,"hrev":0,"hrot":0}
 ```
 `bright` screen brightness 0–4, `anim` bullet animation after each shot (1 = on), `theme` screen look (0–3), `inv` screen inverted (1 = on), `hoff` compass offset (degrees), `hrev` compass turns backwards (only used without an
 accelerometer), `hrot` IMU board rotation (0/90/180/270, counter-clockwise seen from above).
@@ -80,6 +80,7 @@ firmware is kept once it has run for 15 s; a crash or reset before that rolls ba
 | `SET f0=24150000000` | radar frequency (Hz); default 24.150 GHz. Values outside a sensible range are refused |
 | `SET save=0` | stop saving raw captures |
 | `SET trig=9 snr=12` | trigger level and minimum signal (dB) |
+| `SET band=15` | in-band trigger level (dB, Teensy 0.2.5 on); `band=0` uses the old whole-block trigger at `trig`. Config `"band"` |
 | `GET` / `STAT` / `STATUS` | send config / status (and sensors) now |
 | `TIME 1792480000` | set the clock (seconds since 1970, UTC); the app sends this at every connect |
 | `SYNC 10` | re-send stored shots newer than #10 (after a reconnect; up to 200 kept) |

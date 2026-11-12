@@ -74,23 +74,82 @@ float Processor::peakHz(const uint16_t* I, const uint16_t* Q, float dcI, float d
   return best * fs / NFFT;
 }
 
+void Processor::bandBins(const Params& p, int& kmin, int& kmax) {
+  const float hw = halfWavelength(p);
+  kmin = (int)floorf(p.vminMps / hw / p.fs * NFFT);
+  kmax = (int)ceilf(p.vmaxMps / hw / p.fs * NFFT);
+  if (kmin < 3) kmin = 3;
+  if (kmax > NFFT / 2 - 3) kmax = NFFT / 2 - 3;
+}
+
+// Average power of the bins LOC_IN..LOC_OUT away on both sides of each bin kmin..kmax (pw_ must hold kmin-LOC_OUT ..
+// kmax+LOC_OUT, clipped to the spectrum). A broadband burst that is louder at one end of the window lifts its own
+// neighbourhood, so it doesn't stand out against this; a bullet's narrow line does.
+static constexpr int LOC_IN = 6, LOC_OUT = 30;
+void Processor::localFloor(int kmin, int kmax) {
+  const int lo = kmin - LOC_OUT < 1 ? 1 : kmin - LOC_OUT, hi = kmax + LOC_OUT > NFFT / 2 - 1 ? NFFT / 2 - 1 : kmax + LOC_OUT;
+  // prefix sums in tmp_ (index j - lo + 1)
+  tmp_[0] = 0;
+  for (int j = lo; j <= hi; j++) tmp_[j - lo + 1] = tmp_[j - lo] + pw_[j];
+  auto sum = [&](int a, int b, int& cnt) -> float {   // bins a..b clipped to lo..hi
+    if (a < lo) a = lo;
+    if (b > hi) b = hi;
+    if (b < a) return 0;
+    cnt += b - a + 1;
+    return tmp_[b - lo + 1] - tmp_[a - lo];
+  };
+  for (int k = kmin; k <= kmax; k++) {
+    int cnt = 0;
+    float s = sum(k - LOC_OUT, k - LOC_IN, cnt) + sum(k + LOC_IN, k + LOC_OUT, cnt);
+    loc_[k] = cnt ? s / cnt : 0;
+  }
+}
+
+float Processor::bandScan(const uint16_t* I0, const uint16_t* Q0, const uint16_t* I1, const uint16_t* Q1, float dcI, float dcQ,
+                          int kmin, int kmax, float* avg, float alpha, int* kOut) {
+  const int H = NFFT / 2;
+  for (int i = 0; i < H; i++) {
+    re_[i] = ((float)I0[i] - dcI) * win_[i];
+    im_[i] = ((float)Q0[i] - dcQ) * win_[i];
+    re_[H + i] = ((float)I1[i] - dcI) * win_[H + i];
+    im_[H + i] = ((float)Q1[i] - dcQ) * win_[H + i];
+  }
+  fft(re_, im_);
+  if (kmax <= kmin + 4) { if (kOut) *kOut = kmin; return 0; }
+  const int lo = kmin - LOC_OUT < 1 ? 1 : kmin - LOC_OUT, hi = kmax + LOC_OUT > NFFT / 2 - 1 ? NFFT / 2 - 1 : kmax + LOC_OUT;
+  for (int k = lo; k <= hi; k++) {
+    int m = NFFT - k;
+    pw_[k] = 0.5f * (re_[k] * re_[k] + im_[k] * im_[k] + re_[m] * re_[m] + im_[m] * im_[m]);
+  }
+  localFloor(kmin, kmax);
+  int best = kmin;
+  float br = 0;
+  for (int k = kmin; k <= kmax; k++) {
+    float ref = avg[k] > loc_[k] ? avg[k] : loc_[k];
+    float rr = pw_[k] / (ref + 1e-9f);
+    if (rr > br) { br = rr; best = k; }
+    float lvl = avg[k] > 0 ? avg[k] : loc_[k];
+    float x = pw_[k] < 4.0f * lvl ? pw_[k] : 4.0f * lvl;
+    avg[k] = avg[k] > 0 ? avg[k] + alpha * (x - avg[k]) : pw_[k];
+  }
+  if (kOut) *kOut = best;
+  return br > 0 ? 10.0f * log10f(br) : -99.0f;
+}
+
 // Quick check right after a trigger, before committing to a full capture (which keeps BLIPR busy for ~0.5 s).
 // Bluetooth radio bursts and similar knocks set the trigger off but last only 2-4 ms and are mostly broadband or
 // low-pitched; a bullet's echo is a narrow line inside the velocity band that lasts tens of ms. So: average the
 // spectrum of the frames before the trigger (that also takes in any steady interference line), then look at
-// CONFIRM_FRAMES frames starting CONFIRM_FIRST steps after the trigger (skipping the trigger block and the worst
-// of the muzzle blast). Each bin is
+// CONFIRM_FRAMES frames starting CONFIRM_FIRST steps after the trigger (0 since 0.2.5: a weak echo is strongest
+// right at the trigger; blast lifts the frame median, which already keeps it from scoring). Each bin is
 // compared with the larger of its pre-trigger level and the frame's own in-band median, so a steady line (in the
 // reference) and broadband noise (blast, bursts: they lift the median) both score low, while a narrow new line
 // scores high. A shot needs confirmNeed frames whose best bin is at least confirmDb up and within 8 bins of each
 // other (a bullet slows and its angle changes only slightly in a few ms).
 bool Processor::confirm(const uint16_t* I, const uint16_t* Q, int n, int trigSample, const Params& p, Confirm* out) {
   Confirm c;
-  const float hw = halfWavelength(p);
-  int kmin = (int)floorf(p.vminMps / hw / p.fs * NFFT);
-  int kmax = (int)ceilf(p.vmaxMps / hw / p.fs * NFFT);
-  if (kmin < 3) kmin = 3;
-  if (kmax > NFFT / 2 - 3) kmax = NFFT / 2 - 3;
+  int kmin, kmax;
+  bandBins(p, kmin, kmax);
   if (kmax <= kmin + 4 || trigSample < 2 * CONFIRM_STEP) { if (out) *out = c; return true; }
   double si = 0, sq = 0;
   for (int i = 0; i < trigSample; i++) { si += I[i]; sq += Q[i]; }
@@ -101,7 +160,8 @@ bool Processor::confirm(const uint16_t* I, const uint16_t* Q, int n, int trigSam
       im_[i] = ((float)Q[start + i] - mq) * win_[i];
     }
     fft(re_, im_);
-    for (int k = kmin; k <= kmax; k++) {
+    const int lo = kmin - LOC_OUT < 1 ? 1 : kmin - LOC_OUT, hi = kmax + LOC_OUT > NFFT / 2 - 1 ? NFFT / 2 - 1 : kmax + LOC_OUT;
+    for (int k = lo; k <= hi; k++) {
       int m = NFFT - k;
       pw_[k] = 0.5f * (re_[k] * re_[k] + im_[k] * im_[k] + re_[m] * re_[m] + im_[m] * im_[m]);
     }
@@ -132,7 +192,8 @@ bool Processor::confirm(const uint16_t* I, const uint16_t* Q, int n, int trigSam
     float br = 0;
     for (int k = kmin; k <= kmax; k++) {
       // a bin's own reference (never below a tenth of the band's average, so one quiet bin can't fake a line),
-      // or the frame's median if that is higher
+      // or the frame's median if that is higher. (Not the neighbours' level as in bandScan: close to the muzzle the
+      // echo's pitch sweeps across many bins and would hide itself.)
       float ref = ref_[k] > 0.1f * floorAll ? ref_[k] : 0.1f * floorAll;
       if (med > ref) ref = med;
       float rr = pw_[k] / (ref + 1e-9f);
@@ -183,13 +244,19 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
   for (int i = 0; i < n; i++) { si += I[i]; sq += Q[i]; }
   const float mi = (float)(si / n), mq = (float)(sq / n);
 
-  int kmin = (int)floorf(p.vminMps / hw / p.fs * NFFT);
-  int kmax = (int)ceilf(p.vmaxMps / hw / p.fs * NFFT);
-  if (kmin < 3) kmin = 3;
-  if (kmax > NFFT / 2 - 3) kmax = NFFT / 2 - 3;
+  int kmin, kmax;
+  bandBins(p, kmin, kmax);
   if (kmax <= kmin + 4) { r.code = NO_SIGNAL; return r; }
 
   // ---- 1-3: frame peaks ----
+  // Line rejection: the frames that end a block before the trigger are averaged into a reference spectrum. From then
+  // on a bin that already held a line (reference over twice the frame's median) is scored against its reference
+  // instead of the median, so a steady interference line (a converter, a clock, the Bluetooth link) can't pass for the
+  // bullet. Bins with only noise in them score as before.
+  const int refEnd = (int)(p.t0Sec * p.fs) - NFFT / 2;   // reference frames end before this sample
+  int nref = 0;
+  bool refReady = false;
+  for (int k = kmin - 1; k <= kmax + 1; k++) ref_[k] = 0;
   int nf = 0;
   for (int start = 0; start + NFFT <= n && nf < MAX_FRAMES; start += HOP) {
     for (int i = 0; i < NFFT; i++) {
@@ -204,18 +271,31 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
       int m = NFFT - k;
       pw_[k] = 0.5f * (re_[k] * re_[k] + im_[k] * im_[k] + re_[m] * re_[m] + im_[m] * im_[m]);
     }
-    int cnt = kmax - kmin + 1, best = kmin;
-    for (int k = kmin; k <= kmax; k++) {
-      tmp_[k - kmin] = pw_[k];
-      if (pw_[k] > pw_[best]) best = k;
+    if (p.lineReject && !refReady) {
+      if (start + NFFT <= refEnd) {
+        for (int k = kmin; k <= kmax; k++) ref_[k] += pw_[k];
+        nref++;
+      } else {
+        refReady = true;
+        for (int k = kmin; k <= kmax; k++) ref_[k] = nref >= 4 ? ref_[k] / nref : 0;
+      }
     }
+    int cnt = kmax - kmin + 1;
+    for (int k = kmin; k <= kmax; k++) tmp_[k - kmin] = pw_[k];
     std::nth_element(tmp_, tmp_ + cnt / 2, tmp_ + cnt);
     float med = tmp_[cnt / 2];
+    int best = kmin;
+    float bestScore = 0;
+    for (int k = kmin; k <= kmax; k++) {
+      float den = (refReady && ref_[k] > 2.0f * med) ? ref_[k] : med;
+      float sc = den > 0 ? pw_[k] / den : 0;
+      if (sc > bestScore) { bestScore = sc; best = k; }
+    }
     Peak& pk = peaks_[nf];
     pk.t = (start + NFFT * 0.5f) / p.fs;
     pk.used = false;
-    if (med <= 0 || pw_[best] <= 0) { pk.f = 0; pk.snrDb = 0; nf++; continue; }
-    pk.snrDb = 10.0f * log10f(pw_[best] / med);
+    if (med <= 0 || pw_[best] <= 0 || bestScore <= 0) { pk.f = 0; pk.snrDb = 0; nf++; continue; }
+    pk.snrDb = 10.0f * log10f(bestScore);
     // Sub-bin position from a parabola through the log power of the peak and its neighbours
     float a = logf(pw_[best - 1] + 1e-12f), b = logf(pw_[best] + 1e-12f), c = logf(pw_[best + 1] + 1e-12f);
     float den = a - 2 * b + c, d = 0;
@@ -307,7 +387,7 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
 
   float v0 = 0, acc = 0;
   if (!fitLine(tt, vr, ww, m, v0, acc)) { r.code = TOO_FEW; return r; }
-  static float tx[MAX_FRAMES], vy[MAX_FRAMES], wy[MAX_FRAMES], dist[MAX_FRAMES];
+  static float tx[MAX_FRAMES], vy[MAX_FRAMES], wy[MAX_FRAMES], dist[MAX_FRAMES], sn[MAX_FRAMES];
   int k = 0;
   // Each frame's frequency is an average over its window (NFFT / fs: 3.4 ms at 600 kS/s). Close to the muzzle
   // the echo gets much weaker within one window (it falls off as 1/R^2) and the angle
@@ -352,7 +432,7 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
         // (beam shape, blast). Leave those points out rather than trust a big correction.
         if (fabsf(f / plain - 1.0f) > 0.01f) continue;
       }
-      tx[k] = tt[i]; vy[k] = vr[i] * f; wy[k] = ww[i]; dist[k] = s; k++;
+      tx[k] = tt[i]; vy[k] = vr[i] * f; wy[k] = ww[i]; dist[k] = s; sn[k] = snr[i]; k++;
     }
     if (k < 3) break;
     float nv0, nacc;
@@ -372,7 +452,7 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
     int k2 = 0;
     for (int i = 0; i < k; i++) {
       float e = vy[i] - (v0 + acc * tx[i]);
-      if (fabsf(e) <= 3.0f * rms + 0.3f) { tx[k2] = tx[i]; vy[k2] = vy[i]; wy[k2] = wy[i]; dist[k2] = dist[i]; k2++; }
+      if (fabsf(e) <= 3.0f * rms + 0.3f) { tx[k2] = tx[i]; vy[k2] = vy[i]; wy[k2] = wy[i]; dist[k2] = dist[i]; sn[k2] = sn[i]; k2++; }
     }
     if (k2 >= 6 && k2 < k) { k = k2; fitLine(tx, vy, wy, k, v0, acc); }
   }
@@ -394,7 +474,33 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
 
   // A real bullet is tracked for at least a couple of metres, and drag only ever
   // slows it down. Blast and clutter tracks tend to be short or to speed up.
+  // A bullet's echo fades as it flies away until it sinks into the noise, which is where its track ends, well before
+  // the capture does. An interference line that happens to form a track (the phone connecting, say) runs on to the
+  // end of the capture at the same strength. So: a track that reaches the last frames of the capture and is no weaker
+  // at its far end than at its near end is not a bullet. (Fast, strong shots reach 40-50 m in the simulations, about
+  // half the capture; the bench "sim" tone stops after 60 ms.)
+  bool flat = false;
+  const float tEnd = n / p.fs - p.t0Sec;
+  if (p.fadeMinDb > 0 && k >= 6 && tx[k - 1] > tEnd - 0.015f) {
+    const int n3 = k / 3;
+    for (int i = 0; i < n3; i++) tmp_[i] = sn[i];
+    std::nth_element(tmp_, tmp_ + n3 / 2, tmp_ + n3);
+    const float near = tmp_[n3 / 2];
+    for (int i = 0; i < n3; i++) tmp_[i] = sn[k - n3 + i];
+    std::nth_element(tmp_, tmp_ + n3 / 2, tmp_ + n3);
+    const float far = tmp_[n3 / 2];
+    if (near - far < p.fadeMinDb) flat = true;
+#ifdef DEBUG_FADE
+    fprintf(stderr, "fade: d %.1f-%.1f, near %.1f dB, far %.1f dB, k %d\n", r.d0, r.d1, near, far, k);
+#endif
+  }
+
+  // And a bullet's echo is strongest close in, so its track starts close to the muzzle (0.5-3 m in the simulations);
+  // one that only starts tens of metres out is interference that happened to line up.
+  if (r.d0 > 8.0f) flat = true;
+
   if (r.spanMs < 3.0f || r.d1 < 2.0f) r.code = TOO_SHORT;
+  else if (flat) r.code = STEADY_LINE;
   else if (r.rmsMps > 1.5f || acc > 150.0f) r.code = NOISY;
   else if (v0 < p.vminMps || v0 > p.vmaxMps) r.code = OUT_OF_RANGE;
   else r.code = OK;

@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.7"
+#define FW_VERSION "0.2.8"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -238,14 +238,21 @@ static void keepFirmwareIfRunning() {
 // 2 s (shots still go out at the next event, within ~120 ms). Not connected: advertising every ~1 s instead of
 // every 20-40 ms (the phone still finds it, a little more slowly). Both go back to fast for setup and updates.
 // (These numbers follow Apple's connection-parameter rules, so iPhones accept them.)
+// 0.2.8: the phone doesn't always agree (outdoors it stayed at 30 ms), so the request is repeated until the phone
+// reports a link that slow; the slow numbers have more margin (90-120 ms, latency 6: wakes about every 0.8 s); and
+// the radio transmits at 0 dBm instead of +9 dBm while quiet (the phone is a few metres away).
 static uint8_t peerAddr[6];
 static volatile bool havePeer = false;
 static volatile uint32_t connectedAt = 0;
+static volatile uint16_t linkUnits = 0;   // connection interval the phone last reported (1.25 ms units; 0 = not yet)
 static int linkSlow = -1;   // what was last asked of the phone (-1 = nothing yet on this connection)
+static uint32_t linkAskedAt = 0;
+static int linkTries = 0;
 static int advSlow = -1;
+static int txLow = -1;
 
 class ServerCB : public BLEServerCallbacks {
-  void onConnect(BLEServer*) override { connected = true; connectedAt = millis(); linkSlow = -1; }
+  void onConnect(BLEServer*) override { connected = true; connectedAt = millis(); linkSlow = -1; linkUnits = 0; linkTries = 0; }
 #if defined(CONFIG_BLUEDROID_ENABLED)
   void onConnect(BLEServer*, esp_ble_gatts_cb_param_t* param) override {
     memcpy(peerAddr, param->connect.remote_bda, 6);
@@ -253,6 +260,7 @@ class ServerCB : public BLEServerCallbacks {
   }
   void onConnParamsUpdate(esp_bd_addr_t, uint16_t interval, uint16_t latency, uint16_t timeout, esp_bt_status_t status) override {
     Serial.printf("Bluetooth link: every %.1f ms, latency %u, timeout %u ms (status %d)\n", interval * 1.25f, latency, timeout * 10, (int)status);
+    if (status == ESP_BT_STATUS_SUCCESS) linkUnits = interval;
   }
 #endif
   void onDisconnect(BLEServer*) override {
@@ -705,10 +713,12 @@ static void startSetup(uint32_t levelMs) {
   startLevel(levelMs);
   if (quietPref) { if (tArmed) armAfterSetup = true; toTeensy("disarm"); }
 }
+static bool quietPending = false;   // go quiet as soon as a compass calibration or update finishes
 static void endSetup() {
   setupPhase = false;
   if (armAfterSetup) { armAfterSetup = false; toTeensy("arm"); }
   if (quietPref && !sensors::calibratingNow()) enterQuiet();
+  else if (quietPref) quietPending = true;
 }
 
 static void handleTeensy(char* line) {
@@ -1044,7 +1054,11 @@ void loop() {
   if (otaRebootAt && millis() > otaRebootAt) { Serial.println("Restarting into the new firmware..."); delay(100); ESP.restart(); }
   if (otaActive && millis() - otaLastMs > 20000) { Update.abort(); otaActive = false; otaSay("idle"); }   // sender gave up
 
-  if (otaActive && quiet) leaveQuiet();   // show the update's progress
+  if (otaActive && quiet) { leaveQuiet(); quietPending = true; }   // show the update's progress
+  if (quietPending && !quiet && !otaActive && !setupPhase && !levelUntil && !sensors::calibratingNow()) {
+    quietPending = false;
+    if (quietPref) enterQuiet();
+  }
   if (!quiet || sensors::calibratingNow()) sensors::update();
   {
     bool slow = quiet && !otaActive;
@@ -1055,11 +1069,27 @@ void loop() {
       adv->setMaxInterval(slow ? 1636 : 0x40);
       if (!connected) { BLEDevice::stopAdvertising(); BLEDevice::startAdvertising(); }
     }
+    if ((int)slow != txLow) {
+      txLow = slow;
+      esp_power_level_t lvl = slow ? ESP_PWR_LVL_N0 : ESP_PWR_LVL_P9;
+      esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, lvl);
+      esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, lvl);
+      for (int h = 0; h < 3; h++) esp_ble_tx_power_set((esp_ble_power_type_t)(ESP_BLE_PWR_TYPE_CONN_HDL0 + h), lvl);
+    }
 #if defined(CONFIG_BLUEDROID_ENABLED)
-    if (connected && havePeer && millis() - connectedAt > 2000 && (int)slow != linkSlow) {
-      linkSlow = slow;
-      if (slow) server->updateConnParams(peerAddr, 84, 96, 15, 600);   // 105-120 ms, latency 15, 6 s timeout
-      else server->updateConnParams(peerAddr, 12, 24, 0, 400);         // 15-30 ms, no latency, 4 s timeout
+    if (connected && havePeer && millis() - connectedAt > 2000) {
+      // what the phone last reported (before it reports anything the link is at the phone's usual 30 ms)
+      bool isSlow = linkUnits >= 72, isFast = linkUnits == 0 || linkUnits <= 40;
+      bool done = slow ? isSlow : isFast;
+      uint32_t wait = linkTries < 6 ? 5000 : 30000;   // keep asking, less often after a few refusals
+      if ((int)slow != linkSlow) linkTries = 0;
+      if (!done && ((int)slow != linkSlow || millis() - linkAskedAt > wait)) {
+        linkSlow = slow;
+        linkAskedAt = millis();
+        linkTries++;
+        if (slow) server->updateConnParams(peerAddr, 72, 96, 6, 600);   // 90-120 ms, latency 6, 6 s timeout
+        else server->updateConnParams(peerAddr, 12, 24, 0, 400);        // 15-30 ms, no latency, 4 s timeout
+      } else if (done) linkSlow = slow;
     }
 #endif
   }
