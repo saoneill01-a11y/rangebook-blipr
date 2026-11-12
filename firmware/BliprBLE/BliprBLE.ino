@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.4"
+#define FW_VERSION "0.2.5"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -49,7 +49,11 @@ static const int PIN_ONEWIRE = 10;  // ammo temperature probe (optional)
 static const uint32_t LINK_BAUD = 460800;
 
 HardwareSerial& Link = Serial1;
-Adafruit_SSD1306 oled(128, 64, &Wire, -1);
+// I2C (screen and sensors) at 250 kHz, not the library's 400/100 kHz: the radar wires pick up the bus clock, and with
+// the Teensy sampling at 500 kHz, 400 and 100 kHz both land on 100 kHz (about 2035 fps, inside the velocity window).
+// 250 kHz and its harmonics land at 250 kHz (over 5000 fps) or 0 Hz, outside it.
+#define I2C_HZ 250000UL
+Adafruit_SSD1306 oled(128, 64, &Wire, -1, I2C_HZ, I2C_HZ);
 Preferences prefs;
 static bool oledOk = false;
 
@@ -887,7 +891,7 @@ void setup() {
   analogSetPinAttenuation(PIN_BAT, ADC_11db);
 
   Wire.begin(PIN_SDA, PIN_SCL);
-  Wire.setClock(400000);
+  Wire.setClock(I2C_HZ);
   oledOk = oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   if (oledOk) {
     oled.setRotation(screenFlip ? 2 : 0);

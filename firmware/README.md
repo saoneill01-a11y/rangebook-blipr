@@ -55,6 +55,12 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 
 ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `FLIP 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
 
+## What changed in 0.2.5 (ESP32 only; the Teensy stays 0.2.2)
+
+- The screen and sensors (I2C) run at 250 kHz instead of 400/100 kHz. The radar wires picked up the bus clock, and
+  with the Teensy at 500 kS/s (`set fs=500000`, used on the first build to move the battery holder's converter tone
+  out of the way) both old speeds showed up as a false track near 2035 fps. 250 kHz lands outside the velocity window.
+
 ## What changed in 0.2.4 (ESP32 only; the Teensy stays 0.2.2)
 
 - The screen is turned 180 degrees so it reads the right way up in the case (it was upside down on the first build).
