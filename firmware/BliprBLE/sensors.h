@@ -23,6 +23,8 @@ struct EnvReading {
 namespace sensors {
 void begin(int pinOneWire);
 void update();               // call often; it paces itself
+void readNow();              // one full reading right away (after a shot, while BLIPR keeps the I2C bus quiet)
+bool calibratingNow();       // compass calibration running (needs update() called)
 const EnvReading& get();
 String letters();            // e.g. "THPAC" for what's fitted
 // Compass calibration: start, then turn the chronograph slowly through a full circle, then stop.

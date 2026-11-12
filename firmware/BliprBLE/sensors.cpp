@@ -215,8 +215,19 @@ static void useMag(const float v[3], bool tiltComp) {
   env.hasHeading = true;
 }
 
+static uint32_t tSlow = 0, tFast = 0, tProbe = 0, tAmmo = 0;
+
+// One full reading now (level, compass, temperature, humidity, pressure), used after a shot while the bus is quiet.
+void readNow() {
+  uint32_t now = millis();
+  tFast = now - 100;
+  tSlow = now - 2000;
+  update();
+}
+
+bool calibratingNow() { return calibrating; }
+
 void update() {
-  static uint32_t tSlow = 0, tFast = 0, tProbe = 0, tAmmo = 0;
   uint32_t now = millis();
   // look for sensors plugged in after start-up (every 15 s)
   if (now - tProbe > 15000) { tProbe = now; probeI2C(); probeOneWire(); }

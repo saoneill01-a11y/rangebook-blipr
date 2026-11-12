@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.5"
+#define FW_VERSION "0.2.6"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -109,6 +109,18 @@ static bool screenInv = false;
 static bool screenFlip = true;  // FLIP 1 (default): turned 180 degrees, the right way up as the screen sits in the case
 static bool shotAnim = false;   // ANIM 1: after each good shot a bullet flies across and writes the velocity
 static uint32_t animStart = 0;  // millis() when the shot animation started (0 = not running)
+
+// QUIET 1 (the default): once BLIPR is set up (level shown and held, or 60 s, or 3 s without a level sensor) the screen
+// goes dark and the ESP32 stops all I2C traffic (screen and sensors) while it waits for shots. The radar wires pick
+// that traffic up: on the first live fire it set off false shots twice a second and read as a steady ~1134 fps.
+// After each shot the sensors are read once and the result shows for SHOT_SHOW_MS, then the screen goes dark again.
+// The Teensy is held disarmed during setup (the screen and level are busy then) and armed when the quiet starts.
+static bool quietPref = true;
+static bool setupPhase = true;
+static bool quiet = false;
+static uint32_t wakeUntil = 0;       // millis() when a brief screen showing ends (0 = none)
+static bool armAfterSetup = false;
+static const uint32_t SHOT_SHOW_MS = 5000;
 
 static int pctFromVolts(float v) {
   // resting Li-ion curve, close enough for a gauge
@@ -475,7 +487,7 @@ static void drawLevel() {
   oled.display();
 }
 
-static void drawScreen() {
+static void drawScreenNow() {
   if (!oledOk) return;
   oled.invertDisplay(screenInv);
   if (otaActive || otaRebootAt) {               // firmware update in progress
@@ -653,6 +665,31 @@ static void drawScreen() {
 }
 
 // ---------------- messages from the Teensy ----------------
+// Event-driven screen updates (a shot, a setting changed). While quiet the screen lights for SHOT_SHOW_MS and then
+// goes dark again; nothing is redrawn in between, so the I2C bus stays silent.
+static void drawScreen() {
+  if (!quiet) { drawScreenNow(); return; }
+  applyBrightness();
+  drawScreenNow();
+  wakeUntil = millis() + SHOT_SHOW_MS;
+  if (!wakeUntil) wakeUntil = 1;
+}
+static void screenOff() { if (oledOk) oled.ssd1306_command(SSD1306_DISPLAYOFF); }
+static void enterQuiet() { quiet = true; wakeUntil = 0; screenOff(); }
+static void leaveQuiet() { if (!quiet) return; quiet = false; wakeUntil = 0; applyBrightness(); }
+// Power-up and LEVEL: screen and sensors on, Teensy held disarmed until setup ends.
+static void startSetup(uint32_t levelMs) {
+  leaveQuiet();
+  setupPhase = true;
+  startLevel(levelMs);
+  if (quietPref) { if (tArmed) armAfterSetup = true; toTeensy("disarm"); }
+}
+static void endSetup() {
+  setupPhase = false;
+  if (armAfterSetup) { armAfterSetup = false; toTeensy("arm"); }
+  if (quietPref && !sensors::calibratingNow()) enterQuiet();
+}
+
 static void handleTeensy(char* line) {
   // line is the body without '@' and checksum, fields split by commas
   char* f[16];
@@ -687,6 +724,7 @@ static void handleTeensy(char* line) {
       if (s.fps > sMax) sMax = s.fps;
     }
     levelUntil = 0;   // a shot always replaces the level screen
+    if (quiet) sensors::readNow();   // one reading for this shot, after it was measured
     animStart = (shotAnim && s.code == 0) ? (millis() | 1) : 0;
     char js[220];
     shotJson(s, js, sizeof(js));
@@ -725,9 +763,9 @@ static void handleTeensy(char* line) {
       add(snprintf(tmp + o, cap - o, "%s\"%s\":%s", o > 1 ? "," : "", f[i], eq + 1));
     }
     if (fits)
-      add(snprintf(tmp + o, cap - o, "%s\"units\":\"%s\",\"batcal\":%.4f,\"bright\":%d,\"anim\":%d,\"theme\":%d,\"inv\":%d,\"hoff\":%.1f,\"hrev\":%d,\"hrot\":%d}",
+      add(snprintf(tmp + o, cap - o, "%s\"units\":\"%s\",\"batcal\":%.4f,\"bright\":%d,\"anim\":%d,\"theme\":%d,\"inv\":%d,\"hoff\":%.1f,\"hrev\":%d,\"hrot\":%d,\"quiet\":%d}",
                    o > 1 ? "," : "", unitsMps ? "mps" : "fps", batCal, bright, shotAnim ? 1 : 0, screenTheme, screenInv ? 1 : 0, sensors::headingOffset(),
-                   sensors::headingReverse() ? 1 : 0, sensors::imuRotation()));
+                   sensors::headingReverse() ? 1 : 0, sensors::imuRotation(), quietPref ? 1 : 0));
     if (!fits) return;
     memcpy(configJson, tmp, o + 1);
     notifyText(chConfig, configJson);
@@ -804,7 +842,7 @@ static void handleCommand(char* cmd) {
     pushEnv();
   } else if (!strcmp(word, "LEVEL")) {
     // LEVEL: show the bubble level for 60 s.  LEVEL OFF: back to the normal screen.
-    if (toupper(arg[0]) == 'O' && toupper(arg[1]) == 'F') levelUntil = 0; else startLevel(60000);
+    if (toupper(arg[0]) == 'O' && toupper(arg[1]) == 'F') levelUntil = 0; else startSetup(60000);
     drawScreen();
   } else if (!strcmp(word, "THEME")) {
     // THEME 0-3 or CLASSIC / BIG / STATS / RETRO: how the screen looks
@@ -819,6 +857,12 @@ static void handleCommand(char* cmd) {
     screenInv = atoi(arg) != 0 || (arg[0] && toupper(arg[1]) == 'N');
     prefs.putBool("inv", screenInv);
     oled.invertDisplay(screenInv);
+    toTeensy("get");
+  } else if (!strcmp(word, "QUIET")) {
+    // QUIET 1 (default): screen dark and sensors paused while waiting for shots.  QUIET 0: always on (bench work).
+    quietPref = atoi(arg) != 0 || (arg[0] && toupper(arg[1]) == 'N');
+    prefs.putBool("quiet", quietPref);
+    if (!quietPref) leaveQuiet(); else if (!setupPhase) enterQuiet();
     toTeensy("get");
   } else if (!strcmp(word, "FLIP")) {
     // FLIP 1: screen turned 180 degrees (the default, right way up in the case).  FLIP 0: the other way.
@@ -838,6 +882,7 @@ static void handleCommand(char* cmd) {
     if (bright > 4) bright = 4;
     prefs.putInt("bright", bright);
     applyBrightness();
+    if (quiet) drawScreen();
     toTeensy("get");
   } else if (!strcmp(word, "COMPASS")) {
     // COMPASS CAL START | COMPASS CAL STOP | COMPASS MATCH <deg> | COMPASS OFFSET <deg> | COMPASS REVERSE 0/1 | COMPASS ROT 0/90/180/270
@@ -887,6 +932,7 @@ void setup() {
   if (screenTheme < 0 || screenTheme >= THEME_COUNT) screenTheme = THEME_CLASSIC;
   screenInv = prefs.getBool("inv", false);
   screenFlip = prefs.getBool("flip", true);
+  quietPref = prefs.getBool("quiet", true);
   analogReadResolution(12);
   analogSetPinAttenuation(PIN_BAT, ADC_11db);
 
@@ -942,7 +988,7 @@ void setup() {
   delay(300);
   toTeensy("get");
   toTeensy("stat");
-  startLevel(60000);   // only shows if the level sensor answers (levelShowing() checks)
+  startSetup(60000);   // the level only shows if the level sensor answers (levelShowing() checks)
 }
 
 void loop() {
@@ -977,7 +1023,8 @@ void loop() {
   if (otaRebootAt && millis() > otaRebootAt) { Serial.println("Restarting into the new firmware..."); delay(100); ESP.restart(); }
   if (otaActive && millis() - otaLastMs > 20000) { Update.abort(); otaActive = false; otaSay("idle"); }   // sender gave up
 
-  sensors::update();
+  if (otaActive && quiet) leaveQuiet();   // show the update's progress
+  if (!quiet || sensors::calibratingNow()) sensors::update();
   static uint32_t lastBat = 0, lastStat = 0, lastDraw = 0, lastEnv = 0;
   static bool wasConnected = false;
   uint32_t now = millis();
@@ -988,6 +1035,9 @@ void loop() {
     wasConnected = connected;
     pushStatus();
   }
-  if (now - lastDraw >= (animStart ? 15u : (levelUntil || otaActive) ? 100u : 500u)) { lastDraw = now; drawScreen(); }
+  if (!quiet || animRunning()) {
+    if (now - lastDraw >= (animStart ? 15u : (levelUntil || otaActive) ? 100u : 500u)) { lastDraw = now; drawScreenNow(); }
+  } else if (wakeUntil && (int32_t)(now - wakeUntil) >= 0) { wakeUntil = 0; screenOff(); }
+  if (setupPhase && !levelUntil && !otaActive) endSetup();
   if (now - lastEnv >= 2000) { lastEnv = now; if (sensors::letters().length()) pushEnv(); }
 }

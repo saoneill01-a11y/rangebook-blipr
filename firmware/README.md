@@ -53,7 +53,15 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 - `drive` / `drive off`: USB drive mode (below; it turns on by itself when you plug into a computer)
 - `time 1792480000`: set the clock (Range Book does this every time it connects), so raw recordings have the date and time
 
-ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `FLIP 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
+ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `FLIP 0|1`, `QUIET 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
+
+## What changed in 0.2.6 (ESP32 only; the Teensy stays 0.2.2)
+
+- Quiet mode (`QUIET 1`, the default): after setup (the level held, or 60 s, or 3 s without a level sensor) the screen
+  goes dark and the ESP32 stops all screen and sensor traffic while it waits for shots. On the first live fire that
+  traffic set off false shots twice a second and read as a steady ~1134 fps. After each shot the sensors are read once
+  and the result shows for 5 s. The Teensy is held disarmed during setup and armed when the quiet starts.
+  `LEVEL` starts setup again; `QUIET 0` keeps the screen and sensors on (bench work).
 
 ## What changed in 0.2.5 (ESP32 only; the Teensy stays 0.2.2)
 
