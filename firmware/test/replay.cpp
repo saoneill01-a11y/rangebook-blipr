@@ -62,9 +62,9 @@ int main(int argc, char** argv) {
   FILE* pk = peaksPath ? fopen(peaksPath, "w") : nullptr;
   if (pk) fprintf(pk, "file,t_ms,f_hz,mps,snr_db,used\n");
 
-  printf("%-12s %5s %9s %9s %7s %4s %7s %6s %6s %8s %s\n", "file", "shot", "recorded", "replay", "diff", "pts", "span_ms",
-         "snr", "rms", "accel", "result");
-  int ok = 0, total = 0;
+  printf("%-12s %5s %9s %9s %7s %4s %7s %6s %6s %8s %-16s %s\n", "file", "shot", "recorded", "replay", "diff", "pts", "span_ms",
+         "snr", "rms", "accel", "quick check", "result");
+  int ok = 0, total = 0, quickPass = 0, okRejected = 0;
   double sum = 0, sum2 = 0, lo = 1e9, hi = -1e9;
   for (auto& path : files) {
     FILE* f = fopen(path.c_str(), "rb");
@@ -99,13 +99,22 @@ int main(int argc, char** argv) {
     static rdsp::Peak peaks[rdsp::MAX_FRAMES];
     int np = 0;
     rdsp::Result r = proc.analyze(I.data(), Q.data(), N, p, peaks, &np);
+    // The quick check the firmware (0.2.3 on) runs right after a trigger; the trigger block starts at "pre".
+    double pre = 0;
+    num(h, "pre", pre);
+    rdsp::Confirm cf;
+    bool quick = pre > 0 ? proc.confirm(I.data(), Q.data(), N, (int)pre, p, &cf) : true;
+    char qtxt[32];
+    snprintf(qtxt, sizeof(qtxt), "%s %d %.1fdB", quick ? "pass" : "reject", cf.hits, cf.bestDb);
+    if (quick) quickPass++;
+    if (!quick && r.code == rdsp::OK) okRejected++;
     double fps = r.v0Mps / 0.3048, recFps = recV0 / 0.3048;
     const char* base = strrchr(path.c_str(), '/');
     base = base ? base + 1 : path.c_str();
     static const char* codes[] = {"ok", "no signal", "weak", "short", "noisy", "out of range"};
     const char* res = (r.code >= 0 && r.code <= 5) ? codes[r.code] : "?";
-    printf("%-12s %5.0f %9.1f %9.1f %7.1f %4d %7.1f %6.1f %6.2f %8.0f %s%s\n", base, shot, recFps, fps,
-           (r.code == 0 && recCode == 0) ? fps - recFps : 0.0, r.npts, r.spanMs, r.snrDb, r.rmsMps, r.accel, res,
+    printf("%-12s %5.0f %9.1f %9.1f %7.1f %4d %7.1f %6.1f %6.2f %8.0f %-16s %s%s\n", base, shot, recFps, fps,
+           (r.code == 0 && recCode == 0) ? fps - recFps : 0.0, r.npts, r.spanMs, r.snrDb, r.rmsMps, r.accel, qtxt, res,
            (recCode >= 0 && (int)recCode != r.code) ? "  (board said something else)" : "");
     if (csv) fprintf(csv, "%s,%.0f,%s,%.0f,%.2f,%d,%.2f,%.2f,%d,%.2f,%.2f,%.3f,%.1f,%.3f,%.3f\n", base, shot, str(h, "fw").c_str(),
                      recCode, recFps, r.code, fps, (r.code == 0 && recCode == 0) ? fps - recFps : 0.0, r.npts, r.spanMs, r.snrDb,
@@ -122,6 +131,7 @@ int main(int argc, char** argv) {
     double avg = sum / ok, sd = ok > 1 ? sqrt((sum2 - ok * avg * avg) / (ok - 1)) : 0;
     printf("\n%d of %d read. Average %.1f fps, SD %.1f, ES %.1f (low %.1f, high %.1f)\n", ok, total, avg, sd, hi - lo, lo, hi);
   } else printf("\n0 of %d read.\n", total);
+  printf("Quick check: %d of %d passed; %d that read ok would have been thrown away.\n", quickPass, total, okRejected);
   if (csv) fclose(csv);
   if (pk) fclose(pk);
   return 0;

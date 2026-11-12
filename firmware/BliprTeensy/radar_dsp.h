@@ -32,6 +32,20 @@ struct Params {
   float behindM = 0.00f;      // radar's distance behind the muzzle (m); negative = in front
   float minDistM = 0.5f;      // ignore points closer than this to the muzzle (blast)
   float t0Sec = 0.0f;         // time the bullet left the muzzle, from capture start (s)
+  float confirmDb = 11.0f;    // quick check after a trigger: a line this far above the pre-trigger level and the frame median...
+  int confirmNeed = 2;        // ...in at least this many of the CONFIRM_FRAMES frames just after it, agreeing on the frequency
+};
+
+// Quick check after a trigger (Processor::confirm): frames of NFFT samples, CONFIRM_STEP apart.
+constexpr int CONFIRM_STEP = 1024;
+constexpr int CONFIRM_FIRST = 2;    // first frame starts this many steps after the trigger (muzzle blast fades first)
+constexpr int CONFIRM_FRAMES = 6;   // frames CONFIRM_FIRST.. on, so (CONFIRM_FIRST + CONFIRM_FRAMES + 1) steps are needed after it
+
+struct Confirm {
+  int hits = 0;       // frames with the line
+  float bestDb = 0;   // strongest line over the pre-trigger level
+  float f = 0;        // its frequency (Hz)
+  int refFrames = 0;  // pre-trigger frames used as the reference
 };
 
 struct Peak {
@@ -72,6 +86,10 @@ class Processor {
   Result analyze(const uint16_t* I, const uint16_t* Q, int n, const Params& p,
                  Peak* peaksOut = nullptr, int* npeaksOut = nullptr);
   static float halfWavelength(const Params& p);  // metres per Hz of Doppler
+  // Is there a bullet-like line right after a trigger? I and Q start some samples before the trigger (trigSample)
+  // and run at least (CONFIRM_FIRST + CONFIRM_FRAMES + 1) * CONFIRM_STEP samples past it. True: go ahead with the full capture.
+  bool confirm(const uint16_t* I, const uint16_t* Q, int n, int trigSample, const Params& p, Confirm* out = nullptr);
+  void (*idle)() = nullptr;   // called between FFT frames in confirm() (the firmware keeps its ADC buffers emptied)
   // Strongest frequency (Hz) above fminHz in the last NFFT samples (for the bench readout).
   float peakHz(const uint16_t* I, const uint16_t* Q, float dcI, float dcQ, float fs, float fminHz);
 
@@ -85,6 +103,7 @@ class Processor {
   float im_[NFFT];
   float pw_[NFFT / 2];
   float tmp_[NFFT / 2];
+  float ref_[NFFT / 2];
   Peak peaks_[MAX_FRAMES];
 };
 

@@ -30,7 +30,7 @@
 #endif
 #include "radar_dsp.h"
 
-#define FW_VERSION "0.2.2"
+#define FW_VERSION "0.2.3"
 
 // ---------------- pins and sizes ----------------
 static const int PIN_I = A0;      // pin 14
@@ -46,6 +46,12 @@ static const int NBLK = 80;               // blocks kept in the ring (per channe
 static const int PRE_BLK = 12;            // blocks kept before the trigger
 static const int POST_BLK = 66;           // blocks recorded after the trigger
 static const int CAP_BLK = PRE_BLK + POST_BLK;  // must be < NBLK
+// Quick check after a trigger (rdsp::Processor::confirm): CONF_PRE blocks before the trigger block as the reference,
+// CONF_POST blocks from the trigger block on. Bursts that aren't a bullet are dropped after ~18 ms instead of
+// keeping BLIPR busy for ~0.5 s with a full capture.
+static const int CONF_PRE = 8;
+static const int CONF_POST = rdsp::CONFIRM_FIRST + rdsp::CONFIRM_FRAMES + 1;
+static const int CONF_BLK = CONF_PRE + CONF_POST;
 
 DMAMEM static volatile uint16_t __attribute__((aligned(32))) dmaI1[BLOCK];
 DMAMEM static volatile uint16_t __attribute__((aligned(32))) dmaI2[BLOCK];
@@ -53,6 +59,8 @@ DMAMEM static volatile uint16_t __attribute__((aligned(32))) dmaQ1[BLOCK];
 DMAMEM static volatile uint16_t __attribute__((aligned(32))) dmaQ2[BLOCK];
 DMAMEM static uint16_t ringI[NBLK * BLOCK];
 DMAMEM static uint16_t ringQ[NBLK * BLOCK];
+DMAMEM static uint16_t confI[CONF_BLK * BLOCK];
+DMAMEM static uint16_t confQ[CONF_BLK * BLOCK];
 
 ADC* adc = new ADC();
 AnalogBufferDMA abI(dmaI1, BLOCK, dmaI2, BLOCK);
@@ -108,12 +116,14 @@ static float dcI = 2048, dcQ = 2048; // running DC levels
 static float floorE = 0;             // noise floor (energy per block, both channels)
 static uint32_t floorN = 0;
 static float lastBlkDb = 0;          // last block energy over floor (dB) for "live"
-enum State { LISTEN, CAPTURE };
+enum State { LISTEN, CONFIRM, CAPTURE };
 static State state = LISTEN;
 static uint32_t trigBlk = 0;         // block where the shot started
 static int trigIdx = 0;              // sample within that block
 static uint32_t armedAtBlk = 0;
 static uint32_t holdoffUntil = 0;
+static uint32_t rejects = 0;         // triggers the quick check dropped
+static rdsp::Confirm lastConf;       // the quick check of the capture being recorded
 static uint32_t shotNo = 0;
 static uint32_t fileNo = 0;
 static bool sdOk = false;
@@ -196,7 +206,7 @@ static void checkTrigger() {
   uint32_t ready = std::min(cntI, cntQ);
   while (evalBlk < ready) {
     uint32_t b = evalBlk++;
-    if (state == CAPTURE) continue;
+    if (state != LISTEN) continue;
     float e = blockEnergy(ringI + (b % NBLK) * BLOCK, dcI) + blockEnergy(ringQ + (b % NBLK) * BLOCK, dcQ);
     if (floorN < 200) {           // learn the quiet level after power-up
       floorE = floorN ? 0.95f * floorE + 0.05f * e : e;
@@ -206,7 +216,9 @@ static void checkTrigger() {
     lastBlkDb = 10.0f * log10f(e / (floorE + 1e-9f) + 1e-9f);
     bool ready2 = (b >= armedAtBlk + PRE_BLK) && millis() >= holdoffUntil;
     if (ready2 && (manualRec || (cfg.armed && !driveMode && lastBlkDb > cfg.trigDb))) {
-      state = CAPTURE;
+      state = manualRec ? CAPTURE : CONFIRM;
+      lastConf = rdsp::Confirm();
+      lastConf.hits = 99;   // a manual recording isn't checked
       trigBlk = b;
       trigIdx = manualRec ? 0 : onsetIndex(b);
       digitalWriteFast(PIN_LED, HIGH);
@@ -312,6 +324,31 @@ static rdsp::Params currentParams() {
   return p;
 }
 
+// Empties the ADC buffers into the rings (used while the quick check runs, so no block is lost).
+static void pumpOnly() {
+  pump(abI, ringI, cntI, lastIntI);
+  pump(abQ, ringQ, cntQ, lastIntQ);
+}
+
+static void quickCheck() {
+  uint32_t first = trigBlk - CONF_PRE;
+  for (int k = 0; k < CONF_BLK; k++) {
+    size_t from = (size_t)((first + k) % NBLK) * BLOCK;
+    memcpy(confI + k * BLOCK, ringI + from, BLOCK * 2);
+    memcpy(confQ + k * BLOCK, ringQ + from, BLOCK * 2);
+  }
+  rdsp::Params p = currentParams();
+  if (dsp.confirm(confI, confQ, CONF_BLK * BLOCK, CONF_PRE * BLOCK, p, &lastConf)) {
+    state = CAPTURE;   // looks like a bullet: record the rest
+    return;
+  }
+  rejects++;
+  if (liveMode) Serial.printf("  (trigger dropped: best line %.1f dB at %.0f Hz, %d frames)\n", lastConf.bestDb, lastConf.f, lastConf.hits);
+  state = LISTEN;
+  evalBlk = trigBlk + 3;   // carry on just past the burst
+  digitalWriteFast(PIN_LED, LOW);
+}
+
 static void processCapture() {
   // Rotate both rings so the capture starts at index 0 and is contiguous.
   uint32_t first = trigBlk - PRE_BLK;
@@ -334,8 +371,11 @@ static void processCapture() {
   snprintf(body, sizeof(body), "S,%lu,%.1f,%.2f,%.0f,%d,%.1f,%.2f,%.1f,%.1f,%d,%s",
            (unsigned long)shotNo, fps, r.v0Mps, r.accel, r.npts, r.snrDb, r.rmsMps, r.d0, r.d1,
            r.code, wasManual ? "rec" : codeText(r.code));
-  if (!wasManual) linkSend(body);
-  Serial.printf("\n%s #%lu: %s", wasManual ? "Recording" : "Shot", (unsigned long)shotNo, codeText(r.code));
+  // A capture that only just passed the quick check and then didn't measure is almost certainly not a shot: keep it
+  // off the phone (it's still printed and saved here).
+  bool quiet = !wasManual && r.code != rdsp::OK && lastConf.hits < 3;
+  if (!wasManual && !quiet) linkSend(body);
+  Serial.printf("\n%s #%lu: %s%s", wasManual ? "Recording" : "Shot", (unsigned long)shotNo, codeText(r.code), quiet ? " (not sent)" : "");
   if (r.code == rdsp::OK) Serial.printf("  %.1f fps (%.2f m/s)", fps, r.v0Mps);
   Serial.printf("\n  points %d, span %.1f ms, SNR %.1f dB, scatter %.2f m/s, accel %.0f m/s^2, tracked %.1f-%.1f m, %lu ms to process\n",
                 r.npts, r.spanMs, r.snrDb, r.rmsMps, r.accel, r.d0, r.d1, (unsigned long)(tProc / 1000));
@@ -374,9 +414,9 @@ static void sendStatus(bool toLink) {
            cfg.armed && !driveMode, (unsigned long)shotNo, fsActual, 10.0f * log10f(floorE / (2.0f * BLOCK) + 1e-9f),
            (unsigned long)overruns, sdOk ? 1 : 0, FW_VERSION, (unsigned long)bootId, state == LISTEN ? 1 : 0);
   if (toLink) linkSend(body);
-  else Serial.printf("armed %d%s, shots %lu, sample rate %.0f Hz, noise %.1f dB(counts^2), overruns %lu, SD %s, fw %s\n",
-                     cfg.armed, driveMode ? " (paused: USB drive mode)" : "", (unsigned long)shotNo, fsActual, 10.0f * log10f(floorE / (2.0f * BLOCK) + 1e-9f),
-                     (unsigned long)overruns, sdOk ? "ok" : "missing", FW_VERSION);
+  else Serial.printf("armed %d%s, shots %lu, dropped triggers %lu, sample rate %.0f Hz, noise %.1f dB(counts^2), overruns %lu, SD %s, fw %s\n",
+                     cfg.armed, driveMode ? " (paused: USB drive mode)" : "", (unsigned long)shotNo, (unsigned long)rejects, fsActual,
+                     10.0f * log10f(floorE / (2.0f * BLOCK) + 1e-9f), (unsigned long)overruns, sdOk ? "ok" : "missing", FW_VERSION);
 }
 
 static bool setKey(const char* k, float v) {
@@ -580,6 +620,7 @@ void setup() {
   digitalWriteFast(PIN_SIM, LOW);
   simTimer.begin(simTick, 250);  // update the test tone 4000 times a second
   dsp.begin();
+  dsp.idle = pumpOnly;
   sdInit();
 #if HAVE_DRIVE
   MTP.begin();
@@ -599,6 +640,7 @@ void loop() {
   bool any = pump(abI, ringI, cntI, lastIntI);
   any |= pump(abQ, ringQ, cntQ, lastIntQ);
   if (any) checkTrigger();
+  if (state == CONFIRM && cntI >= trigBlk + CONF_POST && cntQ >= trigBlk + CONF_POST) quickCheck();
   if (state == CAPTURE && cntI >= trigBlk + POST_BLK && cntQ >= trigBlk + POST_BLK) processCapture();
 
   readUsb();

@@ -1,5 +1,6 @@
 // Radar chronograph signal processing. See radar_dsp.h for the overview.
 #include "radar_dsp.h"
+#include <stdlib.h>
 #include <math.h>
 #include <string.h>
 #include <algorithm>
@@ -71,6 +72,91 @@ float Processor::peakHz(const uint16_t* I, const uint16_t* Q, float dcI, float d
     if (pw > bp) { bp = pw; best = k; }
   }
   return best * fs / NFFT;
+}
+
+// Quick check right after a trigger, before committing to a full capture (which keeps BLIPR busy for ~0.5 s).
+// Bluetooth radio bursts and similar knocks set the trigger off but last only 2-4 ms and are mostly broadband or
+// low-pitched; a bullet's echo is a narrow line inside the velocity band that lasts tens of ms. So: average the
+// spectrum of the frames before the trigger (that also takes in any steady interference line), then look at
+// CONFIRM_FRAMES frames starting CONFIRM_FIRST steps after the trigger (skipping the trigger block and the worst
+// of the muzzle blast). Each bin is
+// compared with the larger of its pre-trigger level and the frame's own in-band median, so a steady line (in the
+// reference) and broadband noise (blast, bursts: they lift the median) both score low, while a narrow new line
+// scores high. A shot needs confirmNeed frames whose best bin is at least confirmDb up and within 8 bins of each
+// other (a bullet slows and its angle changes only slightly in a few ms).
+bool Processor::confirm(const uint16_t* I, const uint16_t* Q, int n, int trigSample, const Params& p, Confirm* out) {
+  Confirm c;
+  const float hw = halfWavelength(p);
+  int kmin = (int)floorf(p.vminMps / hw / p.fs * NFFT);
+  int kmax = (int)ceilf(p.vmaxMps / hw / p.fs * NFFT);
+  if (kmin < 3) kmin = 3;
+  if (kmax > NFFT / 2 - 3) kmax = NFFT / 2 - 3;
+  if (kmax <= kmin + 4 || trigSample < 2 * CONFIRM_STEP) { if (out) *out = c; return true; }
+  double si = 0, sq = 0;
+  for (int i = 0; i < trigSample; i++) { si += I[i]; sq += Q[i]; }
+  const float mi = (float)(si / trigSample), mq = (float)(sq / trigSample);
+  auto spectrum = [&](int start) {
+    for (int i = 0; i < NFFT; i++) {
+      re_[i] = ((float)I[start + i] - mi) * win_[i];
+      im_[i] = ((float)Q[start + i] - mq) * win_[i];
+    }
+    fft(re_, im_);
+    for (int k = kmin; k <= kmax; k++) {
+      int m = NFFT - k;
+      pw_[k] = 0.5f * (re_[k] * re_[k] + im_[k] * im_[k] + re_[m] * re_[m] + im_[m] * im_[m]);
+    }
+    if (idle) idle();
+  };
+  for (int k = kmin; k <= kmax; k++) ref_[k] = 0;
+  for (int s = 0; s + NFFT <= trigSample - CONFIRM_STEP; s += CONFIRM_STEP) {
+    spectrum(s);
+    for (int k = kmin; k <= kmax; k++) ref_[k] += pw_[k];
+    c.refFrames++;
+  }
+  if (c.refFrames < 2) { if (out) *out = c; return true; }   // can't judge: let the full analysis decide
+  float floorAll = 0;
+  for (int k = kmin; k <= kmax; k++) { ref_[k] /= c.refFrames; floorAll += ref_[k]; }
+  floorAll /= (kmax - kmin + 1);
+  int bk[CONFIRM_FRAMES];
+  float bdb[CONFIRM_FRAMES];
+  int nt = 0;
+  for (int j = CONFIRM_FIRST; j < CONFIRM_FIRST + CONFIRM_FRAMES; j++) {
+    int s = trigSample + j * CONFIRM_STEP;
+    if (s + NFFT > n) break;
+    spectrum(s);
+    int cnt = kmax - kmin + 1;
+    for (int k = kmin; k <= kmax; k++) tmp_[k - kmin] = pw_[k];
+    std::nth_element(tmp_, tmp_ + cnt / 2, tmp_ + cnt);
+    const float med = tmp_[cnt / 2];
+    int best = kmin;
+    float br = 0;
+    for (int k = kmin; k <= kmax; k++) {
+      // a bin's own reference (never below a tenth of the band's average, so one quiet bin can't fake a line),
+      // or the frame's median if that is higher
+      float ref = ref_[k] > 0.1f * floorAll ? ref_[k] : 0.1f * floorAll;
+      if (med > ref) ref = med;
+      float rr = pw_[k] / (ref + 1e-9f);
+      if (rr > br) { br = rr; best = k; }
+    }
+    bk[nt] = best;
+    bdb[nt] = br > 0 ? 10.0f * log10f(br) : -99.0f;
+    nt++;
+  }
+  if (nt == 0) { if (out) *out = c; return true; }
+  // the largest group of frames that agree on the line
+  int i0 = 0;
+  for (int i = 0; i < nt; i++) {
+    if (bdb[i] < p.confirmDb) continue;
+    int h = 0;
+    for (int j = 0; j < nt; j++) if (bdb[j] >= p.confirmDb && abs(bk[j] - bk[i]) <= 8) h++;
+    if (h > c.hits || (h == c.hits && bdb[i] > bdb[i0])) { c.hits = h; i0 = i; }
+  }
+  if (c.hits == 0) for (int i = 1; i < nt; i++) if (bdb[i] > bdb[i0]) i0 = i;
+  c.bestDb = bdb[i0];
+  c.f = bk[i0] * p.fs / NFFT;
+  if (out) *out = c;
+  int need = p.confirmNeed < nt ? p.confirmNeed : nt;
+  return c.hits >= need;
 }
 
 // Least-squares line y = a + b*x, optionally weighted. Returns false if degenerate.

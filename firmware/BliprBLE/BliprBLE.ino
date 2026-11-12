@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.6"
+#define FW_VERSION "0.2.7"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -233,10 +233,31 @@ static void keepFirmwareIfRunning() {
   }
 }
 
+// While quiet the radio is slowed down too: its bursts reach the radar. Connected: the phone is asked for a
+// ~120 ms connection interval with peripheral latency 15, so with nothing to send the ESP32 only wakes about every
+// 2 s (shots still go out at the next event, within ~120 ms). Not connected: advertising every ~1 s instead of
+// every 20-40 ms (the phone still finds it, a little more slowly). Both go back to fast for setup and updates.
+// (These numbers follow Apple's connection-parameter rules, so iPhones accept them.)
+static uint8_t peerAddr[6];
+static volatile bool havePeer = false;
+static volatile uint32_t connectedAt = 0;
+static int linkSlow = -1;   // what was last asked of the phone (-1 = nothing yet on this connection)
+static int advSlow = -1;
+
 class ServerCB : public BLEServerCallbacks {
-  void onConnect(BLEServer*) override { connected = true; }
+  void onConnect(BLEServer*) override { connected = true; connectedAt = millis(); linkSlow = -1; }
+#if defined(CONFIG_BLUEDROID_ENABLED)
+  void onConnect(BLEServer*, esp_ble_gatts_cb_param_t* param) override {
+    memcpy(peerAddr, param->connect.remote_bda, 6);
+    havePeer = true;
+  }
+  void onConnParamsUpdate(esp_bd_addr_t, uint16_t interval, uint16_t latency, uint16_t timeout, esp_bt_status_t status) override {
+    Serial.printf("Bluetooth link: every %.1f ms, latency %u, timeout %u ms (status %d)\n", interval * 1.25f, latency, timeout * 10, (int)status);
+  }
+#endif
   void onDisconnect(BLEServer*) override {
     connected = false;
+    havePeer = false;
     needAdvertise = true;
     if (otaActive) { Update.abort(); otaActive = false; otaSay("idle", nullptr, false); }   // start again next time
   }
@@ -1025,6 +1046,23 @@ void loop() {
 
   if (otaActive && quiet) leaveQuiet();   // show the update's progress
   if (!quiet || sensors::calibratingNow()) sensors::update();
+  {
+    bool slow = quiet && !otaActive;
+    if ((int)slow != advSlow) {
+      advSlow = slow;
+      BLEAdvertising* adv = BLEDevice::getAdvertising();
+      adv->setMinInterval(slow ? 1636 : 0x20);   // 1022.5 ms, or the library's 20-40 ms
+      adv->setMaxInterval(slow ? 1636 : 0x40);
+      if (!connected) { BLEDevice::stopAdvertising(); BLEDevice::startAdvertising(); }
+    }
+#if defined(CONFIG_BLUEDROID_ENABLED)
+    if (connected && havePeer && millis() - connectedAt > 2000 && (int)slow != linkSlow) {
+      linkSlow = slow;
+      if (slow) server->updateConnParams(peerAddr, 84, 96, 15, 600);   // 105-120 ms, latency 15, 6 s timeout
+      else server->updateConnParams(peerAddr, 12, 24, 0, 400);         // 15-30 ms, no latency, 4 s timeout
+    }
+#endif
+  }
   static uint32_t lastBat = 0, lastStat = 0, lastDraw = 0, lastEnv = 0;
   static bool wasConnected = false;
   uint32_t now = millis();

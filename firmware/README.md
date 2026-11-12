@@ -55,6 +55,20 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 
 ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `FLIP 0|1`, `QUIET 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
 
+## What changed in Teensy 0.2.3 and ESP32 0.2.7
+
+- Teensy: a quick check after every trigger (`rdsp::Processor::confirm`). About 18 ms after the trigger it looks for a
+  narrow line inside the velocity window that wasn't there before the trigger and holds in at least 2 of 6 frames. Bursts
+  (the ESP32's Bluetooth radio set off false shots twice a second on the first build) and steady interference lines
+  are dropped in milliseconds instead of keeping BLIPR busy ~0.5 s with a full capture. `stat` shows "dropped
+  triggers". A capture that only just passed and then didn't measure isn't sent to the phone. On the Nov 11
+  recordings it rejected all 478 Bluetooth false triggers and passed every fake-bullet capture; the velocity code is
+  unchanged (all 999 recordings replay to the same speeds). `replay` and `sim_test` print the quick check too.
+- ESP32 0.2.7: while quiet, Bluetooth slows down: connected, the phone is asked for a ~120 ms interval with latency 15
+  (the ESP32 wakes about every 2 s when idle; shots still go out within ~120 ms); not connected, it advertises every
+  ~1 s. Fast again for setup and firmware updates. Bench, armed, no shots: 0 false shots and 0-29 dropped triggers a
+  minute (before: about 2 false shots a second).
+
 ## What changed in 0.2.6 (ESP32 only; the Teensy stays 0.2.2)
 
 - Quiet mode (`QUIET 1`, the default): after setup (the level held, or 60 s, or 3 s without a level sensor) the screen

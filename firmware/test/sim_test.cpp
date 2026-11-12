@@ -21,6 +21,9 @@ struct Shot {
 };
 
 static std::mt19937 rng(1234);
+// Extra interference (set before synth): a steady line present the whole time, and a short burst at the trigger
+// like the ESP32's Bluetooth bursts on the first build (2-4 ms, broadband, mostly low-pitched).
+static double gLineHz = 0, gLineAmp = 0, gBurstMs = 0, gBurstWhite = 0, gBurstLow = 0;
 
 static void synth(const Shot& s, double fs, int n, int t0Sample, std::vector<uint16_t>& I, std::vector<uint16_t>& Q) {
   std::normal_distribution<double> g(0.0, 1.0);
@@ -46,6 +49,14 @@ static void synth(const Shot& s, double fs, int n, int t0Sample, std::vector<uin
       blastLP = 0.9 * blastLP + 0.1 * g(rng);
       xi += env * (0.6 * g(rng) + 3.0 * blastLP);
       xq += env * (0.6 * g(rng) + 3.0 * blastLP);
+    }
+    if (gLineAmp > 0) { double ph = 2 * M_PI * gLineHz * i / fs; xi += gLineAmp * cos(ph); xq += gLineAmp * sin(ph); }
+    if (gBurstMs > 0 && t >= 0 && t < gBurstMs * 1e-3) {
+      static double lp = 0;
+      lp = 0.97 * lp + 0.03 * g(rng);
+      double lo = gBurstLow * lp * 8.0;
+      xi += gBurstWhite * g(rng) + lo;
+      xq += gBurstWhite * g(rng) + 0.7 * lo;
     }
     I[i] = (uint16_t)std::min(4095.0, std::max(0.0, round(xi)));
     Q[i] = (uint16_t)std::min(4095.0, std::max(0.0, round(xq)));
@@ -75,7 +86,9 @@ int main(int argc, char** argv) {
     {"6.5CM, radar 0.4 m in front", {2700 * 0.3048, -320, 0.12, -0.40, 800, 14, 1500, 24.150e9, 0, -2}},
   };
 
-  printf("%-40s %9s %9s %7s %5s %7s %6s %6s %5s\n", "case", "true fps", "got fps", "err", "pts", "spanms", "snr", "rms", "code");
+  printf("%-40s %9s %9s %7s %5s %7s %6s %6s %5s %s\n", "case", "true fps", "got fps", "err", "pts", "spanms", "snr", "rms", "code", "confirm(hits,dB)");
+  const int trigSample = (t0Sample / 1024) * 1024;   // the firmware checks from the start of the trigger block
+  int confirmMiss = 0;
   for (auto& c : cases) {
     int trials = 5;
     for (int tr = 0; tr < trials; tr++) {
@@ -87,10 +100,13 @@ int main(int argc, char** argv) {
       p.behindM = (float)c.s.behind;
       p.t0Sec = (float)((t0Sample) / fs + c.s.t0Err);
       p.vminMps = 100; p.vmaxMps = 1500;
+      rdsp::Confirm cf;
+      bool ok = proc.confirm(I.data(), Q.data(), n, trigSample, p, &cf);
       rdsp::Result r = proc.analyze(I.data(), Q.data(), n, p);
+      if (!ok && r.code == rdsp::OK) confirmMiss++;
       double trueFps = c.s.v0 / 0.3048, got = r.v0Mps / 0.3048;
-      printf("%-40s %9.1f %9.1f %7.1f %5d %7.1f %6.1f %6.2f %5d\n", tr == 0 ? c.name : "", trueFps, got,
-             got - trueFps, r.npts, r.spanMs, r.snrDb, r.rmsMps, r.code);
+      printf("%-40s %9.1f %9.1f %7.1f %5d %7.1f %6.1f %6.2f %5d %s(%d,%.1f)\n", tr == 0 ? c.name : "", trueFps, got,
+             got - trueFps, r.npts, r.spanMs, r.snrDb, r.rmsMps, r.code, ok ? "yes" : "NO ", cf.hits, cf.bestDb);
     }
   }
   // Noise only: must not report a shot
@@ -105,6 +121,43 @@ int main(int argc, char** argv) {
       if (r.code == rdsp::OK) { falses++; printf("FALSE SHOT %.1f fps pts %d span %.1f snr %.1f rms %.2f acc %.0f d0 %.1f d1 %.1f\n", r.v0Mps / 0.3048, r.npts, r.spanMs, r.snrDb, r.rmsMps, r.accel, r.d0, r.d1); }
     }
     printf("blast-only captures reported as shots: %d / 20\n", falses);
+  }
+  printf("measured shots the quick check would have thrown away: %d\n", confirmMiss);
+  // Quick check on captures with no bullet: must reject (blast only, Bluetooth-like bursts, a steady line)
+  {
+    struct NB { const char* name; double lineAmp, burstMs, white, low, blast; };
+    NB nbs[] = {{"blast only", 0, 0, 0, 0, 1500},
+                {"burst 3 ms", 0, 3, 40, 60, 0},
+                {"burst 2 ms, strong", 0, 2, 80, 150, 0},
+                {"steady line 94 kHz + burst", 4, 3, 40, 60, 0},
+                {"steady line 94 kHz, strong + burst", 12, 3, 40, 60, 0}};
+    for (auto& b : nbs) {
+      int pass = 0;
+      float worst = -99;
+      for (int tr = 0; tr < 50; tr++) {
+        gLineHz = 94300; gLineAmp = b.lineAmp; gBurstMs = b.burstMs; gBurstWhite = b.white; gBurstLow = b.low;
+        Shot s{0, 0, 0.1, 0, 0, 14, b.blast, 24.150e9, 0, 0};
+        std::vector<uint16_t> I, Q;
+        synth(s, fs, n, t0Sample, I, Q);
+        rdsp::Params p; p.fs = (float)fs; p.vminMps = 300 * 0.3048; p.vmaxMps = 4500 * 0.3048;
+        rdsp::Confirm cf;
+        if (proc.confirm(I.data(), Q.data(), n, trigSample, p, &cf)) pass++;
+        if (cf.bestDb > worst) worst = cf.bestDb;
+      }
+      printf("no bullet, %-36s quick check passed %d / 50 (strongest line %.1f dB)\n", b.name, pass, worst);
+    }
+    // ...and a real bullet with the steady line and a burst on top must still pass
+    int pass = 0;
+    for (int tr = 0; tr < 20; tr++) {
+      gLineHz = 94300; gLineAmp = 12; gBurstMs = 3; gBurstWhite = 40; gBurstLow = 60;
+      Shot s{2700 * 0.3048, -320, 0.12, 0.15, 250, 14, 1500, 24.150e9, 0, -2};
+      std::vector<uint16_t> I, Q;
+      synth(s, fs, n, t0Sample, I, Q);
+      rdsp::Params p; p.fs = (float)fs; p.lateralM = 0.12f; p.behindM = 0.15f; p.vminMps = 300 * 0.3048; p.vmaxMps = 4500 * 0.3048;
+      if (proc.confirm(I.data(), Q.data(), n, trigSample, p)) pass++;
+    }
+    printf("weak-echo bullet with steady line and burst: quick check passed %d / 20\n", pass);
+    gLineAmp = 0; gBurstMs = 0;
   }
   return 0;
 }
