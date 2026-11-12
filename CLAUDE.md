@@ -101,6 +101,10 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   (flashed) adds `set qc=0` (quick check off, RAM only, back to 11 dB after a restart) and prints each shot's quick-check
   line. With qc=0 and the ESP32 in, Bluetooth triggers (~1/s) keep BLIPR busy, so: **next session, start here:**
   1. Pull the SD card into `recordings/` (saving seemed to stop at s00999 earlier: check `fileNo` / SD).
+  1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,
+     GPIO20 = RX from the Teensy, GPIO21 = TX to the Teensy; display/sensors not needed for the test), armed, no shots,
+     phone connected and not. Bursts gone = they travel through the air (shield or move the ESP32 in the case);
+     still there = they come through the shared 5 V/ground (filter the ESP32's 5 V like the holder's).
   2. A .22 string with the ESP32 **out** (no Bluetooth noise), `set qc=0`, window 600-1800, to record real echoes.
   3. Tune the quick check (and the broadband trigger) on those real echoes; check whether the shot even triggers.
   4. ESP32 link: plug the ESP32's USB into the Mac to see "Bluetooth link: every X ms"; ask for the fast link only
