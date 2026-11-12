@@ -87,6 +87,11 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   Next: Teensy quick-reject (a trigger must show a sustained in-band line for several ms before a full capture,
   so bursts cost milliseconds, not ~0.6 s), Bluetooth slower while armed (longer connection interval), then the
   pre-trigger line rejection in `radar_dsp.cpp`.
+- **Nov 11, 20:30: Teensy 0.2.3 + ESP32 0.2.7 flashed** (quick check after each trigger; slow Bluetooth while quiet).
+  Bench, armed, ESP32 in its socket, no shots: no phone 0 shots / 29 dropped triggers in ~70 s; phone connected 0 shots /
+  0 dropped in ~75 s. The analysis can still lock onto steady lines (94 kHz = 1921 fps, 115 kHz = 2344 fps with the
+  phone) if a real shot passes the quick check: keep the window clear of them (.22: 600-1800) until the pre-trigger line
+  rejection is in `analyze()`. Next: live fire to see the real echo.
 - PCB v1.1 bare boards ordered from PCBWay. Sean is also getting a PCBWay quote for assembled boards
   (files and form answers in `pcb/out/pcba/`, made by `pcb/pcba_files.py`; PCBWay wants the assembly
   drawing as PDF, not PNG). J1-J5 are left empty on those boards.
