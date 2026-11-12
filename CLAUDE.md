@@ -107,7 +107,10 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      GPIO20 = RX from the Teensy, GPIO21 = TX to the Teensy; display/sensors not needed for the test), armed, no shots,
      phone connected and not. Bursts gone = they travel through the air (shield or move the ESP32 in the case);
      still there = they come through the shared 5 V/ground (filter the ESP32's 5 V like the holder's).
-  2. A .22 string with the ESP32 **out** (no Bluetooth noise), `set qc=0`, window 600-1800, to record real echoes.
+  2. A .22 string with the ESP32 **out** (no Bluetooth noise), `set qc=0`, window **950-1200** (`set vmin=950 vmax=1200`),
+     to record real echoes. Ammo: CCI Standard Velocity, expected 1000-1100 fps. (Sean, Nov 12: never needs more than
+     600-3500 fps overall; tomorrow's testing only 950-1200. The old ~1134 fps I2C line falls inside this window, but
+     quiet mode removed it; if 1134 shows up, the ESP32 isn't quiet.)
   3. Tune the quick check (and the broadband trigger) on those real echoes; check whether the shot even triggers.
   4. ESP32 link: plug the ESP32's USB into the Mac to see "Bluetooth link: every X ms"; ask for the fast link only
      during OTA; find out why the slow link didn't hold outside.
