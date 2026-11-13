@@ -47,7 +47,15 @@ sent: the app showed them from its own (cloud) copy. The command to download a s
 Events the unit sends by itself:
 - `80 0d 21` + `08` + BCD start time + `03 26 01` + weight `90 01`: a session started (20:27:52).
 - `80 0b 24` + `08` + the same start time + `03 26 01`: that session ended (20:29:04).
-- Expected tomorrow: a shot event between those two (probably code 22 or 23).
+- `80 1c 22`: **a shot** (Nov 13, 5 shots, all matched). Data: shot number, 6 BCD time, 2 bytes (fraction of
+  a second?), **velocity as little-endian m/s x10** (`d9 0c` = 328.9 m/s = 1079.1 fps), then the string so far:
+  high, low, average, ES (all m/s x10), average deviation and SD (fps x10), energy (ft-lb x10) and power
+  factor (x10) of the average.
+
+`80 01 81` = **the session going now**. Reply `90 02 81 00` = none. Otherwise `81 01 08` + 6 BCD start + 2 bytes
++ `01` + weight + shot count, then per shot 6 BCD time + 2 bytes + velocity (m/s x10), then the stats. Shots fired
+while the link was down only show up here, so ask for it on every reconnect (Nov 13: shots 3 and 4 came this way).
+Range Book chrono 2.44.6 reads both.
 
 Changing fps <-> m/s in the app sent nothing to the unit (display only). The battery
 characteristic notifies about once a second.

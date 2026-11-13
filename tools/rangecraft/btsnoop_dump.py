@@ -213,7 +213,7 @@ class Gatt:
         return "\n".join(lines)
 
 
-def show(b, n=48):
+def show(b, n=int(__import__("os").environ.get("RC_WIDTH", "48"))):
     h = b.hex(" ")
     txt = "".join(chr(c) if 32 <= c < 127 else "." for c in b)
     if len(b) > n:
