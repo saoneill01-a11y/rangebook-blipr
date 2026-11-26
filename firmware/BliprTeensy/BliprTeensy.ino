@@ -30,7 +30,7 @@
 #endif
 #include "radar_dsp.h"
 
-#define FW_VERSION "0.2.7"
+#define FW_VERSION "0.2.8"
 
 // ---------------- pins and sizes ----------------
 static const int PIN_I = A0;      // pin 14
@@ -137,7 +137,8 @@ static int trigIdx = 0;              // sample within that block
 static uint32_t armedAtBlk = 0;
 static uint32_t holdoffUntil = 0;
 static uint32_t rejects = 0;         // triggers the quick check dropped
-static float qcDb = 11.0f;           // "set qc=": the quick check's line threshold (dB); 0 turns it off. Not saved: 11 after a restart.
+static float qcDb = 0.0f;            // "set qc=": the quick check's line threshold (dB); 0 = off (default since 0.2.8: a .22 sets the
+                                     // in-band trigger off late, and the check, looking only after it, dropped 2 of 5 real shots). Not saved.
 static rdsp::Confirm lastConf;       // the quick check of the capture being recorded
 static uint32_t shotNo = 0;
 static uint32_t fileNo = 0;

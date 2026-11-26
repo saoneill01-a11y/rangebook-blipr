@@ -139,6 +139,10 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      that recoil or the rifle's steel doesn't set off needless re-levels.
      ESP32 0.2.20 (shipped, not installed yet): "Disable the level" button in Range Book (LEVELCHK 0/1, saved, config
      "lvl") for shooting at an angle: off = no level at power-up, no re-level after shots, heading follows silently.
+     **Nov 26, first real .22 echoes** (CCI SV, 5 shots, `recordings-kept/2026-11-26_22lr_cci_sv/`): all triggered,
+     echo 15-24 dB but only ~6-8 ms; all read "weak" on 0.2.7. **Teensy 0.2.8** (built, flash next) reads 4 of 5:
+     992-1042 fps vs Sean's Athlon 980-1041 (avg 1017). Quick check now off by default. Next: a longer .22 string with
+     the Athlon's numbers next to BLIPR's (Rangecraft off while BLIPR records, or far apart), then a rifle.
      Lid v0.12 (screen window 1 mm taller) to print.
      **Next session:** live fire, .22 CCI Standard Velocity, window 950-1200, `set qc=0`, save=1 (step 2 below).
      After it: measure `live 114014` with the ESP32's USB unplugged.

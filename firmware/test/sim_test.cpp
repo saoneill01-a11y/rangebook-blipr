@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <random>
 #include <vector>
 
@@ -232,7 +233,7 @@ int main(int argc, char** argv) {
     gLineAmp = 0; gBurstMs = 0;
   }
   // Line rejection in analyze(): a steady line inside the window, stronger than the bullet's far echo
-  {
+  if (!(argc > 3 && !strcmp(argv[3], "skipline"))) {
     int okB = 0, lineB = 0;
     for (int tr = 0; tr < 20; tr++) {
       gLineHz = 94300; gLineAmp = 6;

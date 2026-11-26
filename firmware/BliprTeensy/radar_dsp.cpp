@@ -283,7 +283,10 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
   // on a bin that already held a line (reference over twice the frame's median) is scored against its reference
   // instead of the median, so a steady interference line (a converter, a clock, the Bluetooth link) can't pass for the
   // bullet. Bins with only noise in them score as before.
-  const int refEnd = (int)(p.t0Sec * p.fs) - NFFT / 2;   // reference frames end before this sample
+  // reference frames end before this sample: well before the trigger, because a .22 (no muzzle blast to speak of)
+  // sets the trigger off only once its echo has built up, 2-4 ms after it left the muzzle (Nov 26 recordings)
+  const float tStart = p.t0Sec - LOOKBACK_SEC;            // the bullet can be seen from here on
+  const int refEnd = (int)(tStart * p.fs) - NFFT / 2;
   int nref = 0;
   bool refReady = false;
   for (int k = kmin - 1; k <= kmax + 1; k++) ref_[k] = 0;
@@ -356,7 +359,7 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
   while (tried < 8) {
     int seed = -1;
     for (int i = 0; i < nf; i++)
-      if (!triedSeed[i] && peaks_[i].snrDb >= p.snrMinDb && peaks_[i].t >= p.t0Sec &&
+      if (!triedSeed[i] && peaks_[i].snrDb >= p.snrMinDb && peaks_[i].t >= tStart &&
           (seed < 0 || peaks_[i].snrDb > peaks_[seed].snrDb))
         seed = i;
     if (seed < 0) break;
@@ -374,7 +377,7 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
         float pred = peaks_[last].f + slope * (float)(i - last);
         float tol = 2.0f * binHz + maxRate * dt * steps * 0.5f + (nInDir < 2 ? 2.0f * binHz : 0.0f);
         if (peaks_[i].snrDb >= p.snrMinDb - 3.0f && fabsf(peaks_[i].f - pred) <= tol &&
-            peaks_[i].t >= p.t0Sec) {
+            peaks_[i].t >= tStart) {
           float newSlope = (peaks_[i].f - peaks_[last].f) / (float)(i - last);
           slope = (nInDir == 0) ? newSlope * 0.5f : 0.7f * slope + 0.3f * newSlope;
           cur[i] = true;
@@ -400,12 +403,45 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
   }
   for (int i = 0; i < nf; i++) peaks_[i].used = best[i];
 
+  // ---- muzzle time ----
+  // Normally the trigger is the muzzle blast (t0Sec). If the track starts before that, the trigger came late (a .22
+  // sets it off with the echo itself): find the muzzle time from the echo instead. Close to the muzzle the radar sees
+  // the bullet at an angle, so the speed it measures climbs (v * X / R, X the distance along the bore from the radar)
+  // as the bullet flies off; the muzzle time that best fits that climb is the one used.
+  float tMuzzle = p.t0Sec;
+  {
+    int first = -1;
+    float vTop = 0;
+    for (int i = 0; i < nf; i++) if (peaks_[i].used) { if (first < 0) first = i; float v = peaks_[i].f * hw; if (v > vTop) vTop = v; }
+    if (first >= 0 && peaks_[first].t < p.t0Sec - 0.001f && vTop > 0) {   // clearly before the trigger
+      float bestErr = 1e30f, bestT = p.t0Sec;
+      for (float tc = peaks_[first].t - 0.010f; tc <= peaks_[first].t; tc += 0.0001f) {
+        double err = 0;
+        int cnt = 0;
+        for (int i = first; i < nf; i++) {
+          if (!peaks_[i].used) continue;
+          float X = vTop * (peaks_[i].t - tc) + p.behindM;
+          float pred = X > 0 ? vTop * X / sqrtf(X * X + p.lateralM * p.lateralM) : 0;
+          float e = peaks_[i].f * hw - pred;
+          err += e * e;
+          cnt++;
+        }
+        if (cnt && err < bestErr) { bestErr = (float)err; bestT = tc; }
+      }
+      tMuzzle = bestT;
+    }
+  }
+
+#ifdef DEBUG_TRK
+  fprintf(stderr, "t0 %.2f ms, muzzle %.2f ms\n", p.t0Sec * 1e3, tMuzzle * 1e3);
+  for (int i = 0; i < nf; i++) if (peaks_[i].used) fprintf(stderr, "  used %.2f ms %.1f m/s %.1f dB\n", peaks_[i].t * 1e3, peaks_[i].f * hw, peaks_[i].snrDb);
+#endif
   // ---- 5-6: speeds, angle correction, fit back to the muzzle ----
   static float tt[MAX_FRAMES], vr[MAX_FRAMES], ww[MAX_FRAMES], snr[MAX_FRAMES];
   int m = 0;
   for (int i = 0; i < nf; i++) {
     if (!peaks_[i].used) continue;
-    tt[m] = peaks_[i].t - p.t0Sec;  // time since the bullet left the muzzle
+    tt[m] = peaks_[i].t - tMuzzle;  // time since the bullet left the muzzle
     vr[m] = peaks_[i].f * hw;       // speed toward/away from the radar
     snr[m] = peaks_[i].snrDb;
     float lin = powf(10.0f, peaks_[i].snrDb / 10.0f);
@@ -472,6 +508,9 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
     if (done) break;
   }
   r.npts = k;
+#ifdef DEBUG_TRK
+  fprintf(stderr, "  after the angle fit: %d points, v0 %.1f, acc %.0f\n", k, v0, acc);
+#endif
   if (k < 6) { r.code = TOO_FEW; return r; }
 
   // Throw out the worst outliers (more than 3x the typical scatter) and refit once
@@ -485,6 +524,17 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
       if (fabsf(e) <= 3.0f * rms + 0.3f) { tx[k2] = tx[i]; vy[k2] = vy[i]; wy[k2] = wy[i]; dist[k2] = dist[i]; sn[k2] = sn[i]; k2++; }
     }
     if (k2 >= 6 && k2 < k) { k = k2; fitLine(tx, vy, wy, k, v0, acc); }
+  }
+
+  // A short track (a .22 is seen for only ~6 ms) can't tell its own slow-down: the fitted slope swings by hundreds of
+  // m/s^2 and drags v0 with it. Below SHORT_TRACK_MS, assume the usual drag (about 0.35 x the speed, per second:
+  // ~110 m/s^2 for a .22, ~300 for a rifle) and fit only the speed (Teensy 0.2.8).
+  const float spanS = tx[k - 1] - tx[0];
+  if (spanS < SHORT_TRACK_MS * 1e-3f) {
+    float a = -0.35f * v0;
+    double sw = 0, sv = 0;
+    for (int i = 0; i < k; i++) { sw += wy[i]; sv += wy[i] * (vy[i] - a * tx[i]); }
+    if (sw > 0) { v0 = (float)(sv / sw); acc = a; }
   }
 
   double s2 = 0;
@@ -502,7 +552,7 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
   r.d1 = dist[k - 1];
   r.vFirstMps = v0 + acc * tx[0];
 
-  // A real bullet is tracked for at least a couple of metres, and drag only ever
+  // Drag only ever
   // slows it down. Blast and clutter tracks tend to be short or to speed up.
   // A bullet's echo fades as it flies away until it sinks into the noise, which is where its track ends, well before
   // the capture does. An interference line that happens to form a track (the phone connecting, say) runs on to the
@@ -510,7 +560,7 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
   // at its far end than at its near end is not a bullet. (Fast, strong shots reach 40-50 m in the simulations, about
   // half the capture; the bench "sim" tone stops after 60 ms.)
   bool flat = false;
-  const float tEnd = n / p.fs - p.t0Sec;
+  const float tEnd = n / p.fs - tMuzzle;
   if (p.fadeMinDb > 0 && k >= 6 && tx[k - 1] > tEnd - 0.015f) {
     const int n3 = k / 3;
     for (int i = 0; i < n3; i++) tmp_[i] = sn[i];
@@ -529,7 +579,14 @@ Result Processor::analyze(const uint16_t* I, const uint16_t* Q, int n, const Par
   // one that only starts tens of metres out is interference that happened to line up.
   if (r.d0 > 8.0f) flat = true;
 
-  if (r.spanMs < 3.0f || r.d1 < 2.0f) r.code = TOO_SHORT;
+  // A real bullet is tracked for at least a metre or so (a .22 for ~1.5 m), over a few ms. A short track must also
+  // start close to the muzzle, where the echo is strongest (the Nov 26 .22s: 0.7-0.85 m), have 7+ points and a median
+  // SNR of SHORT_TRACK_SNR (the .22s: 14-21 dB): short
+  // runs of noise that happen to line up start further out or are shorter (bench recordings, Nov 11).
+  // (Tracks that meet the old rule, 3 ms and out to 2 m, pass as before: weak rifle echoes start further out.)
+  const bool longEnough = r.spanMs >= 3.0f && r.d1 >= 2.0f && k >= 11;   // 11 points at HOP 256 = the old 6 at 512
+  const bool shortOk = r.spanMs >= 2.0f && r.d1 >= 1.2f && k >= 7 && r.d0 <= 1.0f && r.snrDb >= SHORT_TRACK_SNR;
+  if (!longEnough && !shortOk) r.code = TOO_SHORT;
   else if (flat) r.code = STEADY_LINE;
   else if (r.rmsMps > 1.5f || acc > 150.0f) r.code = NOISY;
   else if (v0 < p.vminMps || v0 > p.vmaxMps) r.code = OUT_OF_RANGE;

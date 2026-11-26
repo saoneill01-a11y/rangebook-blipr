@@ -18,8 +18,11 @@
 namespace rdsp {
 
 constexpr int NFFT = 2048;      // samples per frame
-constexpr int HOP = 512;        // frame step
-constexpr int MAX_FRAMES = 256; // a 133 ms capture at 600 kS/s is 153 frames
+constexpr int HOP = 256;        // frame step (512 before Teensy 0.2.8: a .22 echo lasts only ~6 ms)
+constexpr int MAX_FRAMES = 384; // a 160 ms capture at 500 kS/s with HOP 256 is 305 frames (133 ms at 600k: 305)
+constexpr float SHORT_TRACK_MS = 6.0f;   // shorter tracks (a .22: 3-5 ms) get an assumed slow-down instead of a fitted one
+constexpr float SHORT_TRACK_SNR = 14.0f;  // a track shorter than 3 ms / 2 m must be at least this strong (median dB), among other things
+constexpr float LOOKBACK_SEC = 0.010f;   // analyze() looks this far before t0Sec for the bullet (the trigger can be late)
 
 struct Params {
   float fs = 600000.0f;       // sample rate, Hz (both channels; the firmware passes the measured rate)
