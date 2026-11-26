@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.14"
+#define FW_VERSION "0.2.15"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -120,7 +120,10 @@ static bool setupPhase = true;
 static bool quiet = false;
 static uint32_t wakeUntil = 0;       // millis() when a brief screen showing ends (0 = none)
 static bool armAfterSetup = false;
-static const uint32_t SHOT_SHOW_MS = 3000;   // while quiet a shot lights the screen this long (Sean: 3 s at most; nobody shoots faster than that from the bench)
+// While quiet a shot lights the screen for showSec seconds (SHOW 1-60; 0 = it stays lit until the next shot). A lit screen
+// costs nothing: it keeps its picture with no traffic on the bus. Only drawing does, and that happens right after a
+// shot, while the Teensy is still busy saving it. Default 3 s (Sean, Nov 25). Saved; config "show".
+static int showSec = 3;
 
 static int pctFromVolts(float v) {
   // resting Li-ion curve, close enough for a gauge
@@ -719,7 +722,8 @@ static void drawScreen(bool force = false) {
   if (!force) return;
   applyBrightness();
   drawScreenNow();
-  wakeUntil = millis() + SHOT_SHOW_MS;
+  if (showSec <= 0) { wakeUntil = 0; return; }   // stays lit until the next shot
+  wakeUntil = millis() + (uint32_t)showSec * 1000;
   if (!wakeUntil) wakeUntil = 1;
 }
 static void screenOff() { if (oledOk) oled.ssd1306_command(SSD1306_DISPLAYOFF); }
@@ -813,9 +817,9 @@ static void handleTeensy(char* line) {
       add(snprintf(tmp + o, cap - o, "%s\"%s\":%s", o > 1 ? "," : "", f[i], eq + 1));
     }
     if (fits)
-      add(snprintf(tmp + o, cap - o, "%s\"units\":\"%s\",\"batcal\":%.4f,\"bright\":%d,\"anim\":%d,\"theme\":%d,\"inv\":%d,\"hoff\":%.1f,\"hrev\":%d,\"hrot\":%d,\"quiet\":%d}",
+      add(snprintf(tmp + o, cap - o, "%s\"units\":\"%s\",\"batcal\":%.4f,\"bright\":%d,\"anim\":%d,\"theme\":%d,\"inv\":%d,\"hoff\":%.1f,\"hrev\":%d,\"hrot\":%d,\"quiet\":%d,\"show\":%d}",
                    o > 1 ? "," : "", unitsMps ? "mps" : "fps", batCal, bright, shotAnim ? 1 : 0, screenTheme, screenInv ? 1 : 0, sensors::headingOffset(),
-                   sensors::headingReverse() ? 1 : 0, sensors::imuRotation(), quietPref ? 1 : 0));
+                   sensors::headingReverse() ? 1 : 0, sensors::imuRotation(), quietPref ? 1 : 0, showSec));
     if (!fits) return;
     memcpy(configJson, tmp, o + 1);
     notifyText(chConfig, configJson);
@@ -921,6 +925,11 @@ static void handleCommand(char* cmd) {
     oled.setRotation(screenFlip ? 2 : 0);
     drawScreen();
     toTeensy("get");
+  } else if (!strcmp(word, "SHOW")) {
+    // SHOW 3: after each shot the screen shows the reading this many seconds (1-60), then goes dark. SHOW 0: it stays on.
+    int s = atoi(arg);
+    if (s >= 0 && s <= 60) { showSec = s; prefs.putInt("show", s); }
+    toTeensy("get");   // the config notification carries "show"
   } else if (!strcmp(word, "ANIM")) {
     // ANIM 1: play the bullet animation after each good shot.  ANIM 0: just show the number.
     shotAnim = atoi(arg) != 0 || (arg[0] && toupper(arg[1]) == 'N');   // also takes ON / OFF
@@ -978,6 +987,7 @@ void setup() {
   unitsMps = prefs.getBool("mps", false);
   bright = prefs.getInt("bright", 3);
   shotAnim = prefs.getBool("anim", false);
+  showSec = prefs.getInt("show", 3);
   screenTheme = prefs.getInt("theme", THEME_CLASSIC);
   if (screenTheme < 0 || screenTheme >= THEME_COUNT) screenTheme = THEME_CLASSIC;
   screenInv = prefs.getBool("inv", false);
@@ -1039,7 +1049,7 @@ void setup() {
     resetReason = r;
   }
   Serial.printf("BLIPR ESP32-C3 firmware %s ready. Sensors found: %s\n"
-                "Commands: STATUS, SYNC n, STRING, UNITS fps|mps, BATV volts, BRIGHT 0-4, THEME 0-3, INVERT 0|1, ANIM 0|1, LEVEL [OFF], COMPASS ...,\n"
+                "Commands: STATUS, SYNC n, STRING, UNITS fps|mps, BATV volts, BRIGHT 0-4, THEME 0-3, INVERT 0|1, ANIM 0|1, SHOW s, LEVEL [OFF], COMPASS ...,\n"
                 "or any Teensy command (STAT, GET, SET ..., ARM, DISARM, TEST, REC, TIME).\n", FW_VERSION,
                 sensors::letters().length() ? sensors::letters().c_str() : "none");
   delay(300);
