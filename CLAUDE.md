@@ -105,7 +105,7 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      armed, no shots: no phone 0 triggers / 2 min; phone connected 0 shots, 1 dropped trigger / 5 min (Range Book left
      the window alone). The in-band check takes ~640 of 2048 us per block. Teensy left armed, 600-1800, save=1.
      ESP32 USB prints didn't show on the Mac (connect lines expected): check later. New Mac ports: Teensy
-     `/dev/cu.usbmodem208996901` / upload `usb:1130000`, ESP32 `/dev/cu.usbmodem101`.
+     `/dev/cu.usbmodem208996901` / upload `usb:1130000` or `usb:1140000` (depends on the Mac port; `arduino-cli board list`), ESP32 `/dev/cu.usbmodem101`.
   1b done Nov 25 (`sessions/2026-11-25_jumper_test/`), phone connected, counted with the OLD trigger (`band=0`, then
      put back to 15): ESP32 in socket + its USB to the Mac ~1/s; in socket, USB out ~31/s; on 30 cm jumpers ~31/s;
      jumpers with BLIPR's 5 V wire off and a power bank in the ESP32's USB-C 0 in 2 min. **The bursts are conducted
@@ -140,9 +140,11 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      ESP32 0.2.20 (shipped, not installed yet): "Disable the level" button in Range Book (LEVELCHK 0/1, saved, config
      "lvl") for shooting at an angle: off = no level at power-up, no re-level after shots, heading follows silently.
      **Nov 26, first real .22 echoes** (CCI SV, 5 shots, `recordings-kept/2026-11-26_22lr_cci_sv/`): all triggered,
-     echo 15-24 dB but only ~6-8 ms; all read "weak" on 0.2.7. **Teensy 0.2.8** (built, flash next) reads 4 of 5:
+     echo 15-24 dB but only ~6-8 ms; all read "weak" on 0.2.7. **Teensy 0.2.8** (flashed Nov 26) reads 4 of 5:
      992-1042 fps vs Sean's Athlon 980-1041 (avg 1017). Quick check now off by default. Next: a longer .22 string with
      the Athlon's numbers next to BLIPR's (Rangecraft off while BLIPR records, or far apart), then a rifle.
+     Nov 26: after a night on the charger the holder's button didn't switch BLIPR on until the cell was pulled and put
+     back (the holder's charge/protection logic?): watch for it.
      Lid v0.12 (screen window 1 mm taller) to print.
      **Next session:** live fire, .22 CCI Standard Velocity, window 950-1200, `set qc=0`, save=1 (step 2 below).
      After it: measure `live 114014` with the ESP32's USB unplugged.
