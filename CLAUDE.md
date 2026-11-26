@@ -127,7 +127,9 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      20 s stall check read the clock before the last-piece time, so a piece arriving in between wrapped the difference
      and cancelled the update. Fixed; 0.2.12 (USB) -> 0.2.13 (Bluetooth) worked, ~30 s. The ESP32's USB is seen by the
      Mac only with the module OUT of BLIPR (in the socket it isn't, even in BOOT mode): flash it out of BLIPR, or by
-     Bluetooth. ESP32 is on 0.2.13 and still out of BLIPR; next: put it back, measure `live 114014` (loop rest fix).
+     Bluetooth. **114 kHz tone gone with 0.2.13** (ESP32 back in BLIPR, USB out, quiet): 3 dB at 114 kHz (was 15-17),
+     no steady line above 10 kHz (strongest ~8 dB, random). Cause confirmed: loop() spinning flat out.
+     **Next session:** live fire, .22 CCI Standard Velocity, window 950-1200, `set qc=0`, save=1 (step 2 below).
      After it: measure `live 114014` with the ESP32's USB unplugged.
   1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
   1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,
