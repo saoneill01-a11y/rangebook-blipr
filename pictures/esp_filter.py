@@ -30,7 +30,7 @@ ax.text(960, 230, "(chip side up)", ha="center", color="#bbb", fontsize=10)
 for y, lab in ((250, "5V pin"), (340, "GND pin")):
     ax.add_patch(Circle((850, y), 13, fc="#ffd54f", ec="#c62828", lw=2.5))
     ax.text(875, y, lab, va="center", color="white", fontsize=11, weight="bold")
-ax.text(960, 420, "its 5V header pin is clipped\noff under the module, so it\nno longer reaches the socket",
+ax.text(960, 420, "still plugged into its socket;\nonly its 5V pin is cut (done),\nso its power comes via L2",
         ha="center", va="center", color="#ffcc80", fontsize=10)
 
 # 5 V path through the inductor
@@ -57,11 +57,12 @@ for x, (fc, top, lab) in ((610, ("#1565c0", "C29", "470 µF\n10 V or more")), (7
     ax.text(x, 480, top + "\n" + lab, ha="center", va="top", fontsize=10.5)
 
 # how-to box
-steps = ("How:  1. Clip the ESP32's 5V header pin flush under the module (a pin can be soldered back on later).\n"
-         "2. Solder a short male header pin to one L2 leg and push it into the socket's 5V hole; solder the other\n"
-         "    leg to the 5V pin's stub on top of the module.   3. Solder C29 and C30 across the module's 5V and GND\n"
-         "    pins, as close as you can (C29 lying flat, stripe to GND).   4. Beep the 5V pin to D1's square pad: it\n"
-         "    should still beep (through L2), and 5V to GND must not.   Check first that\n    it all fits in the case (I can check the case model).")
+steps = ("How:  1. The ESP32's 5V pin is cut (done). Nothing on the board is cut; D1 stays as it is.\n"
+         "2. L2's board end: EITHER solder a short male header pin to it and push it into the socket's empty 5V hole,\n"
+         "    OR solder it to D1's leg on the square-pad side. Other L2 leg to the 5V pin's stub on top of the module.\n"
+         "3. Solder C29 (lying flat, stripe to GND) and C30 across the module's 5V stub and its GND pin, close in.\n"
+         "4. Beep: the module's 5V stub to D1's square pad beeps (through L2); 5V to GND must NOT beep.\n"
+         "    Check first that L2 and C29 clear the case lid (I can check the case model).")
 ax.add_patch(FancyBboxPatch((40, 578), 1070, 128, boxstyle="round,pad=6", fc="#fff8e1", ec="#e6c34a"))
 ax.text(55, 642, steps, va="center", fontsize=10.2, family="DejaVu Sans")
 
