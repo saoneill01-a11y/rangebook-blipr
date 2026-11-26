@@ -145,6 +145,8 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      the Athlon's numbers next to BLIPR's (Rangecraft off while BLIPR records, or far apart), then a rifle.
      **Nov 26, 10:41-10:43, first live .22 string on Teensy 0.2.8** (`sessions/2026-11-26_1040`): 5 of 5 read, no false
      shots: 1025.0, 1034.3, 1030.4, 1024.2, 1058.5 (avg 1034.5, SD 14.0, ES 34; tracked 0.8-2.2 m, 7-10 points, 14-18 dB).
+     Second string 10:50-10:51: 4 of 5 read (1051.4, 996.5, 996.1, 1045.6; shot 6 "weak", 5 points: look at its
+     recording). All 10: 9 read, avg 1029.1, SD 22.0, ES 62.
      Athlon (Nov 21, same gun/ammo, 29 shots): avg 1017, SD 15.2, 980-1041. BLIPR reads ~17 fps (1.7 %) higher on
      average: day/temperature or calibration (f0, lat/behind). Next: shoot BLIPR and the Athlon on the same shots (apart,
      or one at a time) to set `cal`.
