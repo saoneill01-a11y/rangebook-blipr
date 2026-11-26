@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.13"
+#define FW_VERSION "0.2.14"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -120,7 +120,7 @@ static bool setupPhase = true;
 static bool quiet = false;
 static uint32_t wakeUntil = 0;       // millis() when a brief screen showing ends (0 = none)
 static bool armAfterSetup = false;
-static const uint32_t SHOT_SHOW_MS = 1500;   // while quiet a shot lights the screen this long (Sean: "a second" is enough; the app shows the fps)
+static const uint32_t SHOT_SHOW_MS = 3000;   // while quiet a shot lights the screen this long (Sean: 3 s at most; nobody shoots faster than that from the bench)
 
 static int pctFromVolts(float v) {
   // resting Li-ion curve, close enough for a gauge

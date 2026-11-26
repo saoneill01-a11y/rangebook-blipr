@@ -42,7 +42,7 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
 - An ESP32 firmware release for Bluetooth updates: copy the built `BliprBLE-<ver>.bin` into
   `public/blipr/` and update the `esp` entry in `public/blipr/firmware.json` (version, file, size in bytes, md5; the app image `BliprBLE.ino.bin`, not the merged file). The app
   checks the md5, and the ESP32 rolls back if the new firmware doesn't confirm within 15 s.
-  Currently shipped: 0.2.13 (779744 bytes, md5 4f713f3b6a5ce7ea72d8971226beaa3d; chrono 7456dd2, Nov 25). Sean updates his
+  Currently shipped: 0.2.14 (779744 bytes, md5 9e81f493dafe9beb9af0b0fed8655c3f; chrono b39d6cf, Nov 25). Sean updates his
   server in Unraid (image ghcr.io/.../rangebook:chrono, built by GitHub Actions on every push to chrono), then updates in Bluefy.
 
 ## Where things stand (Nov 11, 2026)
