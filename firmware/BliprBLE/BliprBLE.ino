@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.16"
+#define FW_VERSION "0.2.17"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -125,6 +125,14 @@ static bool armAfterSetup = false;
 static const uint32_t WX_SHOW_MS = 10000, READY_SHOW_MS = 2000;
 static uint8_t wrapPhase = 0;        // 1 weather, 2 READY (BLIPR still disarmed, so redraws can't set it off)
 static uint32_t wrapUntil = 0;
+static bool setupWx = false;         // show the weather after this level (only at power-up)
+// 0.2.17: after each shot BLIPR checks it hasn't been knocked. Tilted more than RELEVEL_DEG either way, or turned more
+// than RETURN_DEG from the heading it had when it was last levelled, and it shows the level again (disarmed) once the
+// shot has been on the screen, then READY. The heading in the app is updated by the same re-level.
+static const float RELEVEL_DEG = 1.0f, RETURN_DEG = 5.0f;
+static bool haveRefHeading = false;
+static float refHeading = 0;
+static uint32_t relevelAt = 0;       // millis() to start a re-level after a shot (0 = none)
 // While quiet a shot lights the screen for showSec seconds (SHOW 1-60; 0 = it stays lit until the next shot). A lit screen
 // costs nothing: it keeps its picture with no traffic on the bus. Only drawing does, and that happens right after a
 // shot, while the Teensy is still busy saving it. Default 3 s (Sean, Nov 25). Saved; config "show".
@@ -741,9 +749,11 @@ static void screenOff() { if (oledOk) oled.ssd1306_command(SSD1306_DISPLAYOFF); 
 static void enterQuiet() { quiet = true; wakeUntil = 0; screenOff(); }
 static void leaveQuiet() { if (!quiet) return; quiet = false; wakeUntil = 0; applyBrightness(); }
 // Power-up and LEVEL: screen and sensors on, Teensy held disarmed until setup ends.
-static void startSetup(uint32_t levelMs) {
+static void startSetup(uint32_t levelMs, bool withWx = false) {
   leaveQuiet();
   wrapPhase = 0;
+  relevelAt = 0;
+  setupWx = withWx;
   setupPhase = true;
   startLevel(levelMs);
   if (quietPref) { if (tArmed) armAfterSetup = true; toTeensy("disarm"); }
@@ -751,6 +761,9 @@ static void startSetup(uint32_t levelMs) {
 static bool quietPending = false;   // go quiet as soon as a compass calibration or update finishes
 static void finishSetup() {
   wrapPhase = 0;
+  const EnvReading& e = sensors::get();
+  haveRefHeading = e.hasHeading;
+  refHeading = e.heading;
   if (armAfterSetup) { armAfterSetup = false; toTeensy("arm"); }
   if (quietPref && !sensors::calibratingNow()) enterQuiet();
   else if (quietPref) quietPending = true;
@@ -759,7 +772,7 @@ static void endSetup() {
   setupPhase = false;
   if (quietPref) {   // weather (if there are sensors), then READY, then arm and go quiet: see loop()
     const EnvReading& e = sensors::get();
-    wrapPhase = (e.hasTH || e.hasP || e.hasAmmo) ? 1 : 2;
+    wrapPhase = (setupWx && (e.hasTH || e.hasP || e.hasAmmo)) ? 1 : 2;
     wrapUntil = millis() + (wrapPhase == 1 ? WX_SHOW_MS : READY_SHOW_MS);
     return;
   }
@@ -802,7 +815,20 @@ static void handleTeensy(char* line) {
       if (s.fps > sMax) sMax = s.fps;
     }
     levelUntil = 0;   // a shot always replaces the level screen
-    if (quiet) sensors::readNow();   // one reading for this shot, after it was measured
+    if (quiet) {
+      sensors::readNow();   // one reading for this shot, after it was measured
+      // knocked or turned since it was levelled? show the level again once the shot has been on the screen
+      const EnvReading& e = sensors::get();
+      bool tilted = e.hasLevel && (fabsf(e.pitch) > RELEVEL_DEG || fabsf(e.roll) > RELEVEL_DEG);
+      float dh = fabsf(e.heading - refHeading);
+      if (dh > 180) dh = 360 - dh;
+      bool turned = e.hasHeading && haveRefHeading && dh > RETURN_DEG;
+      if ((tilted || turned) && !s.test) {
+        uint32_t wait = showSec > 0 ? (uint32_t)showSec * 1000 : 3000;
+        relevelAt = millis() + wait;
+        if (!relevelAt) relevelAt = 1;
+      }
+    }
     animStart = (shotAnim && s.code == 0) ? (millis() | 1) : 0;
     char js[220];
     shotJson(s, js, sizeof(js));
@@ -1079,7 +1105,7 @@ void setup() {
   delay(300);
   toTeensy("get");
   toTeensy("stat");
-  startSetup(60000);   // the level only shows if the level sensor answers (levelShowing() checks)
+  startSetup(60000, true);   // the level only shows if the level sensor answers (levelShowing() checks); then the weather
 }
 
 void loop() {
@@ -1173,6 +1199,7 @@ void loop() {
     if (now - lastDraw >= (animStart ? 15u : levelUntil ? 100u : otaActive ? 1000u : 500u)) { lastDraw = now; drawScreenNow(); }
   } else if (wakeUntil && (int32_t)(now - wakeUntil) >= 0) { wakeUntil = 0; screenOff(); }
   if (setupPhase && !levelUntil && !otaActive) endSetup();
+  if (relevelAt && quiet && !otaActive && (int32_t)(now - relevelAt) >= 0) { relevelAt = 0; startSetup(60000); }
   if (wrapPhase && !otaActive && (int32_t)(now - wrapUntil) >= 0) {
     if (wrapPhase == 1) { wrapPhase = 2; wrapUntil = now + READY_SHOW_MS; }
     else finishSetup();
