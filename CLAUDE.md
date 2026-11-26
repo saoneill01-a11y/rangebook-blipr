@@ -42,7 +42,8 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
 - An ESP32 firmware release for Bluetooth updates: copy the built `BliprBLE-<ver>.bin` into
   `public/blipr/` and update the `esp` entry in `public/blipr/firmware.json` (version, file, size in bytes, md5; the app image `BliprBLE.ino.bin`, not the merged file). The app
   checks the md5, and the ESP32 rolls back if the new firmware doesn't confirm within 15 s.
-  Currently shipped: 0.2.10 (779312 bytes, md5 596c2f9e3cfc6e5dd469d425c297925c; chrono 76efdeb, Nov 25).
+  Currently shipped: 0.2.13 (779744 bytes, md5 4f713f3b6a5ce7ea72d8971226beaa3d; chrono 7456dd2, Nov 25). Sean updates his
+  server in Unraid (image ghcr.io/.../rangebook:chrono, built by GitHub Actions on every push to chrono), then updates in Bluefy.
 
 ## Where things stand (Nov 11, 2026)
 
@@ -122,6 +123,11 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      seen by the Mac even in BOOT mode). The Bluetooth update failed (dropped at 0-15%, even in the fast setup minute);
      then USB worked again and **0.2.10 was flashed over USB**: the module may have an intermittent joint after the bend
      (spare SuperMini worth having). Also shipped 0.2.10 on chrono (76efdeb) for Bluetooth updates.
+     **Bluetooth updates fixed (ESP32 0.2.12):** they died at 0-15% ("update stopped (not started)") because loop()'s
+     20 s stall check read the clock before the last-piece time, so a piece arriving in between wrapped the difference
+     and cancelled the update. Fixed; 0.2.12 (USB) -> 0.2.13 (Bluetooth) worked, ~30 s. The ESP32's USB is seen by the
+     Mac only with the module OUT of BLIPR (in the socket it isn't, even in BOOT mode): flash it out of BLIPR, or by
+     Bluetooth. ESP32 is on 0.2.13 and still out of BLIPR; next: put it back, measure `live 114014` (loop rest fix).
      After it: measure `live 114014` with the ESP32's USB unplugged.
   1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
   1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,

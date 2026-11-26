@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.10"
+#define FW_VERSION "0.2.13"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -159,6 +159,7 @@ static void toTeensy(const char* cmd) {
 // the board only switches to it if every byte arrived and the MD5 matches. After the restart the new firmware
 // has to run for 15 s before it's kept: if it crashes or resets before then, the board goes back to the old one.
 static BLECharacteristic* chOta = nullptr;
+static int resetReason = 0;   // esp_reset_reason() at start-up (9 = brownout, 4 = crash); printed on USB at start-up
 static volatile bool otaActive = false;
 static volatile uint32_t otaSize = 0, otaGot = 0, otaLastMs = 0;
 static uint32_t otaRebootAt = 0;
@@ -203,6 +204,7 @@ class OtaCB : public BLECharacteristicCallbacks {
       if (otaGot + len > otaSize) { otaStop("too much data"); return; }
       if (Update.write(d + 5, len) != len) { otaStop(Update.errorString()); return; }
       otaGot += len;
+      if (otaSize && (otaGot - len) * 10 / otaSize != otaGot * 10 / otaSize) Serial.printf("update %lu%%\n", (unsigned long)((uint64_t)otaGot * 100 / otaSize));
       otaSay("rx", nullptr, false);             // readable progress, no notification per piece
     } else if (d[0] == 'E') {                   // E: finish, check, switch on the next restart
       if (!otaActive || otaGot != otaSize) { otaStop("incomplete"); return; }
@@ -265,6 +267,14 @@ class ServerCB : public BLEServerCallbacks {
   void onConnParamsUpdate(esp_bd_addr_t, uint16_t interval, uint16_t latency, uint16_t timeout, esp_bt_status_t status) override {
     Serial.printf("Bluetooth link: every %.1f ms, latency %u, timeout %u ms (status %d)\n", interval * 1.25f, latency, timeout * 10, (int)status);
     if (status == ESP_BT_STATUS_SUCCESS) linkUnits = interval;
+  }
+#endif
+#if defined(CONFIG_BLUEDROID_ENABLED)
+  // 0.2.11: why the link dropped (0x08 the phone stopped answering, 0x13 the phone hung up, 0x16 this side hung up,
+  // 0x3e it never got going), and where an update had got to
+  void onDisconnect(BLEServer*, esp_ble_gatts_cb_param_t* param) override {
+    Serial.printf("Bluetooth: disconnect reason 0x%02x%s, update at %lu of %lu bytes\n", (unsigned)param->disconnect.reason,
+                  param->disconnect.reason == 0x08 ? " (timeout)" : "", (unsigned long)otaGot, (unsigned long)otaSize);
   }
 #endif
   void onDisconnect(BLEServer*) override {
@@ -1021,6 +1031,13 @@ void setup() {
 
   updateBattery();
   pushStatus();
+  {
+    static const char* rr[] = {"unknown", "power-on", "external", "software", "crash", "interrupt watchdog", "task watchdog",
+                               "other watchdog", "deep sleep", "brownout (supply dipped)", "SDIO", "USB", "JTAG"};
+    int r = (int)esp_reset_reason();
+    Serial.printf("Last restart: %s (%d)\n", r >= 0 && r < 13 ? rr[r] : "?", r);
+    resetReason = r;
+  }
   Serial.printf("BLIPR ESP32-C3 firmware %s ready. Sensors found: %s\n"
                 "Commands: STATUS, SYNC n, STRING, UNITS fps|mps, BATV volts, BRIGHT 0-4, THEME 0-3, INVERT 0|1, ANIM 0|1, LEVEL [OFF], COMPASS ...,\n"
                 "or any Teensy command (STAT, GET, SET ..., ARM, DISARM, TEST, REC, TIME).\n", FW_VERSION,
@@ -1061,7 +1078,13 @@ void loop() {
 
   keepFirmwareIfRunning();
   if (otaRebootAt && millis() > otaRebootAt) { Serial.println("Restarting into the new firmware..."); delay(100); ESP.restart(); }
-  if (otaActive && millis() - otaLastMs > 20000) { Update.abort(); otaActive = false; otaSay("idle"); }   // sender gave up
+  // Sender gave up: no piece for 20 s. Read the last piece's time BEFORE the clock: in 0.2.11 and earlier the clock was
+  // read first, so a piece arriving in between made the difference negative (a huge unsigned number) and the update was
+  // cancelled mid-way; the next piece then got "not started" (Bluetooth updates died at 0-15%, Nov 25).
+  if (otaActive) {
+    uint32_t last = otaLastMs;
+    if ((int32_t)(millis() - last) > 20000) { Update.abort(); otaActive = false; otaSay("idle"); }
+  }
 
   if (otaActive && quiet) { leaveQuiet(); quietPending = true; }   // show the update's progress
   if (quietPending && !quiet && !otaActive && !setupPhase && !levelUntil && !sensors::calibratingNow()) {
@@ -1113,7 +1136,7 @@ void loop() {
     pushStatus();
   }
   if (!quiet || animRunning()) {
-    if (now - lastDraw >= (animStart ? 15u : (levelUntil || otaActive) ? 100u : 500u)) { lastDraw = now; drawScreenNow(); }
+    if (now - lastDraw >= (animStart ? 15u : levelUntil ? 100u : otaActive ? 1000u : 500u)) { lastDraw = now; drawScreenNow(); }
   } else if (wakeUntil && (int32_t)(now - wakeUntil) >= 0) { wakeUntil = 0; screenOff(); }
   if (setupPhase && !levelUntil && !otaActive) endSetup();
   if (now - lastEnv >= 2000) { lastEnv = now; if (sensors::letters().length()) pushEnv(); }
