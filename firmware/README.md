@@ -1,4 +1,4 @@
-# Range Book BLIPR firmware (ESP32 0.2.19, Teensy 0.2.7)
+# Range Book BLIPR firmware (ESP32 0.2.20, Teensy 0.2.7)
 
 Firmware for Range Book BLIPR (Ballistic Launch Inspection Portable Radar), the DIY radar chronograph. Step-by-step setup and the bench tests are in the
 build guide's **Firmware** tab; this file is the quick reference.
@@ -56,6 +56,12 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 - `time 1792480000`: set the clock (Range Book does this every time it connects), so raw recordings have the date and time
 
 ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `FLIP 0|1`, `QUIET 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
+
+## What changed in ESP32 0.2.20 (Nov 26)
+
+- `LEVELCHK 0|1` ("Check the level" in Range Book's chronograph settings; saved; config "lvl"). Off, for shooting at an
+  angle: no level screen at power-up and no re-level after shots; the heading reference just follows the compass.
+  The LEVEL command (the Re-level button) still shows the level.
 
 ## What changed in ESP32 0.2.17-0.2.19 (Nov 25)
 

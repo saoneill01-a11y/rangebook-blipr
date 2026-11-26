@@ -97,6 +97,8 @@ firmware is kept once it has run for 15 s; a crash or reset before that rolls ba
 | `INVERT 1` / `INVERT 0` | dark text on a lit screen, or the usual light on black. Remembered; config `"inv"` |
 | `FLIP 1` / `FLIP 0` | screen turned 180 degrees (default 1, the right way up in the case) or not. Remembered |
 | `QUIET 1` / `QUIET 0` | after setup, screen dark and sensors paused while waiting for shots (default 1), or always on. Remembered; config `"quiet"` |
+| `SHOW 3` | seconds a shot stays on the screen while quiet (1-60; 0 = until the next shot). Remembered; config `"show"` |
+| `LEVELCHK 1` / `LEVELCHK 0` | level at power-up and after shots, or never (shooting at an angle). Remembered; config `"lvl"` |
 | `ANIM 1` / `ANIM 0` | bullet animation on the chronograph's screen after each good shot, or not (default off; remembered). The config JSON carries `"anim":1` or `0` |
 | `LEVEL` / `LEVEL OFF` | show the bubble level on the chronograph's screen for 60 s / go back to the normal screen (needs the level sensor) |
 | `DRIVE` / `DRIVE OFF` | USB drive mode: pause shot detection and refresh the SD card file list on the USB-connected computer / resume (status reports armed 0 while paused). It also turns on by itself when the Teensy is plugged into a computer, and off when unplugged. `ARM` and `sim` also end it. Needs the Teensy built with USB Type Serial + MTP Disk |

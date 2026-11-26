@@ -42,7 +42,7 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
 - An ESP32 firmware release for Bluetooth updates: copy the built `BliprBLE-<ver>.bin` into
   `public/blipr/` and update the `esp` entry in `public/blipr/firmware.json` (version, file, size in bytes, md5; the app image `BliprBLE.ino.bin`, not the merged file). The app
   checks the md5, and the ESP32 rolls back if the new firmware doesn't confirm within 15 s.
-  Currently shipped: 0.2.19 (780288 bytes, md5 41feee093acb535647d3f11d516a126d; chrono 35b71f5, Nov 25). Sean updates his
+  Currently shipped: 0.2.20 (780544 bytes, md5 aac87886042cb86a6981281b70e53d8a; chrono d9d3f8a, Nov 26). Sean updates his
   server in Unraid (image ghcr.io/.../rangebook:chrono, built by GitHub Actions on every push to chrono), then updates in Bluefy.
 
 ## Where things stand (Nov 11, 2026)
@@ -137,6 +137,8 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      **ESP32 0.2.19 (after-shot re-level check) works on BLIPR, Nov 25:** tilted, a test shot brought the level back;
      re-levelled, READY, dark. Limits 1 degree tilt / 5 degrees turn (RELEVEL_DEG, RETURN_DEG): check at the range
      that recoil or the rifle's steel doesn't set off needless re-levels.
+     ESP32 0.2.20 (shipped, not installed yet): "Check the level" switch in Range Book (LEVELCHK 0/1, saved, config
+     "lvl") for shooting at an angle: off = no level at power-up, no re-level after shots, heading follows silently.
      Lid v0.12 (screen window 1 mm taller) to print.
      **Next session:** live fire, .22 CCI Standard Velocity, window 950-1200, `set qc=0`, save=1 (step 2 below).
      After it: measure `live 114014` with the ESP32's USB unplugged.

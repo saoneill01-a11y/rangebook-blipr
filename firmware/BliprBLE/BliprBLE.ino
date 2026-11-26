@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.19"
+#define FW_VERSION "0.2.20"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -133,6 +133,9 @@ static const float RELEVEL_DEG = 1.0f, RETURN_DEG = 5.0f;
 static bool haveRefHeading = false;
 static float refHeading = 0;
 static uint32_t relevelAt = 0;       // millis() to start a re-level after a shot (0 = none)
+// 0.2.20: LEVELCHK 0 for shooting at an angle (down a slope): no level screen at power-up and no re-level after shots;
+// the heading still updates after each shot. The LEVEL command still shows the level. Saved; config "lvl".
+static bool levelCheck = true;
 // While quiet a shot lights the screen for showSec seconds (SHOW 1-60; 0 = it stays lit until the next shot). A lit screen
 // costs nothing: it keeps its picture with no traffic on the bus. Only drawing does, and that happens right after a
 // shot, while the Teensy is still busy saving it. Default 3 s (Sean, Nov 25). Saved; config "show".
@@ -754,6 +757,7 @@ static void startSetup(uint32_t levelMs, bool withWx = false) {
   wrapPhase = 0;
   relevelAt = 0;
   setupWx = withWx;
+  if (!levelCheck && withWx) levelMs = 0;   // power-up with the level check off: straight to the weather
   setupPhase = true;
   startLevel(levelMs);
   if (quietPref) { if (tArmed) armAfterSetup = true; toTeensy("disarm"); }
@@ -819,10 +823,11 @@ static void handleTeensy(char* line) {
       sensors::readNow();   // one reading for this shot, after it was measured
       // knocked or turned since it was levelled? show the level again once the shot has been on the screen
       const EnvReading& e = sensors::get();
-      bool tilted = e.hasLevel && (fabsf(e.pitch) > RELEVEL_DEG || fabsf(e.roll) > RELEVEL_DEG);
+      bool tilted = levelCheck && e.hasLevel && (fabsf(e.pitch) > RELEVEL_DEG || fabsf(e.roll) > RELEVEL_DEG);
       float dh = fabsf(e.heading - refHeading);
       if (dh > 180) dh = 360 - dh;
-      bool turned = e.hasHeading && haveRefHeading && dh > RETURN_DEG;
+      bool turned = levelCheck && e.hasHeading && haveRefHeading && dh > RETURN_DEG;
+      if (!levelCheck && e.hasHeading) { refHeading = e.heading; haveRefHeading = true; }   // just follow it
       if (tilted || turned) {   // test shots too (0.2.18), so it can be tried on the bench
         uint32_t wait = showSec > 0 ? (uint32_t)showSec * 1000 : 3000;
         relevelAt = millis() + wait;
@@ -867,9 +872,9 @@ static void handleTeensy(char* line) {
       add(snprintf(tmp + o, cap - o, "%s\"%s\":%s", o > 1 ? "," : "", f[i], eq + 1));
     }
     if (fits)
-      add(snprintf(tmp + o, cap - o, "%s\"units\":\"%s\",\"batcal\":%.4f,\"bright\":%d,\"anim\":%d,\"theme\":%d,\"inv\":%d,\"hoff\":%.1f,\"hrev\":%d,\"hrot\":%d,\"quiet\":%d,\"show\":%d}",
+      add(snprintf(tmp + o, cap - o, "%s\"units\":\"%s\",\"batcal\":%.4f,\"bright\":%d,\"anim\":%d,\"theme\":%d,\"inv\":%d,\"hoff\":%.1f,\"hrev\":%d,\"hrot\":%d,\"quiet\":%d,\"show\":%d,\"lvl\":%d}",
                    o > 1 ? "," : "", unitsMps ? "mps" : "fps", batCal, bright, shotAnim ? 1 : 0, screenTheme, screenInv ? 1 : 0, sensors::headingOffset(),
-                   sensors::headingReverse() ? 1 : 0, sensors::imuRotation(), quietPref ? 1 : 0, showSec));
+                   sensors::headingReverse() ? 1 : 0, sensors::imuRotation(), quietPref ? 1 : 0, showSec, levelCheck ? 1 : 0));
     if (!fits) return;
     memcpy(configJson, tmp, o + 1);
     notifyText(chConfig, configJson);
@@ -975,6 +980,12 @@ static void handleCommand(char* cmd) {
     oled.setRotation(screenFlip ? 2 : 0);
     drawScreen();
     toTeensy("get");
+  } else if (!strcmp(word, "LEVELCHK")) {
+    // LEVELCHK 1: level at power-up and after shots (default). LEVELCHK 0: never (shooting at an angle).
+    levelCheck = atoi(arg) != 0 || (arg[0] && toupper(arg[1]) == 'N');
+    prefs.putBool("lvlchk", levelCheck);
+    if (!levelCheck) relevelAt = 0;
+    toTeensy("get");   // the config notification carries "lvl"
   } else if (!strcmp(word, "SHOW")) {
     // SHOW 3: after each shot the screen shows the reading this many seconds (1-60), then goes dark. SHOW 0: it stays on.
     int s = atoi(arg);
@@ -1038,6 +1049,7 @@ void setup() {
   bright = prefs.getInt("bright", 3);
   shotAnim = prefs.getBool("anim", false);
   showSec = prefs.getInt("show", 3);
+  levelCheck = prefs.getBool("lvlchk", true);
   screenTheme = prefs.getInt("theme", THEME_CLASSIC);
   if (screenTheme < 0 || screenTheme >= THEME_COUNT) screenTheme = THEME_CLASSIC;
   screenInv = prefs.getBool("inv", false);
@@ -1099,7 +1111,7 @@ void setup() {
     resetReason = r;
   }
   Serial.printf("BLIPR ESP32-C3 firmware %s ready. Sensors found: %s\n"
-                "Commands: STATUS, SYNC n, STRING, UNITS fps|mps, BATV volts, BRIGHT 0-4, THEME 0-3, INVERT 0|1, ANIM 0|1, SHOW s, LEVEL [OFF], COMPASS ...,\n"
+                "Commands: STATUS, SYNC n, STRING, UNITS fps|mps, BATV volts, BRIGHT 0-4, THEME 0-3, INVERT 0|1, ANIM 0|1, SHOW s, LEVELCHK 0|1, LEVEL [OFF], COMPASS ...,\n"
                 "or any Teensy command (STAT, GET, SET ..., ARM, DISARM, TEST, REC, TIME).\n", FW_VERSION,
                 sensors::letters().length() ? sensors::letters().c_str() : "none");
   delay(300);
