@@ -85,8 +85,8 @@ TRIPOD_INNER_H = 11.5  # boss height above the floor (stays 0.5 mm under the boa
 # v0.7: the screen sits in the back corner on the gun side (+X), nearest the shooter, its window the same
 # distance (14.4 mm) from the lid's back edge and +X edge. The module's header edge faces the front.
 OLED_IX, OLED_IY = 90.0, 105.0        # centre of the module (inside coords)
-OLED_WIN_W, OLED_WIN_H = 24.0, 12.0
-OLED_WIN_OFFSET = 3.0                 # window centre is this far toward the BACK of module centre
+OLED_WIN_W, OLED_WIN_H = 24.0, 13.0   # v0.12: 13 mm tall (was 12): the window's front edge hid the screen's top line (Nov 25)
+OLED_WIN_OFFSET = 2.5                 # window centre is this far toward the BACK of module centre (back edge unchanged)
 OLED_POCKET = 28.4
 OLED_POCKET_D = 1.0
 # v0.8 (Sean's design, tested): the screen screws in with 4 x M2 into pads in the pocket's corners. The pads fill the

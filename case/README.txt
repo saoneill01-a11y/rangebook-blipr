@@ -3,6 +3,10 @@ Range Book BLIPR - case files, v0.9
 SIDES: "+X side" is the side wall with the Teensy's USB hole. On the bench it faces the gun and you
 (you sit behind it, across the gun, with the chronograph at about 1 o'clock). The "far side" is the other one.
 
+WHAT CHANGED IN v0.12 (lids only: lid_oled and lid_sensors; every other part is the same as v0.11)
+  - Screen window 1 mm taller (12 -> 13 mm), on its front edge (toward the sensor pod): that edge hid the top line of
+    the screen (battery icon and small text). The back edge is unchanged. Picture: out/oled_window_v012.png.
+
 WHAT CHANGED IN v0.11 (base only; every other part is the same as v0.10)
   - Clean-up beside the two left battery-holder pads: the old front cross wall's stub, the wider foot of the
     front-left corner column (up to 10.4 mm) and the foot and two thin horns of the rear-left column behind its pad
