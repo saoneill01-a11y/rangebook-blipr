@@ -59,7 +59,7 @@ ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`,
 
 ## What changed in ESP32 0.2.20 (Nov 26)
 
-- `LEVELCHK 0|1` ("Check the level" in Range Book's chronograph settings; saved; config "lvl"). Off, for shooting at an
+- `LEVELCHK 0|1` ("Disable the level" button in Range Book's chronograph settings; saved; config "lvl"). Off, for shooting at an
   angle: no level screen at power-up and no re-level after shots; the heading reference just follows the compass.
   The LEVEL command (the Re-level button) still shows the level.
 
