@@ -110,7 +110,11 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      jumpers with BLIPR's 5 V wire off and a power bank in the ESP32's USB-C 0 in 2 min. **The bursts are conducted
      through BLIPR's 5 V to the ESP32, not radiated.** Fix: an LC filter on the ESP32's 5 V (like the holder's: 22 uH +
      470 uF + 1 uF), mockup first. With the new trigger (`band=15`) the bursts already cause 0 triggers (1 min, USB out).
-     ESP32 was left on jumpers with the power bank; reassemble before shooting.
+     **Filter built Nov 25** (`pictures/out/esp_filter.png`): ESP32's 5V header pin cut, L2 22 uH from the socket's
+     5V hole (or D1's leg) to the pin stub, C29 470 uF + C30 1 uF across the module's 5V and GND. Board copper
+     untouched. Result, ESP32 back in its socket, no USB, phone connected, old trigger: **0 bursts in 2 min** (was ~31/s);
+     noise rms 7.7 counts, same as with the ESP32 out. The phone's steady 114 kHz (2322 fps) line is still there
+     (outside 600-1800; analyze() rejects pre-trigger lines). `band=15` restored.
   1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
   1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,
      GPIO20 = RX from the Teensy, GPIO21 = TX to the Teensy; display/sensors not needed for the test), armed, no shots,
