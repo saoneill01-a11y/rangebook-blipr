@@ -105,6 +105,12 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      the window alone). The in-band check takes ~640 of 2048 us per block. Teensy left armed, 600-1800, save=1.
      ESP32 USB prints didn't show on the Mac (connect lines expected): check later. New Mac ports: Teensy
      `/dev/cu.usbmodem208996901` / upload `usb:1130000`, ESP32 `/dev/cu.usbmodem101`.
+  1b done Nov 25 (`sessions/2026-11-25_jumper_test/`), phone connected, counted with the OLD trigger (`band=0`, then
+     put back to 15): ESP32 in socket + its USB to the Mac ~1/s; in socket, USB out ~31/s; on 30 cm jumpers ~31/s;
+     jumpers with BLIPR's 5 V wire off and a power bank in the ESP32's USB-C 0 in 2 min. **The bursts are conducted
+     through BLIPR's 5 V to the ESP32, not radiated.** Fix: an LC filter on the ESP32's 5 V (like the holder's: 22 uH +
+     470 uF + 1 uF), mockup first. With the new trigger (`band=15`) the bursts already cause 0 triggers (1 min, USB out).
+     ESP32 was left on jumpers with the power bank; reassemble before shooting.
   1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
   1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,
      GPIO20 = RX from the Teensy, GPIO21 = TX to the Teensy; display/sensors not needed for the test), armed, no shots,
