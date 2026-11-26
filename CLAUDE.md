@@ -100,8 +100,11 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   trigger or the quick check dropped them (dropped triggers aren't saved). Sean fired 4 shots about 5 s apart. Teensy 0.2.4
   (flashed) adds `set qc=0` (quick check off, RAM only, back to 11 dB after a restart) and prints each shot's quick-check
   line. With qc=0 and the ESP32 in, Bluetooth triggers (~1/s) keep BLIPR busy, so: **next session, start here:**
-  0. **Flash Teensy 0.2.5 and ESP32 0.2.8 (built Nov 12, not on the boards yet; see below).** Check `stat` (trigger
-     "in-band", check time per block well under the block time) and `live` (in-band reading) before anything else.
+  0. Done Nov 25 (new Mac; needed Rosetta for arduino-cli's ctags): **Teensy 0.2.6 + ESP32 0.2.9 flashed**. Bench,
+     armed, no shots: no phone 0 triggers / 2 min; phone connected 0 shots, 1 dropped trigger / 5 min (Range Book left
+     the window alone). The in-band check takes ~640 of 2048 us per block. Teensy left armed, 600-1800, save=1.
+     ESP32 USB prints didn't show on the Mac (connect lines expected): check later. New Mac ports: Teensy
+     `/dev/cu.usbmodem208996901` / upload `usb:1130000`, ESP32 `/dev/cu.usbmodem101`.
   1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
   1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,
      GPIO20 = RX from the Teensy, GPIO21 = TX to the Teensy; display/sensors not needed for the test), armed, no shots,
@@ -121,7 +124,7 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   trigger (`set band=15`, saved; `band=0` = old trigger), quick check from the trigger frame, line rejection in
   `analyze()` (pre-trigger lines scored against their own level; a track that runs to the capture's end without
   fading, or starts past 8 m, is code 6 "interference", never sent; `set fade=0` off; skipped for `sim`). ESP32 0.2.8:
-  the slow-link request is repeated until the phone grants 90 ms or more (90-120 ms, latency 6), -12 dBm while quiet (phone on the bench, under 5 ft),
+  the slow-link request is repeated until the phone grants 90 ms or more (90-120 ms, latency 6), 0 dBm while quiet (-12 dBm dropped the phone, Nov 25),
   quiet mode also after a compass calibration. Replay of the 999 Nov 11 recordings: false "ok" reads 611 -> 40, the
   bench fake bullets unchanged; sim: all cases as before, bursts trigger 0/50 (old trigger 50/50). The review's bench
   idea for conducted vs radiated: also count triggers with a USB power bank in the ESP32's own USB-C (the ESP32's
@@ -219,11 +222,10 @@ piece of work so nothing lives only on the laptop.
 
 ## This computer
 
-- Mac (Apple silicon, macOS 26). Repo at `~/Library/CloudStorage/OneDrive-CSI/Claude Stuff/Claude Code/rangebook-blipr`
-  (inside OneDrive: if git acts oddly, set the folder to "Always keep on this device").
+- Mac (Apple silicon, macOS 26). Repo at `~/Claude/Developer/rangebook-blipr`.
 - arduino-cli 1.5.1 (Homebrew), teensy:avr 1.62.0, esp32:esp32 3.3.12. DFRobot_Multi_DOF_IMU and DFRobot_RTU
   are git clones in `~/Documents/Arduino/libraries/` (no unsafe-install setting needed).
-- Build into `~/Library/Caches/blipr-build/` (`--build-path`) so build files stay out of OneDrive.
+- Build into `~/Library/Caches/blipr-build/` (`--build-path`) so build files stay out of the repo.
 - Nov 1, 2026: both sketches compile (ESP32 777373 bytes); `sim_test` passes, 0/20 false shots.
 - Serial ports: Teensy `/dev/cu.usbmodem208996901` (upload port `usb:130000`), ESP32 `/dev/cu.usbmodem1101`
   (on the port Sean used; a charge-only USB-C cable showed nothing at all). The ESP32 prints its startup line

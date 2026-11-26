@@ -30,7 +30,7 @@
 #endif
 #include "radar_dsp.h"
 
-#define FW_VERSION "0.2.5"
+#define FW_VERSION "0.2.6"
 
 // ---------------- pins and sizes ----------------
 static const int PIN_I = A0;      // pin 14
@@ -707,7 +707,9 @@ void loop() {
   readUsb();
   readLink();
 #if HAVE_DRIVE
-  if (state == LISTEN) MTP.loop();  // never while a shot is being recorded
+  // The SD card is shared with the computer only in drive mode (0.2.6): while armed, a computer reading the card
+  // at the same moment as a save made saves fail ("SD card problem", Nov 25 on the new Mac).
+  if (state == LISTEN && driveMode) MTP.loop();
   // Automatic drive mode: plugged into a computer (USB set up for 1 s) -> pause shots so the SD card can be
   // copied; unplugged for 3 s -> listen for shots again. A USB charger or power bank never sets up USB, so it
   // doesn't count. "drive off" or "arm" while plugged in resumes shots until the next time it's plugged in.

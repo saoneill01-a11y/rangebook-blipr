@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.8"
+#define FW_VERSION "0.2.9"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -120,7 +120,7 @@ static bool setupPhase = true;
 static bool quiet = false;
 static uint32_t wakeUntil = 0;       // millis() when a brief screen showing ends (0 = none)
 static bool armAfterSetup = false;
-static const uint32_t SHOT_SHOW_MS = 5000;
+static const uint32_t SHOT_SHOW_MS = 1500;   // while quiet a shot lights the screen this long (Sean: "a second" is enough; the app shows the fps)
 
 static int pctFromVolts(float v) {
   // resting Li-ion curve, close enough for a gauge
@@ -240,7 +240,8 @@ static void keepFirmwareIfRunning() {
 // (These numbers follow Apple's connection-parameter rules, so iPhones accept them.)
 // 0.2.8: the phone doesn't always agree (outdoors it stayed at 30 ms), so the request is repeated until the phone
 // reports a link that slow; the slow numbers have more margin (90-120 ms, latency 6: wakes about every 0.8 s); and
-// the radio transmits at -12 dBm instead of +9 dBm while quiet (the phone sits on the bench within ~1.5 m).
+// the radio transmits at 0 dBm instead of +9 dBm while quiet (-12 dBm kept dropping the phone at the bench, Nov 25:
+// the SuperMini's small antenna is weak).
 static uint8_t peerAddr[6];
 static volatile bool havePeer = false;
 static volatile uint32_t connectedAt = 0;
@@ -252,7 +253,10 @@ static int advSlow = -1;
 static int txLow = -1;
 
 class ServerCB : public BLEServerCallbacks {
-  void onConnect(BLEServer*) override { connected = true; connectedAt = millis(); linkSlow = -1; linkUnits = 0; linkTries = 0; }
+  void onConnect(BLEServer*) override {
+    connected = true; connectedAt = millis(); linkSlow = -1; linkUnits = 0; linkTries = 0;
+    Serial.printf("Bluetooth: phone connected (quiet %d)\n", quiet ? 1 : 0);
+  }
 #if defined(CONFIG_BLUEDROID_ENABLED)
   void onConnect(BLEServer*, esp_ble_gatts_cb_param_t* param) override {
     memcpy(peerAddr, param->connect.remote_bda, 6);
@@ -264,6 +268,7 @@ class ServerCB : public BLEServerCallbacks {
   }
 #endif
   void onDisconnect(BLEServer*) override {
+    Serial.printf("Bluetooth: phone disconnected after %lu s\n", (unsigned long)((millis() - connectedAt) / 1000));
     connected = false;
     havePeer = false;
     needAdvertise = true;
@@ -696,8 +701,12 @@ static void drawScreenNow() {
 // ---------------- messages from the Teensy ----------------
 // Event-driven screen updates (a shot, a setting changed). While quiet the screen lights for SHOT_SHOW_MS and then
 // goes dark again; nothing is redrawn in between, so the I2C bus stays silent.
-static void drawScreen() {
+// 0.2.9: while quiet only a shot (or BRIGHT, to see the new level) lights the screen. The app's commands on connect
+// (UNITS, SYNC, STRING...) each redrew it, and every redraw read as a false shot at ~1136 or ~1697 fps; they now just
+// change the setting, and the next shot shows it.
+static void drawScreen(bool force = false) {
   if (!quiet) { drawScreenNow(); return; }
+  if (!force) return;
   applyBrightness();
   drawScreenNow();
   wakeUntil = millis() + SHOT_SHOW_MS;
@@ -763,7 +772,7 @@ static void handleTeensy(char* line) {
     Serial.println(js);
     digitalWrite(PIN_LED, LOW);
     flashUntil = millis() + 150;
-    drawScreen();
+    drawScreen(true);   // the Teensy is still busy saving this shot, so the bus traffic can't set off another
   } else if (!strcmp(f[0], "T") && nf >= 10) {
     tArmed = atoi(f[1]);
     tShots = strtoul(f[2], nullptr, 10);
@@ -913,7 +922,7 @@ static void handleCommand(char* cmd) {
     if (bright > 4) bright = 4;
     prefs.putInt("bright", bright);
     applyBrightness();
-    if (quiet) drawScreen();
+    if (quiet) drawScreen(true);
     toTeensy("get");
   } else if (!strcmp(word, "COMPASS")) {
     // COMPASS CAL START | COMPASS CAL STOP | COMPASS MATCH <deg> | COMPASS OFFSET <deg> | COMPASS REVERSE 0/1 | COMPASS ROT 0/90/180/270
@@ -1071,7 +1080,7 @@ void loop() {
     }
     if ((int)slow != txLow) {
       txLow = slow;
-      esp_power_level_t lvl = slow ? ESP_PWR_LVL_N12 : ESP_PWR_LVL_P9;
+      esp_power_level_t lvl = slow ? ESP_PWR_LVL_N0 : ESP_PWR_LVL_P9;
       esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_ADV, lvl);
       esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, lvl);
       for (int h = 0; h < 3; h++) esp_ble_tx_power_set((esp_ble_power_type_t)(ESP_BLE_PWR_TYPE_CONN_HDL0 + h), lvl);

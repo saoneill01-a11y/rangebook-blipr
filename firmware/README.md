@@ -1,4 +1,4 @@
-# Range Book BLIPR firmware (ESP32 0.2.8, Teensy 0.2.5)
+# Range Book BLIPR firmware (ESP32 0.2.9, Teensy 0.2.6)
 
 Firmware for Range Book BLIPR (Ballistic Launch Inspection Portable Radar), the DIY radar chronograph. Step-by-step setup and the bench tests are in the
 build guide's **Firmware** tab; this file is the quick reference.
@@ -57,6 +57,17 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 
 ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `FLIP 0|1`, `QUIET 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
 
+## What changed in Teensy 0.2.6 and ESP32 0.2.9 (Nov 25, first bench test of 0.2.5/0.2.8)
+
+- ESP32: while quiet, only a shot (and BRIGHT) lights the screen, for 1.5 s. The app's commands on connect (UNITS,
+  SYNC, STRING) each redrew it, and each redraw read as a false shot at ~1136 or ~1697 fps (8 of them after
+  connecting). Radio at 0 dBm while quiet (-12 dBm kept dropping the phone). Prints a line on each phone
+  connect/disconnect.
+- Teensy: the SD card is shared with the computer (MTP) only in drive mode; with the new Mac reading it while armed,
+  saves failed ("SD card problem").
+- Bench, armed, no shots: no phone 0 triggers in 2 min; phone connected 0 shots and 1 dropped trigger in 5 min,
+  window left at 600-1800 by Range Book 2.44.2.
+
 ## What changed in Teensy 0.2.5 and ESP32 0.2.8
 
 From the second-opinion review of the first live fire (Nov 11): the trigger listened mostly where the Bluetooth noise
@@ -82,7 +93,7 @@ didn't always accept the slow Bluetooth link.
 - Teensy settings gained `band` (EEPROM layout version 2; older settings are kept and `band` added).
 - ESP32 0.2.8: the slow-link request is repeated (every 5 s, then every 30 s) until the phone reports a link of
   90 ms or more; the slow numbers have more margin (90-120 ms, latency 6, 6 s timeout). While quiet the radio
-  transmits at -12 dBm instead of +9 dBm (the phone sits on the bench, within about 1.5 m). Quiet mode now also starts when a compass calibration or a failed
+  transmits at 0 dBm instead of +9 dBm (0.2.9: -12 dBm kept dropping the phone). Quiet mode now also starts when a compass calibration or a failed
   update ends after setup.
 - Not tested on the hardware yet. Tune `band`, `qc` and `fade` on the first real echoes (the review's estimate
   of the real .22 echo is rough: about 3 counts at 1 m, maybe 1-10).
