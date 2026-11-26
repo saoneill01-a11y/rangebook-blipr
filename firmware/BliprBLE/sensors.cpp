@@ -218,11 +218,15 @@ static void useMag(const float v[3], bool tiltComp) {
 static uint32_t tSlow = 0, tFast = 0, tProbe = 0, tAmmo = 0;
 
 // One full reading now (level, compass, temperature, humidity, pressure), used after a shot while the bus is quiet.
+// The level and compass are smoothed (each reading moves them 20 % of the way), so one reading after BLIPR was knocked
+// shows only a fifth of the tilt: take 15 in a row (0.8^15 = 3.5 % left), about 0.1-0.2 s (ESP32 0.2.19).
 void readNow() {
-  uint32_t now = millis();
-  tFast = now - 100;
-  tSlow = now - 2000;
-  update();
+  for (int i = 0; i < 15; i++) {
+    uint32_t now = millis();
+    tFast = now - 100;
+    if (i == 0) tSlow = now - 2000;
+    update();
+  }
 }
 
 bool calibratingNow() { return calibrating; }
