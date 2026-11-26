@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.17"
+#define FW_VERSION "0.2.18"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -823,7 +823,7 @@ static void handleTeensy(char* line) {
       float dh = fabsf(e.heading - refHeading);
       if (dh > 180) dh = 360 - dh;
       bool turned = e.hasHeading && haveRefHeading && dh > RETURN_DEG;
-      if ((tilted || turned) && !s.test) {
+      if (tilted || turned) {   // test shots too (0.2.18), so it can be tried on the bench
         uint32_t wait = showSec > 0 ? (uint32_t)showSec * 1000 : 3000;
         relevelAt = millis() + wait;
         if (!relevelAt) relevelAt = 1;
