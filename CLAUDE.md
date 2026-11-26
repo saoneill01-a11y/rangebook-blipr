@@ -147,6 +147,11 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      shots: 1025.0, 1034.3, 1030.4, 1024.2, 1058.5 (avg 1034.5, SD 14.0, ES 34; tracked 0.8-2.2 m, 7-10 points, 14-18 dB).
      Second string 10:50-10:51: 4 of 5 read (1051.4, 996.5, 996.1, 1045.6; shot 6 "weak", 5 points: look at its
      recording). All 10: 9 read, avg 1029.1, SD 22.0, ES 62.
+     Shot 6 (s01051) and s01041: the echo starts 1.5-2 ms before the trigger and its angle climb (276 -> 316 m/s) isn't in
+     the track, so the muzzle time is the (late) trigger and most points are dropped. Tried (Nov 26, not kept): taking
+     the climbing frames before the track for the muzzle time. Read all 15 .22s (avg 1022, nearer the Athlon's 1017)
+     but moved simulated rifles 3-20 fps low, even with the frame-window model. Needs a better muzzle-time method.
+     Recordings: `recordings/2026-11-26_22lr_b/` (s01046-s01055).
      Athlon (Nov 21, same gun/ammo, 29 shots): avg 1017, SD 15.2, 980-1041. BLIPR reads ~17 fps (1.7 %) higher on
      average: day/temperature or calibration (f0, lat/behind). Next: shoot BLIPR and the Athlon on the same shots (apart,
      or one at a time) to set `cal`.
