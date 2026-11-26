@@ -119,7 +119,9 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      aliased); not the phone (unchanged with distance and with Bluefy disconnected); gone while the ESP32's RST is held,
      so the ESP32 makes it. Likely its loop() spinning ~100k times a second; ESP32 0.2.10 rests 2 ms per pass while
      quiet. **The ESP32's USB stopped working after the filter build** (board bent slightly when the 5V pin was cut; not
-     seen by the Mac even in BOOT mode), so 0.2.10 goes over Bluetooth: shipped on chrono, Sean updates from Range Book.
+     seen by the Mac even in BOOT mode). The Bluetooth update failed (dropped at 0-15%, even in the fast setup minute);
+     then USB worked again and **0.2.10 was flashed over USB**: the module may have an intermittent joint after the bend
+     (spare SuperMini worth having). Also shipped 0.2.10 on chrono (76efdeb) for Bluetooth updates.
      After it: measure `live 114014` with the ESP32's USB unplugged.
   1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
   1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,
