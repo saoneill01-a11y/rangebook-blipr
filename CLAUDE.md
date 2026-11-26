@@ -132,6 +132,9 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      **Lit screen test (ESP32 0.2.15, "Show each shot for", Nov 25):** screen lit and static (no redraws): radar noise
      rms 12.2 counts and a tone at ~11.7 kHz (~240 fps); dark: rms 7.8, no tone. The OLED's own charge pump costs ~4 dB
      of sensitivity while lit. Default stays 3 s.
+     **ESP32 0.2.16 on BLIPR (Bluetooth update), checked Nov 25:** level, weather 10 s, READY 2 s, dark, Teensy armed by
+     itself. Shots show string stats, no weather. "Show each shot for" (default 3 s) in Range Book's settings.
+     Lid v0.12 (screen window 1 mm taller) to print.
      **Next session:** live fire, .22 CCI Standard Velocity, window 950-1200, `set qc=0`, save=1 (step 2 below).
      After it: measure `live 114014` with the ESP32's USB unplugged.
   1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
