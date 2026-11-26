@@ -1,4 +1,4 @@
-# Range Book BLIPR firmware (ESP32 0.2.14, Teensy 0.2.7)
+# Range Book BLIPR firmware (ESP32 0.2.16, Teensy 0.2.7)
 
 Firmware for Range Book BLIPR (Ballistic Launch Inspection Portable Radar), the DIY radar chronograph. Step-by-step setup and the bench tests are in the
 build guide's **Firmware** tab; this file is the quick reference.
@@ -56,6 +56,15 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 - `time 1792480000`: set the clock (Range Book does this every time it connects), so raw recordings have the date and time
 
 ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `FLIP 0|1`, `QUIET 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
+
+## What changed in ESP32 0.2.15 and 0.2.16 (Nov 25)
+
+- 0.2.16: after the level, the screen shows the weather for 10 s (with sensors fitted), then READY for 2 s, then BLIPR
+  arms and goes dark. BLIPR stays disarmed until then, so those screens can't set off a false shot. After a shot the
+  screen shows the string (n, avg, SD, ES) instead of the weather; the app has the weather.
+- 0.2.15: `SHOW s` sets how long a shot stays on the screen (1-60 s, 0 = until the next shot; saved; config "show").
+  Range Book's chronograph settings have it as "Show each shot for". A lit screen adds noise (bench: rms 7.8 -> 12.2
+  counts and a ~11.7 kHz tone), so 3 s is the default.
 
 ## What changed in ESP32 0.2.14 (Nov 25)
 

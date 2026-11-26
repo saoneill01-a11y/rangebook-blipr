@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.15"
+#define FW_VERSION "0.2.16"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -120,6 +120,11 @@ static bool setupPhase = true;
 static bool quiet = false;
 static uint32_t wakeUntil = 0;       // millis() when a brief screen showing ends (0 = none)
 static bool armAfterSetup = false;
+// 0.2.16: after the level, the screen shows the weather for WX_SHOW_MS (only with sensors fitted), then READY for
+// READY_SHOW_MS, then BLIPR arms and goes quiet. The weather isn't shown after shots any more (the app has it).
+static const uint32_t WX_SHOW_MS = 10000, READY_SHOW_MS = 2000;
+static uint8_t wrapPhase = 0;        // 1 weather, 2 READY (BLIPR still disarmed, so redraws can't set it off)
+static uint32_t wrapUntil = 0;
 // While quiet a shot lights the screen for showSec seconds (SHOW 1-60; 0 = it stays lit until the next shot). A lit screen
 // costs nothing: it keeps its picture with no traffic on the bus. Only drawing does, and that happens right after a
 // shot, while the Teensy is still busy saving it. Default 3 s (Sean, Nov 25). Saved; config "show".
@@ -575,7 +580,6 @@ static void drawScreenNow() {
   const double mean = sN ? sSum / sN : 0, var = sN ? sSum2 / sN - mean * mean : 0;
   const double sd = sqrt(var > 0 ? var : 0);
   const EnvReading& e = sensors::get();
-  const bool haveWx = e.hasTH || e.hasP || e.hasAmmo || e.hasHeading;
   auto wxLine1 = [&]() {
     if (e.hasTH || e.hasP) {
       if (unitsMps) oled.printf("%.1fC", e.tempC); else oled.printf("%.1fF", e.tempC * 1.8f + 32);
@@ -589,6 +593,19 @@ static void drawScreenNow() {
   };
   // where the velocity sits, for the shot animation: [0, ax) x [ay0, ay1), bullet centre line ayc
   int ax = 128, ay0 = 9, ay1 = 40, ayc = 25;
+
+  if (wrapPhase == 1) {   // after the level: today's weather, once (the app has it from then on)
+    oled.setTextSize(2);
+    oled.setCursor(0, 13);
+    if (e.hasTH || e.hasP) { if (unitsMps) oled.printf("%.1fC", e.tempC); else oled.printf("%.1fF", e.tempC * 1.8f + 32); }
+    oled.setTextSize(1);
+    if (e.hasTH) { oled.setCursor(0, 34); oled.printf("Humidity %.0f%%", e.rh); }
+    if (e.hasP) { oled.setCursor(0, 44); if (unitsMps) oled.printf("Pressure %.0f hPa", e.hPa); else oled.printf("Pressure %.2f in", e.hPa * 0.02953f); }
+    oled.setCursor(0, 56); wxLine2();
+    oled.display();
+    return;
+  }
+  if (wrapPhase == 2) { bigWord("READY", 38); oled.display(); return; }
 
   bool alive = teensySeenMs && millis() - teensySeenMs < 6000;
   char big[16];
@@ -649,7 +666,7 @@ static void drawScreenNow() {
 
   oled.setTextSize(1);
   if (alive && screenTheme == THEME_STATS && haveLast && last.code == 0) {
-    // right-hand column: the string; bottom left: the weather
+    // right-hand column: the string
     const int cx = 78;
     oled.setCursor(cx, 10); oled.printf("n %d", sN);
     if (sN > 0) {
@@ -661,20 +678,14 @@ static void drawScreenNow() {
       oled.setCursor(cx, 46); oled.printf("lo %.0f", sMin * k);
       oled.setCursor(cx, 55); oled.printf("hi %.0f", sMax * k);
     }
-    if (haveWx) { oled.setCursor(0, 47); wxLine1(); oled.setCursor(0, 56); wxLine2(); }
   } else if (alive && screenTheme == THEME_BIG) {
-    // one line under the big number: the string, taking turns with the weather
+    // one line under the big number: the string
     oled.setCursor(0, 56);
-    if (haveWx && (sN == 0 || (millis() / 4000) % 2)) wxLine1();
-    else if (sN > 1) oled.printf("n%d avg %.0f SD %.1f", sN, mean * k, sd * k);
+    if (sN > 1) oled.printf("n%d avg %.0f SD %.1f", sN, mean * k, sd * k);
     else if (sN == 1) oled.printf("n1 avg %.0f", mean * k);
   } else if (alive) {
-    // Classic and Retro: two lines of string stats, taking turns with the weather when sensors are fitted
-    bool showWx = haveWx && (sN == 0 || (millis() / 4000) % 2);
-    if (showWx) {
-      oled.setCursor(0, 47); wxLine1();
-      oled.setCursor(0, 56); wxLine2();
-    } else if (sN > 0) {
+    // Classic and Retro: two lines of string stats
+    if (sN > 0) {
       oled.setCursor(0, 47);
       oled.printf("n %d  avg %.0f", sN, mean * k);
       oled.setCursor(0, 56);
@@ -732,13 +743,26 @@ static void leaveQuiet() { if (!quiet) return; quiet = false; wakeUntil = 0; app
 // Power-up and LEVEL: screen and sensors on, Teensy held disarmed until setup ends.
 static void startSetup(uint32_t levelMs) {
   leaveQuiet();
+  wrapPhase = 0;
   setupPhase = true;
   startLevel(levelMs);
   if (quietPref) { if (tArmed) armAfterSetup = true; toTeensy("disarm"); }
 }
 static bool quietPending = false;   // go quiet as soon as a compass calibration or update finishes
+static void finishSetup() {
+  wrapPhase = 0;
+  if (armAfterSetup) { armAfterSetup = false; toTeensy("arm"); }
+  if (quietPref && !sensors::calibratingNow()) enterQuiet();
+  else if (quietPref) quietPending = true;
+}
 static void endSetup() {
   setupPhase = false;
+  if (quietPref) {   // weather (if there are sensors), then READY, then arm and go quiet: see loop()
+    const EnvReading& e = sensors::get();
+    wrapPhase = (e.hasTH || e.hasP || e.hasAmmo) ? 1 : 2;
+    wrapUntil = millis() + (wrapPhase == 1 ? WX_SHOW_MS : READY_SHOW_MS);
+    return;
+  }
   if (armAfterSetup) { armAfterSetup = false; toTeensy("arm"); }
   if (quietPref && !sensors::calibratingNow()) enterQuiet();
   else if (quietPref) quietPending = true;
@@ -1097,7 +1121,7 @@ void loop() {
   }
 
   if (otaActive && quiet) { leaveQuiet(); quietPending = true; }   // show the update's progress
-  if (quietPending && !quiet && !otaActive && !setupPhase && !levelUntil && !sensors::calibratingNow()) {
+  if (quietPending && !quiet && !otaActive && !setupPhase && !wrapPhase && !levelUntil && !sensors::calibratingNow()) {
     quietPending = false;
     if (quietPref) enterQuiet();
   }
@@ -1149,6 +1173,10 @@ void loop() {
     if (now - lastDraw >= (animStart ? 15u : levelUntil ? 100u : otaActive ? 1000u : 500u)) { lastDraw = now; drawScreenNow(); }
   } else if (wakeUntil && (int32_t)(now - wakeUntil) >= 0) { wakeUntil = 0; screenOff(); }
   if (setupPhase && !levelUntil && !otaActive) endSetup();
+  if (wrapPhase && !otaActive && (int32_t)(now - wrapUntil) >= 0) {
+    if (wrapPhase == 1) { wrapPhase = 2; wrapUntil = now + READY_SHOW_MS; }
+    else finishSetup();
+  }
   if (now - lastEnv >= 2000) { lastEnv = now; if (sensors::letters().length()) pushEnv(); }
   // 0.2.10: while quiet, rest between passes. loop() otherwise spins ~100,000 times a second, and its current draw at
   // that rate reached the radar as a steady ~114 kHz tone (2322 fps; gone with the ESP32 held in reset, Nov 25).
