@@ -74,6 +74,36 @@ float Processor::peakHz(const uint16_t* I, const uint16_t* Q, float dcI, float d
   return best * fs / NFFT;
 }
 
+float Processor::lineScan(const uint16_t* I, const uint16_t* Q, float dcI, float dcQ, float fs, float fminHz, float atHz,
+                          float* fOut, float* atDb) {
+  for (int i = 0; i < NFFT; i++) {
+    re_[i] = ((float)I[i] - dcI) * win_[i];
+    im_[i] = ((float)Q[i] - dcQ) * win_[i];
+  }
+  fft(re_, im_);
+  int k0 = (int)(fminHz / fs * NFFT);
+  if (k0 < 1) k0 = 1;
+  const int cnt = NFFT / 2 - k0;
+  int best = k0;
+  for (int k = k0; k < NFFT / 2; k++) {
+    int m = NFFT - k;
+    pw_[k] = 0.5f * (re_[k] * re_[k] + im_[k] * im_[k] + re_[m] * re_[m] + im_[m] * im_[m]);
+    tmp_[k - k0] = pw_[k];
+    if (pw_[k] > pw_[best]) best = k;
+  }
+  std::nth_element(tmp_, tmp_ + cnt / 2, tmp_ + cnt);
+  const float med = tmp_[cnt / 2] + 1e-9f;
+  if (fOut) *fOut = best * fs / NFFT;
+  if (atDb) {
+    *atDb = -99;
+    int ka = (int)(atHz / fs * NFFT + 0.5f);
+    float mx = 0;
+    for (int k = ka - 2; k <= ka + 2; k++) if (k >= k0 && k < NFFT / 2 && pw_[k] > mx) mx = pw_[k];
+    if (atHz > 0 && mx > 0) *atDb = 10.0f * log10f(mx / med);
+  }
+  return 10.0f * log10f(pw_[best] / med);
+}
+
 void Processor::bandBins(const Params& p, int& kmin, int& kmax) {
   const float hw = halfWavelength(p);
   kmin = (int)floorf(p.vminMps / hw / p.fs * NFFT);

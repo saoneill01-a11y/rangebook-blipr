@@ -30,7 +30,7 @@
 #endif
 #include "radar_dsp.h"
 
-#define FW_VERSION "0.2.6"
+#define FW_VERSION "0.2.7"
 
 // ---------------- pins and sizes ----------------
 static const int PIN_I = A0;      // pin 14
@@ -144,6 +144,7 @@ static uint32_t fileNo = 0;
 static bool sdOk = false;
 static bool manualRec = false;       // "rec" command: capture now
 static bool liveMode = false;
+static float liveLineHz = 0;           // "live <Hz>": also show the strength of this tone
 static uint32_t bootId = 0;
 
 // ---------------- link to the ESP32 ----------------
@@ -516,6 +517,7 @@ static void printHelp() {
     "                          band (in-band trigger dB, 0 = old trigger), qc fade (dB, 0 = off; not saved)\n"
     "  arm / disarm      listen for shots, or not\n"
     "  live              toggle a twice-a-second readout of the radar signal\n"
+    "  live <Hz>         the same, with the strength of a tone at <Hz> (interference hunting)\n"
     "  rec               record 100 ms right now and save it\n"
     "  sim [fps]         play a fake bullet on pin 2 (bench test; amplifier NOT connected)\n"
     "  test              send a made-up shot to the ESP32 (checks the Bluetooth path)\n"
@@ -554,7 +556,13 @@ static void handleCommand(char* line, bool fromLink) {
   }
   else if (!strcmp(cmd, "arm")) { cfg.armed = 1; driveMode = false; saveSettings(); sendStatus(true); if (!fromLink) Serial.println("armed"); }
   else if (!strcmp(cmd, "disarm")) { cfg.armed = 0; saveSettings(); sendStatus(true); if (!fromLink) Serial.println("disarmed"); }
-  else if (!strcmp(cmd, "live")) { liveMode = !liveMode; }
+  else if (!strcmp(cmd, "live")) {
+    // "live" toggles the readout; "live 114000" also tracks the strength of that frequency (Hz) and the strongest
+    // line above 10 kHz, twice a second (for hunting interference tones)
+    char* a = strtok(nullptr, " ");
+    liveLineHz = a ? atof(a) : 0;
+    liveMode = a ? true : !liveMode;
+  }
   else if (!strcmp(cmd, "rec")) { manualRec = true; if (!fromLink) Serial.println("recording..."); }
   else if (!strcmp(cmd, "sim")) {
     driveMode = false;  // bench test over USB: listen for the fake shot
@@ -650,6 +658,13 @@ static void liveReport() {
     float a = liveI[i] - mi, b = liveQ[i] - mq;
     pi += a * a; pq += b * b;
     if (liveI[i] > 4090 || liveI[i] < 5 || liveQ[i] > 4090 || liveQ[i] < 5) clip++;
+  }
+  if (liveLineHz > 0) {   // tone hunting: one 4 ms frame per readout
+    float fl = 0, at = 0;
+    float db = dsp.lineScan(liveI, liveQ, mi, mq, fsActual, 10000, liveLineHz, &fl, &at);
+    Serial.printf("rms %5.1f %5.1f | strongest above 10 kHz: %7.0f Hz, %5.1f dB over the median | at %.0f Hz: %5.1f dB\n",
+                  sqrt(pi / rdsp::NFFT), sqrt(pq / rdsp::NFFT), fl, db, liveLineHz, at);
+    return;
   }
   float f = dsp.peakHz(liveI, liveQ, mi, mq, fsActual, 500);
   float hw = rdsp::Processor::halfWavelength(currentParams());

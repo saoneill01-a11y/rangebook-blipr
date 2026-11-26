@@ -29,7 +29,7 @@
 #include "esp_ota_ops.h"
 #include "sensors.h"
 
-#define FW_VERSION "0.2.9"
+#define FW_VERSION "0.2.10"
 #define DEVICE_NAME "RB BLIPR"
 
 // Bluetooth service and characteristics (Range Book looks for these)
@@ -1117,4 +1117,8 @@ void loop() {
   } else if (wakeUntil && (int32_t)(now - wakeUntil) >= 0) { wakeUntil = 0; screenOff(); }
   if (setupPhase && !levelUntil && !otaActive) endSetup();
   if (now - lastEnv >= 2000) { lastEnv = now; if (sensors::letters().length()) pushEnv(); }
+  // 0.2.10: while quiet, rest between passes. loop() otherwise spins ~100,000 times a second, and its current draw at
+  // that rate reached the radar as a steady ~114 kHz tone (2322 fps; gone with the ESP32 held in reset, Nov 25).
+  // Bluetooth runs in its own task; the link from the Teensy has a 1 KB buffer (22 ms at 460800 baud).
+  if (quiet && !otaActive && !animRunning()) delay(2);
 }

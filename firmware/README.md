@@ -1,4 +1,4 @@
-# Range Book BLIPR firmware (ESP32 0.2.9, Teensy 0.2.6)
+# Range Book BLIPR firmware (ESP32 0.2.10, Teensy 0.2.7)
 
 Firmware for Range Book BLIPR (Ballistic Launch Inspection Portable Radar), the DIY radar chronograph. Step-by-step setup and the bench tests are in the
 build guide's **Firmware** tab; this file is the quick reference.
@@ -56,6 +56,13 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 - `time 1792480000`: set the clock (Range Book does this every time it connects), so raw recordings have the date and time
 
 ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `FLIP 0|1`, `QUIET 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
+
+## What changed in Teensy 0.2.7 and ESP32 0.2.10 (Nov 25)
+
+- Teensy: `live <Hz>` also shows the strongest line above 10 kHz and the strength of the tone at `<Hz>` (dB over the
+  median), for hunting interference. Velocity code unchanged.
+- ESP32: while quiet, loop() rests 2 ms per pass. Spinning flat out, its current draw showed up at the radar as a
+  steady ~114 kHz tone (2322 fps; gone with the ESP32 held in reset).
 
 ## What changed in Teensy 0.2.6 and ESP32 0.2.9 (Nov 25, first bench test of 0.2.5/0.2.8)
 

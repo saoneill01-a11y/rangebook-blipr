@@ -101,6 +101,10 @@ class Processor {
   float bandScan(const uint16_t* I0, const uint16_t* Q0, const uint16_t* I1, const uint16_t* Q1, float dcI, float dcQ,
                  int kmin, int kmax, float* avg, float alpha, int* kOut);
   static void bandBins(const Params& p, int& kmin, int& kmax);   // FFT bins of the velocity window
+  // Bench readout ("live <Hz>"): strongest line above fminHz (*fOut, Hz) and its level over the median of the bins above
+  // fminHz (dB, returned); *atDb gets the level at atHz (+-2 bins, 0 = skip) the same way.
+  float lineScan(const uint16_t* I, const uint16_t* Q, float dcI, float dcQ, float fs, float fminHz, float atHz,
+                 float* fOut, float* atDb);
   // Strongest frequency (Hz) above fminHz in the last NFFT samples (for the bench readout).
   float peakHz(const uint16_t* I, const uint16_t* Q, float dcI, float dcQ, float fs, float fminHz);
 

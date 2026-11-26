@@ -42,7 +42,7 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
 - An ESP32 firmware release for Bluetooth updates: copy the built `BliprBLE-<ver>.bin` into
   `public/blipr/` and update the `esp` entry in `public/blipr/firmware.json` (version, file, size in bytes, md5; the app image `BliprBLE.ino.bin`, not the merged file). The app
   checks the md5, and the ESP32 rolls back if the new firmware doesn't confirm within 15 s.
-  Currently shipped: 0.2.3 (757440 bytes, md5 28fcaa5cb1bc6a1e4dba07b00c923024).
+  Currently shipped: 0.2.10 (779312 bytes, md5 596c2f9e3cfc6e5dd469d425c297925c; chrono 76efdeb, Nov 25).
 
 ## Where things stand (Nov 11, 2026)
 
@@ -115,6 +115,12 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      untouched. Result, ESP32 back in its socket, no USB, phone connected, old trigger: **0 bursts in 2 min** (was ~31/s);
      noise rms 7.7 counts, same as with the ESP32 out. The phone's steady 114 kHz (2322 fps) line is still there
      (outside 600-1800; analyze() rejects pre-trigger lines). `band=15` restored.
+     **114 kHz tone hunt, Nov 25** (`live 114014`, Teensy 0.2.7): ~15-17 dB, same frequency at fs 600k (real, not
+     aliased); not the phone (unchanged with distance and with Bluefy disconnected); gone while the ESP32's RST is held,
+     so the ESP32 makes it. Likely its loop() spinning ~100k times a second; ESP32 0.2.10 rests 2 ms per pass while
+     quiet. **The ESP32's USB stopped working after the filter build** (board bent slightly when the 5V pin was cut; not
+     seen by the Mac even in BOOT mode), so 0.2.10 goes over Bluetooth: shipped on chrono, Sean updates from Range Book.
+     After it: measure `live 114014` with the ESP32's USB unplugged.
   1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
   1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,
      GPIO20 = RX from the Teensy, GPIO21 = TX to the Teensy; display/sensors not needed for the test), armed, no shots,
