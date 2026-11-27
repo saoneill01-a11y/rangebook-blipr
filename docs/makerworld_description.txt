@@ -27,11 +27,13 @@ PARTS
 - front_cover: the radar window. Print in natural, white or gray, NOT black or any filled filament (carbon, glitter, metal), or the radar can't see through it
 - sensor_pod and sensor_pod_roof: only with lid_sensors
 
-PRINT SETTINGS (printed in ASA; no supports needed)
+PRINT SETTINGS (PETG recommended; no supports needed)
 - base: floor on the bed. 0.2 mm layers, 6 walls, 4 top/bottom layers, 25% gyroid infill. Use a brim.
 - lid: top face on the bed (the lettering comes out crisp). Same settings as the base.
 - front_cover: flat smooth face on the bed. 0.15 mm layers, 100% infill. The window is 0.9 mm thick.
-- ASA warps: use an enclosure or a draft shield and a bed around 100 C. PETG should work too.
+- Material: PETG works well for most people. ASA is best if it will sit in strong sun or a hot car, or you live somewhere
+  really hot (it warps, so use an enclosure or draft shield and a bed around 100 C). PLA is fine for a test fit, but it
+  softens in a hot car. The test unit was printed in PLA.
 
 HARDWARE
 - 8 x M3 heat-set inserts (about 4.6-5 mm OD, up to 7 mm long): 4 lid corners + 4 board posts (2 more for the sensor pod)
