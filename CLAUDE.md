@@ -169,6 +169,9 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      2 false reads ~1135 fps ~0.8 s after a shot (s01062, s01066: +55.7 kHz line, the old ESP32 I2C line): the ESP32
      drawing the shot result while the Teensy is re-armed. **Teensy 0.2.9 flashed Nov 27:** no trigger for 1.5 s after a
      capture (was 0.25 s; `set hold=<ms>`, not saved). Not live-fire tested yet: check the false reads are gone.
+     Sean measured the setup: radar 6" (0.152 m) beside the bore, 3" (0.076 m) behind the muzzle; saved as lat/behind.
+     Replaying the 10 .38 shots with it: 9 of 10, -0.6 fps vs the Athlon (was -3.1 with 0.102/0.102). Ask for these
+     two numbers whenever BLIPR is moved.
   1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
   1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,
      GPIO20 = RX from the Teensy, GPIO21 = TX to the Teensy; display/sensors not needed for the test), armed, no shots,
