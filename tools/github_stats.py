@@ -1,28 +1,38 @@
 #!/usr/bin/env python3
-"""Saves GitHub's visitor numbers for BLIPR and Range Book every day, because GitHub itself only keeps the last 14 days.
+"""Saves GitHub's visitor numbers for all of Sean's public repos every day, because GitHub itself only keeps the last 14 days.
 
 Uses the GitHub command-line tool (gh), already signed in, so no token is stored here. Each run:
-  - for each repo (its own subfolder), merges the last 14 days of views and clones into daily.csv (one row per day; re-running is harmless),
+  - finds every public repo on the account (new ones are picked up by themselves),
+  - for each repo (its own subfolder, named after the repo), merges the last 14 days of views and clones into daily.csv (one row per day; re-running is harmless),
   - adds today's stars and forks, and the top referring sites and pages so far,
-  - rebuilds stats.html, one page with both repos' charts and tables (open it in any browser).
+  - rebuilds stats.html: a summary table of every repo, then each repo's chart and tables (open it in any browser).
 Run daily by launchd (~/Library/LaunchAgents/org.rangebook.github-stats.plist).
 
     python3 tools/github_stats.py [output folder]
 """
 import csv, datetime as dt, html, json, os, subprocess, sys
 
-REPOS = (("BLIPR", "saoneill01-a11y/rangebook-blipr"), ("Range Book", "saoneill01-a11y/rangebook"))
+OWNER = "saoneill01-a11y"
 GH = "/opt/homebrew/bin/gh"
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser(
-    "~/Claude/Range Book Project Files/GitHub stats")
+    "~/Claude/GitHubStats")
 DAILY = ("date", "views", "visitors", "clones", "cloners", "stars", "forks")
 
 
-def api(repo, path):
-    r = subprocess.run([GH, "api", f"repos/{repo}{path}"], capture_output=True, text=True, timeout=60)
+def gh(*args):
+    r = subprocess.run([GH, *args], capture_output=True, text=True, timeout=60)
     if r.returncode:
-        raise SystemExit(f"gh api {path} failed: {r.stderr.strip()}")
+        raise RuntimeError(f"gh {' '.join(args)} failed: {r.stderr.strip()}")
     return json.loads(r.stdout)
+
+
+def api(repo, path):
+    return gh("api", f"repos/{repo}{path}")
+
+
+def public_repos():
+    rows = gh("repo", "list", OWNER, "--visibility", "public", "--limit", "500", "--json", "name,nameWithOwner")
+    return sorted((r["name"], r["nameWithOwner"]) for r in rows)
 
 
 def load(path, key):
@@ -41,8 +51,14 @@ def save(path, fields, rows):
 
 def main():
     today = dt.date.today().isoformat()
-    sections = [collect(name, repo, today) for name, repo in REPOS]
-    write_page(sections, today)
+    results = []
+    for name, repo in public_repos():
+        try:
+            results.append(collect(name, repo, today))
+        except RuntimeError as err:          # one repo failing shouldn't stop the others
+            print(err)
+    results.sort(key=lambda r: (-r["views14"], r["name"].lower()))
+    write_page(results, today)
 
 
 def collect(name, repo, today):
@@ -70,8 +86,11 @@ def collect(name, repo, today):
         new = [{"snapshot": today, label: i[label], "views": i["count"], "visitors": i["uniques"]} for i in items]
         save(p, ("snapshot", label, "views", "visitors"), old + new)
 
-    print(f"saved {today} {name}: {sum(v['count'] for v in views.get('views', []))} views in the last 14 days -> {out}")
-    return section(name, repo, sorted(days.values(), key=lambda r: r["date"]), refs, paths, info)
+    v14 = sum(v["count"] for v in views.get("views", []))
+    print(f"saved {today} {name}: {v14} views in the last 14 days -> {out}")
+    return {"name": name, "repo": repo, "views14": v14, "visitors14": views.get("uniques", 0),
+            "clones14": clones.get("count", 0), "stars": info["stargazers_count"], "forks": info["forks_count"],
+            "html": section(name, repo, sorted(days.values(), key=lambda r: r["date"]), refs, paths, info)}
 
 
 def section(name, repo, rows, refs, paths, info):
@@ -100,7 +119,7 @@ def section(name, repo, rows, refs, paths, info):
             f"<td>{i['uniques']}</td></tr>" for i in items) + "</table>"
     recent = "".join(f"<tr><td>{r['date']}</td><td>{num(r['views'])}</td><td>{num(r['visitors'])}</td>"
                      f"<td>{num(r['clones'])}</td></tr>" for r in reversed(rows[-14:]))
-    return f"""<h2>{name}</h2><p class=m><a href="https://github.com/{repo}">{repo}</a> · full history in the
+    return f"""<h2 id="{html.escape(name)}">{html.escape(name)}</h2><p class=m><a href="https://github.com/{repo}">{repo}</a> · full history in the
 "{name}" folder: daily.csv, referrers.csv, pages.csv (open in Numbers or Excel).</p>
 <div class=k><div><b>{total_v}</b>views (all saved days)</div><div><b>{total_u}</b>visitors, added up by day</div>
 <div><b>{info['stargazers_count']}</b>stars</div><div><b>{info['forks_count']}</b>forks</div>
@@ -113,7 +132,11 @@ def section(name, repo, rows, refs, paths, info):
 <hr>"""
 
 
-def write_page(sections, today):
+def write_page(results, today):
+    summary = "".join(f'<tr><td><a href="#{html.escape(r["name"])}">{html.escape(r["name"])}</a></td><td>{r["views14"]}</td>'
+                      f'<td>{r["visitors14"]}</td><td>{r["clones14"]}</td><td>{r["stars"]}</td><td>{r["forks"]}</td></tr>'
+                      for r in results)
+    sections = [r["html"] for r in results]
     doc = f"""<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
 <title>GitHub stats</title>
 <style>:root{{--bg:#fff;--fg:#1b1d21;--m:#666;--a:#b9dfe2;--b:#2a9aa3;--l:#ddd}}
@@ -123,8 +146,11 @@ h1,h2{{margin:0 0 4px}} h2{{margin-top:24px}} hr{{border:0;border-top:1px solid 
 .k div{{border:1px solid var(--l);border-radius:10px;padding:10px 16px}} .k b{{display:block;font-size:26px}}
 svg{{width:100%;height:auto}} .t{{font-size:10px;fill:var(--m)}} table{{border-collapse:collapse;margin:6px 0 18px}}
 td,th{{text-align:left;padding:4px 14px 4px 0;border-bottom:1px solid var(--l)}} td+td,th+th{{text-align:right}}
-.cols{{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 30px}}</style>
-<h1>GitHub stats</h1><p class=m>Updated {today}. GitHub's numbers can run up to a day behind.</p>
+.cols>div{{min-width:0}} td{{overflow-wrap:anywhere}} .cols{{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 30px}}</style>
+<h1>GitHub stats</h1><p class=m>Updated {today}. GitHub's numbers can run up to a day behind. Every public repo
+on {OWNER}, busiest first.</p>
+<h3>All repos <span class=m>(last 14 days)</span></h3>
+<table><tr><th>Repo</th><th>Views</th><th>People</th><th>Clones</th><th>Stars</th><th>Forks</th></tr>{summary}</table>
 {"".join(sections)}"""
     with open(os.path.join(OUT, "stats.html"), "w") as f:
         f.write(doc)
