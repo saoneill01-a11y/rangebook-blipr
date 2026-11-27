@@ -34,7 +34,7 @@ Sample rate 600000 Hz (asked for 600000). SD card found. Type 'help' for command
 
 5. Type `stat` and press Enter. **overruns** should be 0. If the status says SD missing, unplug, re-seat the card and plug in again (it only looks at start-up). Still missing: try another card. On the first build an 8 GB card from another device wasn't read; a 32 GB A1 card worked.
 
-6) Type `set fs=500000`. It's saved, and the next start-up line says 500000 Hz. The battery holder's converter whistles at about 494 kHz: at 600 kHz sampling that lands near 2,150 fps, at 500 kHz near 100 fps, out of the way (build guide Step 6). `defaults` puts 600000 back.
+6) Type `set fs=500000`. It's saved; type reboot so it takes effect, and the start-up line then says 500000 Hz. The battery holder's converter whistles at about 494 kHz: at 600 kHz sampling that lands near 2,150 fps, at 500 kHz near 100 fps, out of the way (build guide Step 6). `defaults` puts 600000 back.
 
 If the IDE won't build it, use the ready-made file instead. Open the Teensy Loader app, choose File › Open HEX File › `prebuilt/BliprTeensy.hex`, then press the Teensy's button.
 
@@ -129,7 +129,7 @@ Type these in the Teensy's Serial Monitor (BLIPR switched on, USB plugged in). S
 | `stat` | Status: armed, shots, overruns (should be 0), SD card |
 | `get` | Every setting: window, position, calibration, sample rate, trigger levels |
 | `set vmin=950 vmax=1200` | The velocity window, in fps. Keep it a little wider than your load |
-| `set fs=500000` | Sample rate (500000 recommended; `defaults` puts 600000 back) |
+| `set fs=500000` | Sample rate (500000 recommended; then reboot; `defaults` puts 600000 back) |
 | `set save=1` | Save every shot's raw recording to the SD card (for tuning) |
 | `live` / `live 114000` | Twice a second: noise, DC level, clipping and the strongest line; with a number, also the level at that frequency. `live` again stops it |
 | `rec` | Record 100 ms now and say what's in it: the way to find an interference tone |

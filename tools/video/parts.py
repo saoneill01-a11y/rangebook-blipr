@@ -72,6 +72,19 @@ def electrolytic_top(ctx, d=6.3, minus_dir=0.0):
     setc(ctx, hexc("#B9C0CC")); ctx.arc(0, 0, r * 0.72, 0, 2 * math.pi); ctx.fill()
 
 
+def inductor(ctx, d=8.0, h=9.0):
+    """Radial drum-core power inductor, side view: two legs down, copper winding on a dark core."""
+    setc(ctx, LEAD); ctx.set_line_width(0.5)
+    ctx.move_to(-1.8, h / 2); ctx.line_to(-1.8, h / 2 + 4.5); ctx.move_to(1.8, h / 2); ctx.line_to(1.8, h / 2 + 4.5); ctx.stroke()
+    setc(ctx, DARK); rrect(ctx, -d / 2, -h / 2, d, 1.6, 0.4); ctx.fill(); rrect(ctx, -d / 2, h / 2 - 1.6, d, 1.6, 0.4); ctx.fill()
+    setc(ctx, hexc("#B8642A")); ctx.rectangle(-d / 2 + 0.6, -h / 2 + 1.6, d - 1.2, h - 3.2); ctx.fill()
+    setc(ctx, hexc("#8A4518")); ctx.set_line_width(0.25)
+    for k in range(9):
+        yy = -h / 2 + 2.0 + k * (h - 4.0) / 8
+        ctx.move_to(-d / 2 + 0.6, yy); ctx.line_to(d / 2 - 0.6, yy + 0.3); ctx.stroke()
+SIZE["inductor"] = (9, 14)
+
+
 def diode(ctx, lead=4.0, body=(5.2, 2.7)):
     bw, bh = body
     setc(ctx, LEAD); ctx.set_line_width(0.6); ctx.move_to(-bw / 2 - lead, 0); ctx.line_to(bw / 2 + lead, 0); ctx.stroke()

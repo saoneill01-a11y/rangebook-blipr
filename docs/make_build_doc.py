@@ -202,6 +202,13 @@ def table(rows, widths, header=True, size=11):
             if header and i == 0:
                 r.bold = True
                 shade(c, "DCE6F2")
+            # short tables stay on one page; no row is ever split across a page break
+            if len(rows) <= 10 and i < len(rows) - 1:
+                c.paragraphs[0].paragraph_format.keep_with_next = True
+        trPr = t.rows[i]._tr.get_or_add_trPr()
+        trPr.append(OxmlElement("w:cantSplit"))
+        if header and i == 0:
+            trPr.append(OxmlElement("w:tblHeader"))
     doc.add_paragraph().paragraph_format.space_after = Pt(2)
 
 
@@ -242,8 +249,7 @@ def build():
     para("Ballistic Launch Inspection Portable Radar", size=13, align=WD_ALIGN_PARAGRAPH.CENTER, space=2)
     para("Build guide: a bench-side radar chronograph for Range Book", bold=True, size=16,
          align=WD_ALIGN_PARAGRAPH.CENTER, space=14)
-    hero = IMG / "hero.png"
-    picture(hero if hero.exists() else CASE / "assembly_from_your_seat.png", 6.0 if hero.exists() else 5.2)
+    picture(IMG / "blipr_front.jpg", 4.6, "The first BLIPR, on a small tripod (case v0.12).")
     para("A 24 GHz Doppler radar chronograph that sits on the bench beside the rifle and sends each shot's muzzle "
          "velocity over Bluetooth to Range Book. Nothing goes downrange. This guide covers everything: parts, "
          "printing the case, loading and bench-testing the firmware, soldering the circuit board, wiring, the "
@@ -407,7 +413,7 @@ def build():
               ("Plug in ", "with the micro-USB data cable and load BliprTeensy. The first time, the Teensy Loader "
                            "may ask you to press the Teensy's white button."),
               ("Check: ", "type stat: 0 overruns and SD ok, firmware 0.2.8."),
-              ("Set the sample rate: ", "set fs=500000 (saved). The battery holder's converter whistles at about "
+              ("Set the sample rate: ", "set fs=500000, then reboot (it's saved). The battery holder's converter whistles at about "
                                         "494 kHz; sampled at 500 kHz it reads near 100 fps, out of the way, instead "
                                         "of near 2,150 fps at the default 600 kHz.")])
     tip("If it says SD missing, unplug, re-seat the card and plug in again (it only looks for the card at start-up). "
@@ -550,6 +556,8 @@ def build():
                                 "Lay L2 and C29 flat so the lid clears them."),
               ("Beep test. ", "The 5V stub to D1's square pad beeps (through L2); 5V to GND must not.")])
 
+    picture(IMG / "blipr_inside.jpg", 5.4, "The first build with the lid off: the screen's four soldered wires (no header), "
+            "the board with the Teensy and the ESP32, and the 18650 cell in its holder.")
     doc.add_heading("Checkpoint 3: everything powered", 2)
     para("Beep J2's VCC hole to the 3.3 V supply and GND to ground, then check by eye that the two pin-1 marks "
          "meet. Plug in the Teensy, the ESP32 and the radar plug. Put the meter on 3.3 V and keep it there, ready to "
@@ -583,6 +591,8 @@ def build():
               ("Lid. ", "Tuck the screen wires in so nothing gets pinched, then four M3 × 8 screws into the corner "
                         "inserts. It also holds the front cover down.")])
     picture(IMG / "case_base_under.png", 2.6, "The tripod insert under the floor, at the balance point.")
+    picture(IMG / "blipr_radar_side.jpg", 4.4, "Finished: the radar window on the front face, the screen in the lid's back "
+            "corner, the sensor pod in front.")
 
     # ---------------------------------------------------------------- 10 sensor kit
     doc.add_heading("10. Sensor kit (optional)", 1)

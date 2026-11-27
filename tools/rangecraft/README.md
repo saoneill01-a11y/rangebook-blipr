@@ -9,7 +9,7 @@ which bytes hold them. No Wireshark needed.
 
 ## What we know (nRF Connect, Nov 12)
 
-- Name `AthlonVPR1_020418` (address FB:7D:C4:EB:9A:A0), maker "Athlon", model "Athlon_V3".
+- Name `AthlonVPR1_` followed by a serial number, maker "Athlon", model "Athlon_V3".
   Zephyr / Nordic nRF chip. It bonded with the phone when notifications were turned on.
 - **Data service** `6e40ff01-b5a3-f393-e0a9-4174686c6f6e`, a Nordic-UART-style serial pipe (the
   last part is "Athlon" in ASCII):

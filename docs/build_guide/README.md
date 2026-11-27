@@ -7,7 +7,7 @@ pictures themselves are in this repo:
 - Wiring pictures, the two 5 V filters (`power_filter.png`, `esp_filter.png`) and the screen sequence
   (`screen_sequence.png`): `pictures/out/`
 - Circuit board drawings: `pcb/out/` (pcb_assembly.png, gerber_view_top.png, gerber_view_bottom.png)
-- Case, lid, pod and assembly pictures: `case/out/`; the side-wall drawing is `docs/img/case_base_walls.png`
+- Case, lid, pod and assembly pictures: `case/out/`; the side-wall drawing and the photos of the first build: `docs/img/`
 
 Order: 1 build guide, 2 wiring pictures, 3 circuit board, 4 firmware, 5 sensors. The same guide as one document:
 `docs/BLIPR Build Guide.pdf` (with pictures) and `docs/BLIPR Build Guide.docx`.

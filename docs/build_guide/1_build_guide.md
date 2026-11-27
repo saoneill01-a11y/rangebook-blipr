@@ -18,6 +18,10 @@ How it works, in one pass: the RFbeam K-LC5 radar sends out a 24 GHz signal and 
 
 **Status (Nov 26, 2026):** one BLIPR is built on circuit board v1.1 and has been tested live on .22 LR (CCI Standard Velocity). On its first two strings it read 9 of 10 shots, averaging 1029 fps (SD 22). An Athlon chronograph with the same rifle and ammo averaged 1017 fps on another day, so the two agree within about 1%. Rifles are next. This guide also comes as a PDF and a Word file (`docs/` in the project), and there is a narrated assembly video.
 
+&#91;image: The first BLIPR on a small tripod: screen window in the lid's back corner, sensor pod in front\]
+
+&#91;image: The same BLIPR from the radar side: the square radar window on the front face\]
+
 ## Tools, supplies and safety
 
 You need a temperature-controlled soldering iron, a multimeter, and calipers; everything else is cheap or optional.
@@ -257,6 +261,8 @@ Everything left is point-to-point wiring; the table at the end of this section i
 
 &#91;image: 5 V noise filter at the ESP32: its 5V pin cut, L2 from the socket's 5V hole to the pin stub, C29 and C30 at the module\]
 
+&#91;image: The first build with the lid off: the screen's four soldered wires (no header), the board with the Teensy and the ESP32, the 18650 cell in its holder\]
+
 **Checkpoint 3: everything powered**
 
 Before the radar goes on, use the beep test to confirm header pin 2 connects to +3V3A and pin 4 to GND. That only checks the wires: it can't tell if the plug is turned round on the radar, so check by eye that the two pin-1 marks meet. Then plug in the Teensy and the ESP32, and the radar plug onto the module. Put the meter on +3V3A, keep it there, and be ready to cut power at once (pull the cell if the holder's button needs a double press). Insert the cell and switch on: if +3V3A doesn't read 3.3 V within a second, or U3 gets warm, cut power.
@@ -350,7 +356,7 @@ BLIPR is ready when it powers up to READY and goes dark: that means it's listeni
 
 **Settings to check once** (Teensy Serial Monitor, Firmware tab; each is saved):
 
-1. `set fs=500000`: samples at 500 kHz instead of 600 kHz. The battery holder's converter whistles at about 494 kHz, which at 600 kHz lands near 2,150 fps; at 500 kHz it lands near 100 fps, below any window.
+1. `set fs=500000`: then reboot (the new rate starts after a restart): samples at 500 kHz instead of 600 kHz. The battery holder's converter whistles at about 494 kHz, which at 600 kHz lands near 2,150 fps; at 500 kHz it lands near 100 fps, below any window.
 2. The velocity window, a little wider than your load: for example `set vmin=950 vmax=1200` for .22 LR standard velocity. Range Book's chronograph settings show BLIPR's window and have a button that sets it from the load (75–125%).
 3. `stat`: overruns should be 0 and the SD card found. `get` lists every setting.
 

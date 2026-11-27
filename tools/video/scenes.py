@@ -53,7 +53,7 @@ def wsize(*a):
 add("intro_title", "intro", "Range Book BLIPR", [
     "This is BLIPR, a radar chronograph you build yourself.",
     "In this video we'll build it together, one small step at a time.",
-], visual=drawing(lambda ctx, c, x, y, w, h: DG.title(ctx, c, x, y, w, h, hero="turn_0080")), full=True, tail=0.8)
+], visual=drawing(lambda ctx, c, x, y, w, h: DG.title(ctx, c, x, y, w, h, hero=REPO + "/docs/img/blipr_front.jpg")), full=True, tail=0.8)
 
 add("intro_what", "intro", "What BLIPR does", [
     "BLIPR sits on the bench beside your rifle, a little behind the muzzle.",
@@ -137,17 +137,17 @@ def _plan(ctx, c, x, y, w, h):
 add("kit_modules", "kit", "Parts: the big pieces", [
     "Let's lay out everything you need. Start with the big pieces.",
     "The main circuit board, version one point one. The RFbeam K-LC5 radar. Order the dash zero zero C version, which runs on three point three volts.",
-    "A Teensy 4.1 with pins, and an ESP32-C3 SuperMini.",
-    "A 0.96 inch SSD1306 I2C OLED screen, the 18650 battery holder, a button-top 18650 cell, and a microSD card.",
+    "A Teensy 4.1 with pins, and an ESP32-C3 SuperMini. Buy a pack of those: a spare is worth having.",
+    "A 0.96 inch SSD1306 I2C OLED screen with four pins, the 18650 battery holder, a button-top 18650 cell, and a microSD card. A name-brand thirty-two gigabyte A1 card works well.",
 ], visual=items_view([
     (PT.pcb_bare, {}, "pcb_bare", "Main board v1.1", "PCBWay, through-hole"),
     (PT.radar, {"side": "front"}, "radar", "Radar K-LC5-RFB-00C", "3.3 V version"),
     (PT.teensy, {}, "teensy", "Teensy 4.1", "with pins"),
-    (PT.esp32, {}, "esp32", "ESP32-C3 SuperMini", "USB-C"),
-    (PT.oled, {}, "oled", "0.96\" OLED", "SSD1306, I2C"),
+    (PT.esp32, {}, "esp32", "ESP32-C3 SuperMini", "buy a pack: spares"),
+    (PT.oled, {}, "oled", "0.96\" OLED", "SSD1306, I2C, 4 pads"),
     (PT.battery_holder, {"with_cell": False}, "battery_holder", "18650 battery holder", "5 V out, own button"),
     (PT.cell, {}, "cell", "18650 cell", "name brand, button top"),
-    (PT.sd_card, {}, "sd_card", "microSD card", "32 GB, in the Teensy"),
+    (PT.sd_card, {}, "sd_card", "microSD card", "32 GB A1, in the Teensy"),
 ], cols=4, line_map=[1, 1, 2, 2, 3, 3, 3, 3]), full=True)
 
 add("kit_small", "kit", "Parts: the small pieces", [
@@ -162,9 +162,21 @@ add("kit_small", "kit", "Parts: the small pieces", [
     (PT.opamp_chip, {}, "esp32", "MCP6022-E/P × 2", "plus 2 DIP-8 sockets"),
     (PT.to92, {}, "to92", "MCP1700-3302E", "3.3 V version, TO-92"),
     (PT.diode, {}, "diode", "1N5817 diode", "stripe = cathode"),
-    (PT.header_male, {"n": 4}, "esp32", "Male headers", "optional, for J1–J3"),
+    (PT.header_male, {"n": 4}, "esp32", "Male headers", "optional, for J1"),
     (PT.header_female, {"n": 8}, "teensy", "Female headers", "2×24, 2×8, 1×5, 1×4"),
 ], cols=4, line_map=[1, 1, 1, 2, 2, 2, 3, 3]), full=True)
+
+add("kit_filters", "kit", "Parts: the two 5 V filters", [
+    "Six more small parts make two noise filters. They go in the wires, not on the board.",
+    "Two twenty-two microhenry inductors, rated one amp or more. One goes in the battery holder's red wire, and one in the ESP32's own five volt feed.",
+    "And at each one, a four hundred and seventy microfarad electrolytic capacitor, ten volts or more, with a one microfarad ceramic beside it.",
+    "Without them, the battery holder's converter and the ESP32's radio both whisper into the radar through the five volt supply.",
+], visual=items_view([
+    (PT.inductor, {}, "inductor", "Inductor 22 µH × 2", "L1, L2 · 1 A or more"),
+    (PT.electrolytic_side, {"d": 8, "h": 12}, "electrolytic_side", "470 µF × 2", "C27, C29 · 10 V or more"),
+    (PT.ceramic, {"code": "105"}, "ceramic", "1 µF ceramic × 2", "C28, C30"),
+    (PT.heatshrink, {}, "heatshrink", "Heat-shrink", "on every joint"),
+], cols=4, line_map=[1, 2, 2, 2]), full=True)
 
 add("kit_hardware", "kit", "Parts: case hardware", [
     "For the case: the printed parts, eight M3 heat-set inserts, and one quarter-twenty insert for a tripod, nine millimetres long or shorter.",
@@ -440,7 +452,7 @@ add("power_holder", "power", "Wire the battery holder", [
     "Time for power. The battery holder has its own button, and that button is BLIPR's on and off switch.",
     "Before you solder anything, put the cell in, turn the holder on, and meter its pads. The red probe on the five volt pad must read plus five, not minus five.",
     "Nothing on the board protects against those two swapped. Then take the cell out.",
-    "With no cell in the holder, solder a red wire to its five volt pad and a black wire to its ground pad. They go to J1 plus five volts and J1 ground.",
+    "With no cell in the holder, solder a red wire to its five volt pad and a black wire to its ground pad. They go to J1 plus five volts and J1 ground. The red one gets a small filter on the way, in a moment.",
     "Now the battery gauge. Tin the holder's plus end tab, and quickly solder one leg of a ten k resistor, R25, straight onto it. Cover it with heat-shrink.",
     "Solder a wire to R25's other leg. Brown in our pictures. It goes to J1 BAT. With the resistor right at the tab, a nicked wire can't short the cell.",
     "Set the holder's mode switch to power on. About ten centimetres of wire reaches from the holder to the board.",
@@ -448,6 +460,15 @@ add("power_holder", "power", "Wire the battery holder", [
     notes=[(1, "!First: meter its pads, +5 V not −5 V"), (2, "Then cell out while soldering"), (3, "Red: 5V pad → J1 +5V"), (3, "Black: GND pad → J1 GND"),
            (4, "R25 (10 kΩ) soldered on the + tab, heat-shrink"), (5, "R25 → J1 BAT"), (6, "Mode switch: power on")],
     pause=6, do="Pause and wire the holder")
+
+add("power_filter", "power", "The battery holder's 5 V filter", [
+    "Now the filter in that red wire. The holder makes its five volts with a tiny switching converter, and the radar can hear it whistle.",
+    "Cut the red wire and put L1, the twenty-two microhenry inductor, in the gap. It goes either way round.",
+    "At the board end, solder C27, four hundred and seventy microfarads, across J1's plus five volts and ground. Stripe to ground. Put C28, the one microfarad ceramic, right beside it.",
+    "Keep the red and black wires side by side, and heat-shrink every joint.",
+], visual=image_view(PIC + "power_filter.png"),
+    notes=[(1, "L1 22 µH in the red wire"), (1, "Either way round"), (2, "C27 470 µF: stripe to GND"), (2, "C28 1 µF beside it"),
+           (2, "*Capacitors on the board side, close to J1"), (3, "Heat-shrink every joint")], pause=6, do="Pause and fit the filter")
 
 add("power_check1", "power", "Checkpoint 1: power rails", [
     "Checkpoint one. The chips and modules are still out.",
@@ -558,14 +579,14 @@ add("wire_radar_check", "wiring", "Before the radar goes on", [
            (3, "!Plug turned round = power and ground swapped"), (3, "No beep test catches it: check the marks")], pause=5, do="Pause and beep-test the pigtail")
 
 add("wire_oled", "wiring", "The screen", [
-    "Now the screen. Four wires from J3 to the screen's pads.",
+    "Now the screen. It's wired directly: four wires soldered to the screen's pads, and straight into J3. No header, and no plug-on jumpers.",
     "Screen ground to J3 ground, and screen VCC to J3 VCC.",
     "Screen SCL to J3 SCL, and screen SDA to J3 SDA.",
     "Screens don't all put their pins in the same order, so always go by the labels printed on yours.",
-    "Make these wires about fifteen centimetres long, because the screen lives in the lid. Solder them straight to its pads. A plug-on header won't fit.",
+    "Make these wires about fifteen centimetres long, because the screen lives in the lid. If your screen came with header pins already fitted, unsolder or clip them off first. Under the lid there's no room for a header with Dupont plugs on it.",
 ], visual=drawing(lambda ctx, c, x, y, w, h: DG.oled_wiring(ctx, c, x, y, w, h, line0=0)),
     notes=[(1, "GND → J3 GND (black)"), (1, "VCC → J3 VCC (orange)"), (2, "SCL → J3 SCL (yellow)"), (2, "SDA → J3 SDA (blue)"),
-           (3, "!Go by YOUR screen's labels"), (4, "Wires ~15 cm, soldered to the pads")], pause=6, do="Pause and wire the screen")
+           (3, "!Go by YOUR screen's labels"), (4, "Wires ~15 cm, soldered at both ends"), (4, "!No header, no Dupont plugs")], pause=6, do="Pause and wire the screen")
 
 add("wire_check3", "wiring", "Checkpoint 3: everything powered", [
     "Checkpoint three. Plug the Teensy and the ESP32 into their sockets, and the radar onto its pigtail.",
@@ -608,35 +629,49 @@ add("fw_teensy", "firmware", "Load the Teensy", [
     "Open BliprTeensy dot I N O. In the Tools menu choose Teensy 4.1, USB type Serial plus MTP Disk, and CPU speed six hundred megahertz.",
     "Click Upload. The first time, the Teensy Loader may ask you to press the little white button on the Teensy.",
     "Open the Serial Monitor. If it's blank, press the Teensy's button once. Type stat. Overruns should be zero, and SD should say ok. Paused is normal while it's plugged into a computer.",
+    "Then type set f s equals five hundred thousand, and then reboot. That sets the sample rate to five hundred kilohertz, and it's saved. It moves the battery holder's whistle down to about a hundred feet per second, out of the way.",
 ], visual=switch([(0, drawing(lambda ctx, c, x, y, w, h: DG.ide(ctx, c, x, y, w, h, [
     (1, "Sketch", "BliprTeensy.ino"), (1, "Board", "Teensy 4.1"), (1, "USB Type", "Serial + MTP Disk (Experimental)"),
     (1, "CPU Speed", "600 MHz"), (2, "Upload", "press the Teensy's button if asked")],
     intro="1. Press the holder's button: BLIPR on\n2. USB data cable into the Teensy"))),
     (3, drawing(lambda ctx, c, x, y, w, h: DG.serial(ctx, c, x, y, w, h, [
-        (3, "Range Book BLIPR, Teensy firmware 0.2.2", None), (3, "Sample rate 600000 Hz (asked for 600000). SD card found.", None),
+        (3, "Range Book BLIPR, Teensy firmware 0.2.8", None), (3, "Sample rate 600000 Hz (asked for 600000). SD card found.", None),
         (3, "> stat", hexc("#7FD1FF")), (3, "armed 1 (paused: USB drive mode), shots 0,", hexc("#9BE39B")),
-        (3, "sample rate 600000 Hz, ... overruns 0, SD ok, fw 0.2.2", hexc("#9BE39B"))])))]),
+        (3, "sample rate 600000 Hz, ... overruns 0, SD ok, fw 0.2.8", hexc("#9BE39B")),
+        (4, "> set fs=500000", hexc("#7FD1FF")), (4, "vmin=600,vmax=3500,...,fs=500000,...", hexc("#9BE39B")),
+        (4, "New sample rate takes effect after 'reboot'.", None), (4, "> reboot", hexc("#7FD1FF"))])))]),
     notes=[(0, "!BLIPR must be ON to program the Teensy"), (1, "USB Type: Serial + MTP Disk"), (2, "First time: press the Teensy's button"),
-           (3, "*stat → overruns 0")], pause=5, do="Pause and load the Teensy")
+           (3, "*stat → overruns 0"), (4, "set fs=500000, then reboot")], pause=5, do="Pause and load the Teensy")
 
 add("fw_esp", "firmware", "Load the ESP32", [
-    "Now the ESP32. Open BliprBLE dot I N O in a second IDE window, so each board keeps its own Serial Monitor.",
+    "Now the ESP32. Take it out of BLIPR's socket and plug its USB into the computer. Open BliprBLE dot I N O in a second IDE window, so each board keeps its own Serial Monitor.",
     "Choose the Nologo ESP32C3 Super Mini board, with USB CDC On Boot enabled, and its port.",
     "Click Upload. If it can't connect, hold the BOOT button, tap RESET, let go of BOOT, and upload again.",
     "When it's done, tap RESET. The Serial Monitor shows the ESP32 firmware version, ready.",
-    "You only need the cable this once. After this, Range Book can update the ESP32 over Bluetooth.",
+    "You only need the cable this once. After its filter goes on, the computer only sees the ESP32 when it's out of BLIPR, and Range Book updates it over Bluetooth in about thirty seconds.",
 ], visual=switch([(0, drawing(lambda ctx, c, x, y, w, h: DG.ide(ctx, c, x, y, w, h, [
     (0, "Sketch", "BliprBLE.ino  (second window)"), (1, "Board", "Nologo ESP32C3 Super Mini"), (1, "USB CDC On Boot", "Enabled"),
-    (2, "Can't connect?", "hold BOOT, tap RESET, release")], intro="USB-C data cable into the ESP32"))),
-    (3, drawing(lambda ctx, c, x, y, w, h: DG.serial(ctx, c, x, y, w, h, [(3, "BLIPR ESP32-C3 firmware 0.2.3 ready.", hexc("#9BE39B")),
+    (2, "Can't connect?", "hold BOOT, tap RESET, release")], intro="ESP32 out of BLIPR's socket\nUSB-C data cable into the ESP32"))),
+    (3, drawing(lambda ctx, c, x, y, w, h: DG.serial(ctx, c, x, y, w, h, [(3, "BLIPR ESP32-C3 firmware 0.2.20 ready.", hexc("#9BE39B")),
                                                                               (3, "Sensors found: ...", None)])))]),
-    notes=[(1, "USB CDC On Boot: Enabled"), (2, "No connection? BOOT + tap RESET"), (4, "Later updates: Range Book, over Bluetooth")],
+    notes=[(0, "!ESP32 out of BLIPR for USB"), (1, "USB CDC On Boot: Enabled"), (2, "No connection? BOOT + tap RESET"), (4, "Later updates: Range Book, over Bluetooth")],
     pause=5, do="Pause and load the ESP32")
+
+add("fw_espfilter", "firmware", "The ESP32's own 5 V filter", [
+    "With its firmware on, the ESP32 gets its own filter. Its Bluetooth radio draws current in bursts, and those bursts reached the radar through the shared five volts.",
+    "Keep the module out of BLIPR. Hold it flat, and cut its five volt pin off just under the black plastic with flush cutters. Don't lever it. Nothing on the board is cut.",
+    "Solder L2, the second inductor, from the socket's five volt hole to the pin's stub on top of the module. A short header pin soldered to L2 pushes into the hole. Or solder it to D1's leg on the square-pad side.",
+    "Then C29, four hundred and seventy microfarads, stripe to ground, and C30, one microfarad, across the module's five volt stub and its ground pin, close in. Lay them flat so the lid clears them.",
+    "Beep test: the five volt stub to D1's square pad beeps, through L2. Five volts to ground must not beep. Then plug the ESP32 back in.",
+], visual=image_view(PIC + "esp_filter.png"),
+    notes=[(1, "Cut the module's 5V pin only"), (1, "!Hold it flat: don't lever it"), (2, "L2 22 µH: socket 5V hole → pin stub"),
+           (3, "C29 470 µF (stripe to GND) + C30 1 µF"), (3, "Lay them flat"), (4, "*5V stub → D1 square pad: beep"), (4, "!5V → GND: no beep")],
+    pause=6, do="Pause and fit the ESP32 filter")
 
 add("fw_phone", "firmware", "Talk to it from Range Book", [
     "Now let's see the two boards working together.",
     "Open Range Book through its https address, in Chrome on Android, or in the Bluefy app on an iPhone.",
-    "Go to Tools, BLIPR Chronograph, and tap Connect chronograph. Pick RB BLIPR.",
+    "Go to Tools, BLIPR Chronograph, and tap Connect chronograph. Pick RB BLIPR. You need Range Book two point four four or later.",
     "Tap Test shot. A test shot of twenty-seven hundred feet per second appears on your phone, and on BLIPR's screen.",
     "If that works, the radar board, the Bluetooth board and the app are all talking. Turn BLIPR off. Time for the case.",
 ], visual=drawing(lambda ctx, c, x, y, w, h: _phone_and_screen(ctx, c, x, y, w, h)),
@@ -733,7 +768,7 @@ add("case_cover", "case", "The front cover", [
     notes=[(1, "Recessed side toward the radar"), (1, "Wider frame edge at the top")], pause=4, do="Pause and fit the cover")
 
 add("case_screen", "case", "Screen into the lid", [
-    "The screen goes into the pocket under the lid's window.",
+    "The screen goes into the pocket under the lid's window, its four wires already soldered on, pointing toward the board.",
     "Screw it to the four corner pads with the tiny M2 by four screws. Snug only. The holes are plastic.",
     "Under the lid you can also see the rib that presses on the radar's foam.",
 ], visual=image_view(CASE + "preview_lid_sensors_under.png", overlays=[{"at": 1, "kind": "box", "xywh": (395, 452, 135, 85)},
@@ -781,16 +816,26 @@ add("pod_mount", "sensors", "Mount the pod", [
 add("test_boot", "test", "Power it up", [
     "Everything's together. Press the battery holder's button through the side slot.",
     "BLIPR plays its start-up: a bullet flies across the screen, writes BLIPR, and the screen blinks.",
-    "With the sensor kit fitted, a bubble level follows for the first minute.",
+    "With the sensor kit fitted, a bubble level comes next, for up to a minute.",
 ], visual=drawing(lambda ctx, c, x, y, w, h: DG.oled_play(ctx, c, x, y, w, h, REPO + "/pictures/out/oled_boot_animation.gif", 1, "BLIPR's start-up animation")),
-    notes=[(0, "On/off: the holder's button"), (2, "Sensor kit: bubble level for 1 minute")])
+    notes=[(0, "On/off: the holder's button"), (2, "Sensor kit: bubble level, up to 1 minute")])
 
 add("test_level", "test", "Level it on the bench", [
     "Shim the case until the bubble sits in the middle circle, and the screen says LEVEL. That's within half a degree.",
-    "Hold it there for three seconds and the normal screen comes back.",
+    "Hold it there for three seconds.",
     "The top of the screen is the front, downrange. The text tells you which way to move: lift the nose, lower the nose, lift left or right.",
 ], visual=image_view(PIC + "oled_level_preview.png", cams=[(0, (0, 0, 1074, 300)), (2, (0, 0, 540, 300))]),
     notes=[(0, "LEVEL = within 0.5°"), (1, "Hold 3 s"), (2, "Top of screen = downrange")])
+
+add("test_screen", "test", "Dark means listening", [
+    "After the level, the weather shows for ten seconds, then READY for two. Then BLIPR arms itself, and the screen goes dark.",
+    "Dark means listening. A lit screen makes a little electrical noise the radar can hear, so BLIPR keeps it off while it waits for a shot.",
+    "After each shot, the speed and the string show for three seconds, then it goes dark again. Range Book's Show each shot for setting changes that time. Keep it short: BLIPR doesn't listen while the screen is lit.",
+    "After every shot, BLIPR also checks it hasn't been knocked. Tilted more than a degree, or turned more than five, and the level comes back once the shot has been shown.",
+    "In Range Book's chronograph settings, Re-level and update the heading shows the level any time. Disable the level is for shooting at an angle: then there's no level at all.",
+], visual=image_view(PIC + "screen_sequence.png", cams=[(0, (0, 0, 1292, 648)), (3, (0, 420, 1292, 228))]),
+    notes=[(0, "Level → weather 10 s → READY 2 s → dark"), (1, "*Dark = listening"), (2, "Each shot: 3 s, then dark"), (2, "Not listening while lit"),
+           (3, "Knocked > 1° or turned > 5°: level again"), (4, "Range Book: Re-level · Disable the level")])
 
 add("test_compass", "test", "Calibrate the compass once", [
     "If you fitted the sensor kit, calibrate the compass once.",
@@ -820,7 +865,7 @@ def _compass(ctx, c, x, y, w, h):
 add("test_place", "test", "Set it up at the bench", [
     "At the bench, BLIPR sits beside the rifle, behind the muzzle, out of the blast. From your seat it's at about one o'clock.",
     "The front window faces downrange, and the screen corner is nearest you.",
-    "A good place to start is about thirty centimetres behind the muzzle, and twelve centimetres to the side.",
+    "For a rifle, a good place to start is about thirty centimetres behind the muzzle, and twelve centimetres to the side, out of the blast. A twenty-two has no real blast: the first twenty-two tests had BLIPR about ten centimetres behind the muzzle and ten to the side.",
     "In Range Book's chronograph settings, enter where it sits, so BLIPR can correct for the angle.",
 ], visual=drawing(lambda ctx, c, x, y, w, h: DG.bench(ctx, c, x, y, w, h, shot_line=None, phone=False, dims=2)), full=True)
 
@@ -842,6 +887,15 @@ def _mini_bench(ctx, cx, cy, c, bad):
     ctx.restore()
     DG.dot(ctx, cx - 93, cy - 230, 7, hexc("#B8860B"))
 
+
+add("test_settings", "test", "Two things before the first shot", [
+    "Two things before the first shot. First, the speed window. BLIPR only reports speeds inside it, so set it a little wider than your load.",
+    "Range Book's chronograph settings show BLIPR's window, and a button sets it from your load. Or type it on the Teensy: for twenty-two standard velocity, v min nine fifty and v max twelve hundred.",
+    "Second, keep other radar chronographs away. Two twenty-four gigahertz radars side by side interfere with each other. Use one at a time, or set them well apart.",
+], visual=drawing(lambda ctx, c, x, y, w, h: DG.serial(ctx, c, x, y, w, h, [
+    (1, "> set vmin=950 vmax=1200", hexc("#7FD1FF")), (1, "vmin=950,vmax=1200,...,fs=500000,save=1,arm=1,band=15", hexc("#9BE39B"))])),
+    notes=[(0, "Window a little wider than your load"), (1, "Range Book: window from the load"), (1, ".22 SV: 950–1200 fps"),
+           (2, "!One radar chronograph at a time")])
 
 add("test_shot", "test", "Your first shot", [
     "Connect Range Book, and fire.",
@@ -877,6 +931,18 @@ add("trouble2", "trouble", "More fixes", [
     (1, "Screen: NO RADAR", "Teensy 35 → R23 → GPIO20 · Teensy 34 → R24 → GPIO21 · shared GND · Teensy power"),
     (2, "Screen: PAUSED", "Teensy on a computer (USB drive mode), or disarmed. Unplug it, or send arm"),
     (3, "Still stuck", "Repeat the checkpoints in order. The first wrong reading points to the fault")]), BG), full=True)
+
+add("trouble3", "trouble", "Noise, and a few quirks", [
+    "BLIPR's radar hears more than bullets. If it reads the same speed again and again, or reports shots nobody fired, look for a steady tone.",
+    "On the Teensy, type live. Twice a second it shows the noise and the strongest line, with its speed. Type rec to record a tenth of a second and see what's in it.",
+    "Most tones come from switching converters or a lit screen. Check both five volt filters are fitted, the sample rate is five hundred thousand, and the window stays clear of the tone's speed.",
+    "If the holder's button won't turn BLIPR on after a night on the charger, take the cell out, put it back, and press the button.",
+    "And if the computer can't see the ESP32 while it's in BLIPR, that's normal with its filter: take it out to flash it, or update it over Bluetooth.",
+], visual=drawing(lambda ctx, c, x, y, w, h: DG.trouble(ctx, c, x + 10, y + 10, w - 20, h - 20, [
+    (0, "Same speed every time, or false shots", "A steady tone: type live (strongest line) or rec on the Teensy"),
+    (2, "Where tones come from", "Converters, a lit screen: both 5 V filters · fs=500000 · window clear of the line"),
+    (3, "Button won't switch on after charging", "Take the cell out, put it back, press the button"),
+    (4, "Computer can't see the ESP32 in BLIPR", "Normal with its filter: flash it out of the socket, or over Bluetooth")]), BG), full=True)
 
 add("outro", "intro", "You built BLIPR", [
     "That's it. You've built BLIPR.",

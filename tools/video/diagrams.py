@@ -65,11 +65,15 @@ def legend(ctx, x, y, items, size=24):
 
 # ------------------------------------------------------------------ title / outro
 def title(ctx, c, x, y, w, h, sub="Assembly, step by step", hero="turn_0119"):
-    surf = load_surface(f"{BUILD}/3d/{hero}.png")
+    photo = "/" in hero          # a real photo (path) instead of a 3D frame
+    surf = load_surface(hero if photo else f"{BUILD}/3d/{hero}.png")
     k = ramp(c.t, 0.2, 1.2)
-    s = 0.92
+    s = min(0.5 * w / surf.get_width(), 0.86 * h / surf.get_height()) if photo else 0.92
     iw, ih = surf.get_width() * s, surf.get_height() * s
-    ctx.save(); ctx.translate(x + w - iw - 10, y + (h - ih) / 2 + (1 - k) * 30); ctx.scale(s, s)
+    ctx.save(); ctx.translate(x + w - iw - (50 if photo else 10), y + (h - ih) / 2 + (1 - k) * 30)
+    if photo:
+        rrect(ctx, 0, 0, iw, ih, 18); ctx.clip()
+    ctx.scale(s, s)
     ctx.set_source_surface(surf, 0, 0); ctx.paint_with_alpha(k); ctx.restore()
     a = ramp(c.t, 0.0, 0.8)
     text(ctx, "RANGE BOOK", x + 60, y + 230, 40, CHAPTER_COL["intro"], True, alpha=a)
@@ -78,7 +82,7 @@ def title(ctx, c, x, y, w, h, sub="Assembly, step by step", hero="turn_0119"):
     b = ramp(c.t, 0.8, 0.8)
     setc(ctx, FOCUS, b); ctx.rectangle(x + 60, y + 470, 120 * b, 6); ctx.fill()
     text(ctx, sub, x + 60, y + 540, 44, INK, weight="semi", alpha=b)
-    text(ctx, "Circuit board v1.1  ·  Case v0.8  ·  Firmware 0.2.2 / 0.2.3", x + 60, y + 600, 26, INK2, alpha=b)
+    text(ctx, "Circuit board v1.1  ·  Case v0.12  ·  Firmware 0.2.8 / 0.2.20", x + 60, y + 600, 26, INK2, alpha=b)
 
 
 # ------------------------------------------------------------------ bench top view
@@ -785,7 +789,7 @@ def trouble(ctx, c, x, y, w, h, items):
 
 
 def outro(ctx, c, x, y, w, h):
-    title(ctx, c, x, y, w, h, sub="Built. Now go shoot.", hero="turn_0060")
+    title(ctx, c, x, y, w, h, sub="Built. Now go shoot.", hero=REPO + "/docs/img/blipr_radar_side.jpg")
 
 
 # ------------------------------------------------------------------ op-amp pin voltages
