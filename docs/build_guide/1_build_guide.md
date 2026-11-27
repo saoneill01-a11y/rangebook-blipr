@@ -12,7 +12,7 @@ How it works, in one pass: the RFbeam K-LC5 radar sends out a 24 GHz signal and 
 
 **What this guide covers:** the hardware: the circuit, soldering, wiring, the 3D-printed case, and electrical checks with a multimeter at each stage. The firmware for the Teensy and ESP32 and the Range Book connection are on the Firmware tab; do its bench tests before soldering (Step 1). **The usual build is now the circuit board v1.2** (Circuit board tab): it replaces the perfboard and most of the wiring below. The steps still apply, and where the circuit board differs they say so.
 
-**Case files (v0.12):** `base`, `lid_oled` / `lid_plain` / `lid_sensors`, `front_cover`, `sensor_pod` and `sensor_pod_roof`, each as STEP and STL, plus `blipr_case.py`, the parametric script that generates them. v0.12 is the version built and used: the Teensy's USB hole fits the Teensy on its 8.5 mm sockets, and the lid's screen window is 13 mm tall, so the screen's top line shows (see Step 5).
+**Case files (v0.12):** `base`, `lid_oled` / `lid_plain` / `lid_sensors`, `front_cover`, `sensor_pod` and `sensor_pod_roof`, each as STEP and STL, plus `blipr_case.py`, the parametric script that generates them. v0.12 is the version built and used: the Teensy's USB hole fits the Teensy on its 8.5 mm sockets, and the lid's screen window is 13 mm tall, so the screen's top line shows (see Step 5). The case is also on [MakerWorld](https://makerworld.com/en/models/3697742-blipr-doppler-radar-chronograph#profileId-4248561).
 
 **Firmware (Teensy 0.2.8, ESP32 0.2.20):** setup and bench tests are on the Firmware tab.
 
@@ -335,6 +335,8 @@ The v0.12 case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and prints in
 | front\_cover | Flat, smooth outside face on the bed | 0.15 mm layers, 100% infill. **Natural, white or gray filament**, not black or any filled filament. The window is 0.9 mm thick |
 
 ASA warps, so use an enclosure or a draft shield, a brim on the base, and a bed around 100 °C.
+
+**On MakerWorld:** the case is also on [MakerWorld](https://makerworld.com/en/models/3697742-blipr-doppler-radar-chronograph#profileId-4248561), with Sean's print project (`BLIPR_Case.3mf`, also in `case/out/`) ready to open in Bambu Studio.
 
 &#91;image: Lid v0.12 with the 13 mm screen window, and its underside: screen pocket with four M2 screw pads\]
 

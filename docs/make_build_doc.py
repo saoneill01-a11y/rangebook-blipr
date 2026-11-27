@@ -385,7 +385,8 @@ def build():
 
     # ---------------------------------------------------------------- 3 print
     doc.add_heading("3. Print the case", 1)
-    para("The case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and every part prints without supports.")
+    para("The case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and every part prints without supports. It's also on MakerWorld, with Sean's print "
+         "project (BLIPR_Case.3mf, also in case/out) ready to open: makerworld.com/en/models/3697742")
     table([("Part", "Print it", "Settings (ASA)"),
            ("base", "Floor on the bed, open top up", "0.2 mm layers, 6 walls, 4 top/bottom layers, 25% gyroid. "
                                                      "Brim. Bridges are 34 mm or shorter"),
@@ -709,7 +710,7 @@ def build():
     doc.add_heading("Where things are", 2)
     table([("What", "Where in the project"),
            ("Firmware", "firmware/BliprTeensy, firmware/BliprBLE (ready-made files in firmware/prebuilt)"),
-           ("Case files", "case/out (STL and STEP); case/blipr_case.py rebuilds them"),
+           ("Case files", "case/out (STL, STEP and BLIPR_Case.3mf); case/blipr_case.py rebuilds them; on MakerWorld: makerworld.com/en/models/3697742"),
            ("Circuit board", "pcb/out: v1.2 (Gerbers, BOM, assembly drawing); pcb/v1.1: the v1.1 files"),
            ("Parts list with prices", "docs/RB_BLIPR_Parts_List.xlsx (docs/make_parts_list.py)"),
            ("Assembly video", "YouTube: https://youtu.be/nRWELvyEKN8 (tools/video makes it)"),
