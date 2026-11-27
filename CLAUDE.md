@@ -2,8 +2,8 @@
 
 BLIPR (Ballistic Launch Inspection Portable Radar) is Sean's DIY 24 GHz radar chronograph for Range Book.
 Sean is a target shooter, not a programmer: explain things in plain words, keep answers short, and ask
-before anything that costs money or can't be undone. The private repo is saoneill01-a11y/rangebook-blipr;
-Sean will make it public once BLIPR is proven.
+before anything that costs money or can't be undone. The repo is saoneill01-a11y/rangebook-blipr, public since Nov 27, 2026 (anything pushed is visible to everyone);
+
 
 ## What's where
 
