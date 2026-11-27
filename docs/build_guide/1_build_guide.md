@@ -18,7 +18,9 @@ How it works, in one pass: the RFbeam K-LC5 radar sends out a 24 GHz signal and 
 
 **You'll need Range Book:** BLIPR sends its shots to Range Book, a free, self-hosted shooting log and ballistics app. [rangebook.org](https://rangebook.org) shows how to install it. On iPhone and iPad, get the [Range Book app](https://apps.apple.com/app/id6837895002) (Range Book: Shooting Log) from the App Store; on Android, use Chrome.
 
-**Status (Nov 26, 2026):** one BLIPR is built on circuit board v1.1 and has been tested live on .22 LR (CCI Standard Velocity). On its first two strings it read 9 of 10 shots, averaging 1029 fps (SD 22). An Athlon chronograph with the same rifle and ammo averaged 1017 fps on another day, so the two agree within about 1%. Rifles are next. Board v1.2, which puts both 5 V filters on the board, is designed but not built yet; this guide covers both boards. This guide also comes as a PDF and a Word file (`docs/` in the project), and there is a narrated assembly video.
+**Watch the build:** the narrated assembly video (about 39 minutes) is on YouTube: [youtu.be/nRWELvyEKN8](https://youtu.be/nRWELvyEKN8). It follows this guide step by step; pause at each step and build along.
+
+**Status (Nov 26, 2026):** one BLIPR is built on circuit board v1.1 and has been tested live on .22 LR (CCI Standard Velocity). On its first two strings it read 9 of 10 shots, averaging 1029 fps (SD 22). An Athlon chronograph with the same rifle and ammo averaged 1017 fps on another day, so the two agree within about 1%. Rifles are next. Board v1.2, which puts both 5 V filters on the board, is designed but not built yet; this guide covers both boards. This guide also comes as a PDF and a Word file (`docs/` in the project), and there is a narrated [assembly video on YouTube](https://youtu.be/nRWELvyEKN8).
 
 &#91;image: The first BLIPR on a small tripod: screen window in the lid's back corner, sensor pod in front\]
 

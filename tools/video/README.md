@@ -3,7 +3,8 @@
 Scripts that make the narrated, step-by-step assembly video (about 38 minutes, 1080p) straight from the design
 files in this repo: the board drawings come from `pcb/design.py`, the 3D case views from the STL files in
 `case/out/`, and the wiring pictures and screen animations from `pictures/out/`. Change the design, re-run, and
-the video follows. The finished MP4 is not kept in git (too large for GitHub).
+the video follows. The finished MP4 is not kept in git (too large for GitHub); it's on YouTube:
+https://youtu.be/nRWELvyEKN8.
 
 Current version (Nov 26, 2026): circuit board v1.2 (both 5 V filters on the board: L1/L2 with three holes, C27-C30,
 R23/R24 standing), case v0.12, Teensy 0.2.8, ESP32 0.2.20, the direct-wired screen and the dark-while-listening

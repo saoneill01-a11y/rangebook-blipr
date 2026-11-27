@@ -258,6 +258,8 @@ def build():
     para("You'll need Range Book, free: rangebook.org shows how to install it. On iPhone and iPad, get the Range Book "
          "app (Range Book: Shooting Log) from the App Store: apps.apple.com/app/id6837895002.",
          bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    para("Watch the build: the narrated assembly video (about 39 minutes) is on YouTube: youtu.be/nRWELvyEKN8",
+         bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     para("Parts → Print → Flash and bench test → Solder → Check → Wire → Case → Range",
          bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     para("Status, Nov 26, 2026: built and tested live on .22 LR. 9 of 10 shots read on the first two strings, "
@@ -710,7 +712,7 @@ def build():
            ("Case files", "case/out (STL and STEP); case/blipr_case.py rebuilds them"),
            ("Circuit board", "pcb/out: v1.2 (Gerbers, BOM, assembly drawing); pcb/v1.1: the v1.1 files"),
            ("Parts list with prices", "docs/RB_BLIPR_Parts_List.xlsx (docs/make_parts_list.py)"),
-           ("Assembly video", "see README.md"),
+           ("Assembly video", "YouTube: https://youtu.be/nRWELvyEKN8 (tools/video makes it)"),
            ("Wiring pictures", "pictures/out"),
            ("Session logger, recordings", "tools/blipr_log.py, tools/pull_shots.py"),
            ("This guide", "docs/make_build_doc.py rebuilds it; docs/make_build_pdf.py makes the PDF")],
