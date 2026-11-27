@@ -32,6 +32,12 @@ def radial(dia, pitch, drill=1.0, pad=1.8):
     p = pitch / 2
     return {"pads": [("1", -p, 0, "circle", pad, pad, drill), ("2", p, 0, "circle", pad, pad, drill)], "body": ("circle", dia)}
 
+def inductor(dia=8.4):
+    """22 uH drum inductor, two lead spacings: holes 1 and 2 are 5.0 mm apart (e.g. Wurth 744772220), holes 1 and 3
+    are 3.2 mm apart (the small 6.7 mm drums Sean has, leads 3.8 mm outside to outside). 2 and 3 are joined."""
+    return {"pads": [("1", -2.5, 0, "circle", 1.6, 1.6, 1.0), ("2", 2.5, 0, "circle", 1.5, 1.5, 1.0),
+                     ("3", 0.7, 0, "circle", 1.5, 1.5, 1.0)], "body": ("circle", dia)}
+
 def hairpin(pitch=2.54):
     """Resistor standing on end (one lead bent back down): body over pad 1."""
     return {"pads": [("1", 0, 0, "circle", 1.6, 1.6, 0.8), ("2", pitch, 0, "circle", 1.6, 1.6, 0.8)],
@@ -144,10 +150,10 @@ part("R23", hairpin(), 21.3, 29.7, 90, "1k", "serial: Teensy TX8 (pin 35) to ESP
 part("R24", hairpin(), 21.3, 35.7, 90, "1k", "serial: ESP32 GPIO21 to Teensy RX8 (pin 34); stands on end")
 
 # v1.2: the two 5 V noise filters, on the board (v1.1 had them in the wiring)
-part("L1", radial(8.4, 5.0), 10.4, 61.6, 0, "22uH", "battery holder filter: 1 A or more, up to 8.4 mm across, 5 mm lead spacing (e.g. Wurth 744772220)")
+part("L1", inductor(), 10.4, 61.6, 0, "22uH", "battery holder filter: 1 A or more, up to 8.4 mm across; leads 5 mm apart (holes 1-2) or 3.2 mm (holes 1-3)")
 part("C27", elec(8.0, 3.5), 18.8, 61.9, 0, "470uF", "battery holder filter, 10 V or more, 8 mm")
 part("C28", ceramic(), 10.4, 46.6, 0, "1uF", "battery holder filter")
-part("L2", radial(8.4, 5.0), 10.4, 52.5, 0, "22uH", "ESP32 filter: 1 A or more, up to 8.4 mm across, 5 mm lead spacing (e.g. Wurth 744772220)")
+part("L2", inductor(), 10.4, 52.5, 0, "22uH", "ESP32 filter: 1 A or more, up to 8.4 mm across; leads 5 mm apart (holes 1-2) or 3.2 mm (holes 1-3)")
 part("C29", elec(8.0, 3.5), 18.8, 52.5, 0, "470uF", "ESP32 filter, 10 V or more, 8 mm")
 part("C30", ceramic(), 18.9, 46.6, 0, "1uF", "ESP32 filter")
 
@@ -171,9 +177,9 @@ net("GND", "J1-2", "J2-4", "J3-1", "J4-1", "J5-3", tpin("GND", "F"), "U5-B0", "U
     "C4-2", "C1-2", "U3-1", "C2-2", "C3-2", "C7-2", "R3-2", "C10-2", "C11-2", "C5-2",
     "C14-2", "C17-2", "C18-2", "C21-2", "C24-2", "C25-2", "U1-4", "U2-4", "C8-2", "C9-2", "R20-2", "C26-2", "C27-2", "C28-2", "C29-2", "C30-2")
 net("5VIN", "J1-1", "L1-1")
-net("+5V", "L1-2", "C27-1", "C28-1", tpin("VIN", "F"), "D1-1", "R18-1")
+net("+5V", "L1-2", "L1-3", "C27-1", "C28-1", tpin("VIN", "F"), "D1-1", "R18-1")
 net("ESP5V", "D1-2", "L2-1")
-net("ESP5VF", "L2-2", "C29-1", "C30-1", epin("5V"))
+net("ESP5VF", "L2-2", "L2-3", "C29-1", "C30-1", epin("5V"))
 net("5VF", "R18-2", "C4-1", "C1-1", "U3-2")
 net("+3V3A", "U3-3", "C2-1", "C3-1", "J2-2", "C5-1", "R1-1")
 net("+3V3OP", "R1-2", "C7-1", "R2-1", "U1-8", "U2-8", "C8-1", "C9-1")

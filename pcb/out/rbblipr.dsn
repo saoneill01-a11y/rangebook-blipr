@@ -385,8 +385,9 @@
       (pin PS_circle_1600_1600_800 "2" 2540 0)
     )
     (image IMG_L1
-      (pin PS_circle_1800_1800_1000 "1" -2500 0)
-      (pin PS_circle_1800_1800_1000 "2" 2500 0)
+      (pin PS_circle_1600_1600_1000 "1" -2500 0)
+      (pin PS_circle_1500_1500_1000 "2" 2500 0)
+      (pin PS_circle_1500_1500_1000 "3" 700 0)
     )
     (image IMG_C27
       (pin PS_rect_1600_1600_800 "1" -1750 0)
@@ -397,8 +398,9 @@
       (pin PS_circle_1600_1600_800 "2" 2540 0)
     )
     (image IMG_L2
-      (pin PS_circle_1800_1800_1000 "1" -2500 0)
-      (pin PS_circle_1800_1800_1000 "2" 2500 0)
+      (pin PS_circle_1600_1600_1000 "1" -2500 0)
+      (pin PS_circle_1500_1500_1000 "2" 2500 0)
+      (pin PS_circle_1500_1500_1000 "3" 700 0)
     )
     (image IMG_C29
       (pin PS_rect_1600_1600_800 "1" -1750 0)
@@ -453,14 +455,24 @@
       (shape (rect B.Cu -900 -900 900 900))
       (attach off)
     )
+    (padstack PS_circle_1600_1600_1000
+      (shape (circle F.Cu 1600))
+      (shape (circle B.Cu 1600))
+      (attach off)
+    )
+    (padstack PS_circle_1500_1500_1000
+      (shape (circle F.Cu 1500))
+      (shape (circle B.Cu 1500))
+      (attach off)
+    )
     (padstack Via600 (shape (circle F.Cu 600)) (shape (circle B.Cu 600)) (attach off))
   )
   (network
     (net "GND" (pins J1-2 J2-4 J3-1 J4-1 J5-3 U5-A1 U5-B0 U5-A14 U4-A1 C4-2 C1-2 U3-1 C2-2 C3-2 C7-2 R3-2 C10-2 C11-2 C5-2 C14-2 C17-2 C18-2 C21-2 C24-2 C25-2 U1-4 U2-4 C8-2 C9-2 R20-2 C26-2 C27-2 C28-2 C29-2 C30-2))
     (net "5VIN" (pins J1-1 L1-1))
-    (net "+5V" (pins L1-2 C27-1 C28-1 U5-A0 D1-1 R18-1))
+    (net "+5V" (pins L1-2 L1-3 C27-1 C28-1 U5-A0 D1-1 R18-1))
     (net "ESP5V" (pins D1-2 L2-1))
-    (net "ESP5VF" (pins L2-2 C29-1 C30-1 U4-A0))
+    (net "ESP5VF" (pins L2-2 L2-3 C29-1 C30-1 U4-A0))
     (net "5VF" (pins R18-2 C4-1 C1-1 U3-2))
     (net "+3V3A" (pins U3-3 C2-1 C3-1 J2-2 C5-1 R1-1))
     (net "+3V3OP" (pins R1-2 C7-1 R2-1 U1-8 U2-8 C8-1 C9-1))

@@ -13,8 +13,10 @@ v1.2 (Nov 2026) is the board to order. It is v1.1 with the two 5 V noise filters
   - Same size, holes, connectors and module positions: the v1.1 case fits, and the ESP32 now plugs in
     with ALL its pins (nothing to cut).
   - The new parts are up to 12 mm tall; there is about 20 mm under the lid.
-  Inductors: 22 uH, 1 A or more, round (drum) type up to 8.4 mm across with leads 5 mm apart, e.g. Wurth
-  744772220 (8.3 mm, 2.3 A). 470 uF: 10 V or more, 8 mm across, leads 3.5 mm apart (e.g. Nichicon
+  Inductors: 22 uH, 1 A or more, round (drum) type up to 8.4 mm across. L1 and L2 have THREE holes in a row:
+  the outer two are 5 mm apart (e.g. Wurth 744772220, 8.3 mm, 2.3 A); the left one and the MIDDLE one are
+  3.2 mm apart for the small drums (6.7 mm across, leads about 3.8 mm outside to outside). Use whichever pair
+  fits your inductor and leave the third hole empty (it is joined to its neighbour). 470 uF: 10 V or more, 8 mm across, leads 3.5 mm apart (e.g. Nichicon
   UKA1A471MPD1TD). Check yours fit those sizes before soldering.
   Building on a v1.1 board? Everything for v1.1 (Gerbers, pictures, the PCBA files and the source as it
   was) is kept in v1.1/, and the build guide still covers the v1.1 way of fitting the filters.

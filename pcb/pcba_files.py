@@ -41,7 +41,7 @@ LINES = [
     (["C27", "C29"], "470 uF", "Nichicon", "UKA1A471MPD1TD", "Aluminium electrolytic capacitor, 10 V, 8 x 11.5 mm", "Radial, 8 mm dia, 3.5 mm lead spacing",
      "POLARISED: + lead in the SQUARE pad. Equivalent OK: 10 V or more, 8 mm dia (no bigger), 3.5 mm leads"),
     (["L1", "L2"], "22 uH", "Wurth Elektronik", "744772220", "Inductor, radial drum core, 22 uH, 2.3 A, 8.3 mm dia", "Radial, 5 mm lead spacing",
-     "Not polarised. Equivalent OK: 22 uH, 1 A or more, 8.4 mm dia or less, 5 mm leads, 12 mm tall or less"),
+     "Not polarised. Use the two OUTER holes (5 mm apart); the middle hole stays empty. Equivalent OK: 22 uH, 1 A or more, 8.4 mm dia or less, 5 mm leads, 12 mm tall or less"),
     (["D1"], "1N5817", "onsemi", "1N5817RLG", "Schottky diode, 20 V, 1 A, DO-41", "Axial DO-41, 10.16 mm",
      "POLARISED: stripe (cathode) on the SQUARE pad (right-hand end, as drawn)"),
     (["U3"], "MCP1700-3302E/TO", "Microchip", "MCP1700-3302E/TO", "3.3 V LDO regulator", "TO-92",

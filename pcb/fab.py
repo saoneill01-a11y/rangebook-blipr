@@ -603,7 +603,7 @@ def bom(path):
             key = ("MCP6022-E/P op-amp + DIP-8 socket", "")
         else:
             kind = {"R": "Resistor 1/4 W", "C": "Capacitor", "D": "Schottky diode", "U": "Regulator",
-                    "L": "Inductor, radial drum, 1 A or more, up to 8.4 mm across, 5 mm lead spacing (e.g. Wurth 744772220)"}[ref[0]]
+                    "L": "Inductor, radial drum, 1 A or more, up to 8.4 mm across, leads 5 mm or 3.2 mm apart (three holes)"}[ref[0]]
             if ref[0] == "C" and p["fp"]["body"][0] == "circle" and p["fp"]["body"][1] >= 8:
                 kind = "Electrolytic capacitor, 10 V or more, 8 mm across, 3.5 mm lead spacing"
             elif ref[0] == "C" and p["fp"]["body"][0] == "circle":

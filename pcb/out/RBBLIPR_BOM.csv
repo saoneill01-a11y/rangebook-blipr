@@ -10,7 +10,7 @@ Qty,Part,References,Note
 2,"Header, 1x3 male (or solder wires straight in)",J1 J5,
 2,"No header: solder the wires straight in (radar J2, screen J3)",J2 J3,
 1,"Header, 1x4 FEMALE (the sensor cable ends in male pins; or solder its wires straight in)",J4,
-2,"Inductor, radial drum, 1 A or more, up to 8.4 mm across, 5 mm lead spacing (e.g. Wurth 744772220) 22uH",L1 L2,
+2,"Inductor, radial drum, 1 A or more, up to 8.4 mm across, leads 5 mm or 3.2 mm apart (three holes) 22uH",L1 L2,
 2,Resistor 1/4 W 330,R10 R17,
 2,Resistor 1/4 W 10,R1 R18,
 2,Resistor 1/4 W 100k,R19 R20,
