@@ -1,5 +1,5 @@
 """Builds docs/BLIPR Build Guide.docx (and the case pictures it uses, docs/img/case_*.png).
-Covers the circuit board build (v1.2, with the v1.1 steps kept), case v0.12, Teensy firmware 0.2.8 and ESP32 firmware 0.2.20,
+Covers the circuit board build (v1.2, with the v1.1 steps kept), case v0.12, Teensy firmware 0.2.9 and ESP32 firmware 0.2.20,
 with both 5 V filters and the direct-wired screen. docs/make_build_pdf.py turns it into the PDF. Needs: pip install python-docx pillow numpy matplotlib.
 Run from the repo root: python docs/make_build_doc.py"""
 import sys
@@ -262,10 +262,10 @@ def build():
          bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     para("Parts → Print → Flash and bench test → Solder → Check → Wire → Case → Range",
          bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
-    para("Status, Nov 26, 2026: built and tested live on .22 LR. 9 of 10 shots read on the first two strings, "
-         "averaging within about 1% of an Athlon chronograph with the same rifle and ammo.",
+    para("Status, Nov 27, 2026: built and tested live on .22 LR and .38 Special. Beside an Athlon chronograph on the "
+         "same shots (.38 Special, 20 shots) it read 19 of 20, each string averaging within about 3 fps of the Athlon.",
          size=11, align=WD_ALIGN_PARAGRAPH.CENTER)
-    para("Circuit board v1.2 (v1.1 notes kept) · Case v0.12 · Teensy firmware 0.2.8 · ESP32 firmware 0.2.20 · November 2026",
+    para("Circuit board v1.2 (v1.1 notes kept) · Case v0.12 · Teensy firmware 0.2.9 · ESP32 firmware 0.2.20 · November 2026",
          size=10, color=(90, 90, 90), align=WD_ALIGN_PARAGRAPH.CENTER)
     doc.add_page_break()
 
@@ -424,7 +424,7 @@ def build():
                                "It sits flush; there's no click."),
               ("Plug in ", "with the micro-USB data cable and load BliprTeensy. The first time, the Teensy Loader "
                            "may ask you to press the Teensy's white button."),
-              ("Check: ", "type stat: 0 overruns and SD ok, firmware 0.2.8."),
+              ("Check: ", "type stat: 0 overruns and SD ok, firmware 0.2.9."),
               ("Set the sample rate: ", "set fs=500000, then reboot (it's saved). The battery holder's converter whistles at about "
                                         "494 kHz; sampled at 500 kHz it reads near 100 fps, out of the way, instead "
                                         "of near 2,150 fps at the default 600 kHz.")])
@@ -654,20 +654,24 @@ def build():
     numbered([("Connect. ", "Range Book 2.44 or later: the Range Book app on iPhone and iPad (App Store), or Chrome on Android: Tools › BLIPR "
                             "Chronograph › Connect chronograph › RB BLIPR. Test shot should show 2,700 fps. Range Book "
                             "sets BLIPR's clock and units, and its settings show BLIPR's window and position."),
-              ("Set the window ", "a little wider than your load, in Range Book's settings (a button sets it from the "
+              ("Set the window ", "a little wider than your load, with the low end well below your slowest shot (BLIPR only hears "
+                                  "speeds inside the window), in Range Book's settings (a button sets it from the "
                                   "load) or on the Teensy: set vmin=950 vmax=1200 for .22 LR standard velocity."),
               ("Place it. ", "Beside the rifle, behind the muzzle, front window downrange and the screen corner nearest "
                              "you (about 1 o'clock from your seat), level and parallel to the bore. The first .22 tests "
                              "had it about 10 cm to the side and 10 cm behind the muzzle; for a rifle start further "
-                             "back, out of the blast (about 30 cm behind, 12 cm to the side). Enter where it sits in "
-                             "Range Book's settings."),
+                             "back, out of the blast (about 30 cm behind, 12 cm to the side). Measure where it sits "
+                             "(radar centre sideways to the bore, and back from the muzzle) and enter it in Range "
+                             "Book's settings: a 5 cm error moved the .38 tests about 3 fps. The best match came from "
+                             "a little less than the measured sideways distance (13 cm for 15 cm)."),
               ("Level it. ", "Shim it until the screen says LEVEL and hold 3 s. After each shot BLIPR checks it hasn't "
                              "been knocked (more than 1° tilt or 5° turn) and shows the level again if so. Re-level "
                              "and update the heading (Range Book) shows it any time; Disable the level is for "
                              "shooting at an angle."),
               ("One radar at a time. ", "Two 24 GHz radar chronographs side by side interfere: with an Athlon "
                                         "Rangecraft beside it, BLIPR saw a steady line near 1,700 fps. Use one at a "
-                                        "time or set them well apart."),
+                                        "time or set them well apart (on Nov 27 an Athlon on the same shots caused no "
+                                        "trouble: check with BLIPR armed and no shots)."),
               ("Shoot a string. ", "Compare with another chronograph if you have one: one session against it sets "
                                    "BLIPR's calibration (each radar differs by up to about 0.4%, around 10 fps at "
                                    "2,700 fps)."),

@@ -1,6 +1,6 @@
 # Firmware: setup and bench tests
 
-Today's goal is to load both programs, check that the Teensy measures a fake bullet correctly, and see shots arrive on your phone over Bluetooth. You don't need the radar, amplifier or battery for any of it. Do it before you cut the Teensy's VIN–VUSB trace (build guide Step 1): these tests run the Teensy from USB alone, and once the trace is cut it only runs when BLIPR is switched on. On a v1.1 board, do it before the ESP32's hand-wired 5 V filter too (build guide Step 4): after that, the computer only saw the ESP32 when it was out of BLIPR's socket. The current firmware is **Teensy 0.2.8** and **ESP32 0.2.20**, in the project's `firmware/` folder, with ready-made files in `firmware/prebuilt/`. Circuit boards v1.1 and v1.2 need 0.2.2 or later: the Teensy talks to the ESP32 on pins 34 and 35 (Serial8), not 0 and 1.
+Today's goal is to load both programs, check that the Teensy measures a fake bullet correctly, and see shots arrive on your phone over Bluetooth. You don't need the radar, amplifier or battery for any of it. Do it before you cut the Teensy's VIN–VUSB trace (build guide Step 1): these tests run the Teensy from USB alone, and once the trace is cut it only runs when BLIPR is switched on. On a v1.1 board, do it before the ESP32's hand-wired 5 V filter too (build guide Step 4): after that, the computer only saw the ESP32 when it was out of BLIPR's socket. The current firmware is **Teensy 0.2.9** and **ESP32 0.2.20**, in the project's `firmware/` folder, with ready-made files in `firmware/prebuilt/`. Circuit boards v1.1 and v1.2 need 0.2.2 or later: the Teensy talks to the ESP32 on pins 34 and 35 (Serial8), not 0 and 1.
 
 ## What you need
 
@@ -28,7 +28,7 @@ Today's goal is to load both programs, check that the Teensy measures a fake bul
 4. Open the Serial Monitor (magnifying glass, top right). Press the Teensy's button or replug it if the screen is blank. You should see:
 
 ```
-Range Book BLIPR, Teensy firmware 0.2.8
+Range Book BLIPR, Teensy firmware 0.2.9
 Sample rate 600000 Hz (asked for 600000). SD card found. Type 'help' for commands.
 ```
 
@@ -128,7 +128,7 @@ Type these in the Teensy's Serial Monitor (BLIPR switched on, USB plugged in). S
 | --- | --- |
 | `stat` | Status: armed, shots, overruns (should be 0), SD card |
 | `get` | Every setting: window, position, calibration, sample rate, trigger levels |
-| `set vmin=950 vmax=1200` | The velocity window, in fps. Keep it a little wider than your load |
+| `set vmin=950 vmax=1200` | The velocity window, in fps. Keep it a little wider than your load, the low end well below your slowest shot (BLIPR only hears speeds inside it) |
 | `set fs=500000` | Sample rate (500000 recommended; then reboot; `defaults` puts 600000 back) |
 | `set save=1` | Save every shot's raw recording to the SD card (for tuning) |
 | `live` / `live 114000` | Twice a second: noise, DC level, clipping and the strongest line; with a number, also the level at that frequency. `live` again stops it |
@@ -144,7 +144,9 @@ Type these in the Teensy's Serial Monitor (BLIPR switched on, USB plugged in). S
 
 ## Limits of this version
 
-- **Tested on .22 LR so far.** First live strings (Nov 26, 2026, Teensy 0.2.8): 9 of 10 shots read, average 1029 fps, against 1017 fps from an Athlon chronograph with the same rifle and ammo on another day (about 1% apart). Rifles haven't been tested yet.
+- **Tested on .22 LR and .38 Special so far.** .22 LR (Nov 26, 2026, Teensy 0.2.8): 9 of 10 shots read, average 1029 fps, about 1% from an Athlon chronograph with the same rifle and ammo on another day. .38 Special 158 gr handloads from a lever-action rifle (Nov 27), with an Athlon on the same shots: 19 of 20 read; the two strings averaged 3.1 fps below and 3.4 fps above the Athlon. Supersonic rifle ammo hasn't been tested yet.
+- **The window is also the trigger.** BLIPR only listens for speeds inside `vmin`–`vmax`, so a shot below the window isn't heard at all (a 733 fps .38 with the window starting at 800 never triggered). Set the low end well below your slowest shot.
+- **A pause after each shot.** From Teensy 0.2.9, BLIPR waits 1.5 s after a shot before it listens again (`set hold=<ms>` changes it until a restart). On 0.2.8 the ESP32 drawing the result on the screen could cause a false read near 1,135 fps about half a second after a shot.
 - **Calibration.** Each radar module's exact frequency varies a little from unit to unit, which can shift readings by up to about 0.4% (around 10 fps at 2,700 fps). A session beside a known chronograph sets the `cal` value.
 - **Interference.** The radar hears switching converters, the ESP32 and a lit screen. The two 5 V filters, `fs=500000`, the dark screen while listening and the firmware's rejection of steady lines deal with what the first build met; `live` and `rec` show anything new (build guide Troubleshooting).
 - **Saving.** Saving a shot to the card takes 0.3–3.6 s; whether a shot that arrives during a save is missed is still to check.

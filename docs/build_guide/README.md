@@ -1,7 +1,7 @@
 # BLIPR build guide (exported copy)
 
 A Markdown copy of the live build guide, exported Nov 26, 2026 (circuit board v1.2 with v1.1 notes, case v0.12, Teensy firmware
-0.2.8, ESP32 0.2.20). The export leaves out pictures; each one shows as a placeholder like `[image: …]`. The
+0.2.9, ESP32 0.2.20). The export leaves out pictures; each one shows as a placeholder like `[image: …]`. The
 pictures themselves are in this repo:
 
 - Wiring pictures, the two 5 V filters (`power_filter.png`, `esp_filter.png`) and the screen sequence

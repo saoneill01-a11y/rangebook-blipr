@@ -4,16 +4,17 @@
 the bench beside the rifle and sends each shot's muzzle velocity over Bluetooth to
 [Range Book](https://github.com/saoneill01-a11y/rangebook). Nothing goes downrange.
 
-**Status (Nov 26, 2026):** one unit built and tested live on .22 LR (CCI Standard Velocity). On its first two live
-strings it read 9 of 10 shots, averaging 1029 fps (SD 22); an Athlon chronograph with the same rifle and ammo
-averaged 1017 fps on another day, so the two agree within about 1%. Rifles haven't been tested yet. Expect changes
-as more real shots come in.
+**Status (Nov 27, 2026):** one unit built and tested live. On .22 LR (CCI Standard Velocity) its first two strings
+read 9 of 10 shots, averaging 1029 fps (SD 22), within about 1% of an Athlon chronograph with the same rifle and ammo
+on another day. Beside an Athlon on the same shots (.38 Special handloads from a lever-action rifle, 20 shots) it read
+19 of 20, each string averaging within about 3 fps of the Athlon. Supersonic rifle ammo hasn't been tested yet.
+Expect changes as more real shots come in.
 
 | | Version |
 |---|---|
 | Circuit board | v1.2 (the two 5 V noise filters on the board; v1.1 boards fit them in the wiring) |
 | Case | v0.12 |
-| Teensy firmware | 0.2.8 |
+| Teensy firmware | 0.2.9 |
 | ESP32 firmware | 0.2.20 (also delivered by Range Book over Bluetooth) |
 | Sensor kit (optional) | Adafruit SHT45 + DFRobot Gravity 10-DoF (BMI323 / BMM350 / BMP581) |
 
