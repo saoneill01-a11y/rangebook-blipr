@@ -342,7 +342,7 @@ def build():
            ("C28, C30", "1 µF ceramic", "v1.2: on the board. v1.1: beside C27 and C29")],
           [1.75, 2.35, 2.8], size=10)
 
-    doc.add_heading("Printed parts (PETG recommended)", 2)
+    doc.add_heading("Printed parts (ASA recommended)", 2)
     checkbox_list(["base.stl (case v0.12)",
                    "lid_oled.stl (or lid_sensors.stl with the sensor kit, or lid_plain.stl with no screen)",
                    "front_cover.stl, in natural, white or grey filament (never black or any filled filament: the "
@@ -386,16 +386,14 @@ def build():
     # ---------------------------------------------------------------- 3 print
     doc.add_heading("3. Print the case", 1)
     para("The case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and every part prints without supports.")
-    table([("Part", "Print it", "Settings"),
+    table([("Part", "Print it", "Settings (ASA)"),
            ("base", "Floor on the bed, open top up", "0.2 mm layers, 6 walls, 4 top/bottom layers, 25% gyroid. "
                                                      "Brim. Bridges are 34 mm or shorter"),
            ("lid_oled / lid_sensors / lid_plain", "Top face on the bed", "Same settings. Print one lid"),
            ("front_cover", "Smooth outside face on the bed", "0.15 mm layers, 100% infill. The window is 0.9 mm thick"),
            ("sensor_pod, sensor_pod_roof", "Pod upright; roof flat side down", "Same as the base")],
           [1.8, 2.1, 3.0], size=10.5)
-    tip("Filament: PETG is recommended for most people. ASA is best for strong sun, a hot car or a very hot climate; "
-        "it warps, so use an enclosure or a draft shield, a brim on the base and a bed around 100 °C. PLA is fine for a "
-        "test fit but softens in a hot car. The first BLIPR was printed in PLA.")
+    tip("ASA warps: use an enclosure or a draft shield and a bed around 100 °C.")
     picture(IMG / "case_base_above.png", 5.4, "Base v0.12 from above, front at the top. The battery bay is on the "
             "right of this view with its four round pads; the main board's four posts and the tripod post are on the left.")
     picture(IMG / "case_base_walls.png", 6.9, "The two side walls from outside. Left: the battery holder's USB-C "
