@@ -27,6 +27,16 @@
 - Cost of a second BLIPR for Sean (Oct 24): about $80-90 (radar ~$45, Teensy $35.50, filament and screws); he has
   spare boards, ESP32, OLED, battery holder, 18650, op-amps, regulator and passives. Sensor kit about $35 more.
 
+## Teensy updates over Bluetooth (decided: later; Nov 27, 2026)
+- For builders who need a Teensy update without a USB cable and Teensy Loader (today only the ESP32 updates by Bluetooth).
+- Path: Range Book sends the Teensy file to the ESP32 over Bluetooth (like the ESP32 OTA), the ESP32 passes it to the
+  Teensy over the existing serial link (GPIO20/21), and the Teensy writes it with FlasherX (Joe Pasquariello's
+  library): new program into spare flash, check it, then copy over the old one. ~145 KB, under a minute.
+- Risk: power lost during the final copy leaves BLIPR not starting; USB + Teensy Loader always recovers a Teensy
+  (its bootloader chip is separate), so USB stays the fallback.
+- Work: Teensy (FlasherX receive + check), ESP32 (relay), Range Book chrono (a "Teensy" entry in firmware.json and
+  the upload), bench tests including a pulled-power test mid-update.
+
 ## Other
 - Teensy firmware updates from Range Book (FlasherX via the ESP32 or from the SD card).
 - Standalone BLIPR web app (self-hosted PWA), then app-store builds (Capacitor) if others want one.
