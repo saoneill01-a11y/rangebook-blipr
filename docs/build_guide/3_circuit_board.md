@@ -10,7 +10,7 @@ It's worth it here: the amplifier is about 40 parts and 100 connections, and on 
 - The ESP32's filter is on the board: L2 (22 µH), C29 (470 µF) and C30 (1 µF) sit between D1 and the ESP32's 5V pin. Nothing is cut on the module.
 - To make room, R19–R22 and C26 moved up 2.5 mm and right 0.9 mm, and R23 and R24 now stand on end.
 - Same size, holes, connectors and module positions: the v0.12 case fits. The new parts are up to 12 mm tall, with about 20 mm under the lid.
-- Part sizes: inductors 22 µH, 1 A or more, round drum type up to 8.4 mm across with leads 5 mm apart (e.g. Würth 744772220). 470 µF: 10 V or more, 8 mm across, leads 3.5 mm apart (e.g. Nichicon UKA1A471MPD1TD). Check yours before soldering.
+- Part sizes: inductors 22 µH, 1 A or more, round drum type up to 8.4 mm across, leads 5 mm apart (e.g. Würth 744772220) or 3.2 mm apart (small 6.7 mm drums): L1 and L2 have three holes in a row. 470 µF: 10 V or more, 8 mm across, leads 3.5 mm apart (e.g. Nichicon UKA1A471MPD1TD). Check yours before soldering.
 
 **What changed in v1.1:**
 
@@ -31,14 +31,14 @@ JLCPCB, OSH Park and Aisler take the same zip.
 
 ## Where each part goes
 
-&#91;image: PCB v1.2 assembly drawing: L1, C27, C28 beside J1; L2, C29, C30 above the ESP32; R23 and R24 standing\]
+&#91;image: PCB v1.2 assembly drawing: L1, C27, C28 beside J1; L2, C29, C30 below them; L1 and L2 with three holes each; R23 and R24 standing\]
 
 The BOM in the zip (**RBBLIPR\_BOM.csv**) lists every part by reference. Solder in this order, lowest parts first:
 
 1. Resistors (colour bands on the Wiring pictures tab), then D1: stripe to the right, on the square pad. (D1 is a 1N5817; the bag may say "IN5817", the same part.) R23 and R24 are 1 kΩ and stand on end: bend one lead back down beside the body, with the body over the hole inside the drawn square.
 2. Ceramic capacitors (either way round, including C28 and C30), then the two 8-pin sockets, notch matching the drawing (pointing right).
 3. U3 (MCP1700): flat face toward the front edge, legs GND – IN – OUT left to right. Spread its outer legs a little to reach the holes.
-4. Electrolytic capacitors: + leg in the square pad. C3 (100 µF): 16 V or 25 V, no wider than 6.3 mm. C4, C7, C10 (10 µF): 25 V ones, smaller than 50 V. C27 and C29 (470 µF): 8 mm across. Then L1 and L2 (22 µH, either way round), pushed down flat.
+4. Electrolytic capacitors: + leg in the square pad. C3 (100 µF): 16 V or 25 V, no wider than 6.3 mm. C4, C7, C10 (10 µF): 25 V ones, smaller than 50 V. C27 and C29 (470 µF): 8 mm across. Then L1 and L2 (22 µH, either way round), pushed down flat. Each has three holes in a row: the two outer holes are 5 mm apart, and the left and middle holes 3.2 mm apart for small drums. Use whichever pair fits; the third hole stays empty.
 5. Headers J1 and J5 (or solder the wires straight in). Solder the wires straight into J2 (the radar, so nothing there can be plugged in backwards) and J3 (the screen: its wires are soldered to the OLED too, with no header, build guide Step 4), then the female headers for the Teensy (2 × 24) and ESP32 (2 × 8). Plug the modules in while soldering their headers so they come out straight. The Teensy sits on these 8.5 mm sockets, and the case's USB hole (v0.10 and later) is placed for that height. J4 (sensor kit) needs a female 1×4, since the sensor cable ends in male pins; J5 (ammo-probe jack) can stay empty.
 6. Battery holder to J1, red and black wires straight in (no switch: its button is on/off). Before soldering its wires, check its 5 V and GND pads with the meter: +5 V, not −5 V. Then the power test before the chips go in: 5 V at J1, 3.3 V at U3's OUT leg, about 1.65 V at the + leg of C10.
 7. Op-amps (each chip's dot beside the square pad), Teensy (VIN–VUSB trace cut first, after the Firmware tab's bench tests) and ESP32 in, all its pins; then the radar and OLED wires, as on the Wiring pictures tab.

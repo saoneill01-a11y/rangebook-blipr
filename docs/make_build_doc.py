@@ -329,8 +329,8 @@ def build():
            ("J3", "Wires soldered straight in", "Screen: soldered at the OLED end too, no header (a header plus "
                                                 "plug-on jumpers stands too tall under the lid)"),
            ("J4", "1x4 FEMALE header, or wires", "Sensor kit: the sensor cable ends in male pins"),
-           ("L1, L2", "22 µH inductor, 1 A or more", "v1.2: on the board; drum type up to 8.4 mm across, leads 5 mm apart "
-                                                     "(e.g. Würth 744772220). v1.1: in the holder's red wire and the ESP32's 5 V"),
+           ("L1, L2", "22 µH inductor, 1 A or more", "v1.2: on the board; drum type up to 8.4 mm across, leads 5 mm or 3.2 mm "
+                                                     "apart (three holes; e.g. Würth 744772220 or small 6.7 mm drums). v1.1: in the holder's red wire and the ESP32's 5 V"),
            ("C27, C29", "470 µF electrolytic, 10 V or more", "v1.2: on the board; 8 mm across, leads 3.5 mm apart (e.g. Nichicon "
                                                             "UKA1A471MPD1TD). v1.1: across J1, and across the ESP32's 5V and GND"),
            ("C28, C30", "1 µF ceramic", "v1.2: on the board. v1.1: beside C27 and C29")],
@@ -474,7 +474,9 @@ def build():
               ("Electrolytic capacitors. ", "The + leg (longer) goes in the square pad; the stripe on the can is the "
                                             "minus side. C3 (100 µF) is the small 16 V or 25 V one; C4, C7, C10 are "
                                             "10 µF 25 V. On v1.2 also C27 and C29 (470 µF, 8 mm across)."),
-              ("L1 and L2 (v1.2). ", "22 µH, either way round, pushed down flat. On a v1.1 board these and C27-C30 have no "
+              ("L1 and L2 (v1.2). ", "22 µH, either way round, pushed down flat. Each has three holes in a row: the two "
+                                     "outer holes are 5 mm apart, the left and middle 3.2 mm apart for small drums. Use "
+                                     "whichever pair fits; the third hole stays empty. On a v1.1 board these and C27-C30 have no "
                                      "holes: they go in the wires (sections 7 and 8)."),
               ("Headers. ", "J1 and J5 as headers or wires. J4 a FEMALE 1x4 header if you'll fit the sensor kit. "
                             "J2 (radar) and J3 (screen) get wires soldered straight in, never a plug."),

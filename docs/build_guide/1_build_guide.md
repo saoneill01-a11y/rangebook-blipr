@@ -78,7 +78,7 @@ The spreadsheet has prices and links; this table adds the reference names (R1, C
 | C12, C15, C19, C22 | 10 nF ceramic | 4 | Input coupling |
 | R23, R24 | 1 kΩ | 2 | new (v1.1): one in each serial line between the Teensy and ESP32 |
 | D1 | 1N5817 Schottky diode | 1 | ESP32's 5 V feed. The bag may say "IN5817": same part |
-| L1, L2 | 22 µH inductor, 1 A or more, through-hole | 2 | new (Nov 2026), either way round. Board v1.2: on the board; radial drum type up to 8.4 mm across, leads 5 mm apart (e.g. Würth 744772220). Board v1.1: off the board, L1 in the holder's red wire, L2 in the ESP32's 5 V feed |
+| L1, L2 | 22 µH inductor, 1 A or more, through-hole | 2 | new (Nov 2026), either way round. Board v1.2: on the board; radial drum type up to 8.4 mm across, leads 5 mm or 3.2 mm apart (three holes each; e.g. Würth 744772220, or small 6.7 mm drums). Board v1.1: off the board, L1 in the holder's red wire, L2 in the ESP32's 5 V feed |
 | C27, C29 | 470 µF electrolytic, 10 V or higher | 2 | new (Nov 2026), stripe to GND. Board v1.2: on the board, 8 mm across, leads 3.5 mm apart (e.g. Nichicon UKA1A471MPD1TD). Board v1.1: C27 across J1, C29 across the ESP32's 5V and GND |
 | C28, C30 | 1 µF ceramic | 2 | new (Nov 2026): beside C27 and C29 |
 | R25 | 10 kΩ | 1 | Soldered on the battery holder's + tab (battery gauge) |

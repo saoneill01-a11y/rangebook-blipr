@@ -30,14 +30,14 @@ add("v12_intro", "board", "Circuit board v1.2: what's different", [
 
 add("v12_parts", "board", "1. Six more parts on the board", [
     "One. Six more parts solder onto the board, in the top-left corner beside J1.",
-    "L1 and L2 are the twenty-two microhenry inductors. They go either way round. Use the round drum type, up to eight point four millimetres across, with legs five millimetres apart.",
+    "L1 and L2 are the twenty-two microhenry inductors, the round drum type, either way round. Each has three holes in a row: the outer two are five millimetres apart, and the left and middle ones three point two millimetres apart, for small drums. Use whichever pair fits.",
     "C27 and C29 are the four hundred and seventy microfarad capacitors: eight millimetres across, legs three and a half millimetres apart. The plus leg goes in the square pad, like every electrolytic.",
     "C28 and C30 are one microfarad ceramics, either way round. Solder the capacitors with the other electrolytics, then the two inductors, pushed down flat.",
 ], visual=image_view(PCB + "pcb_assembly.png", cams=[(0, FILTERS), (1, (130, 500, 380, 420)), (2, (300, 500, 220, 420)), (3, FILTERS)],
                      overlays=[{"at": 1, "kind": "ring", "xy": (236, 615), "r": 70}, {"at": 1, "kind": "ring", "xy": (236, 786), "r": 70, "delay": 0.3},
                                {"at": 2, "kind": "ring", "xy": (393, 610), "r": 70}, {"at": 2, "kind": "ring", "xy": (393, 786), "r": 70, "delay": 0.3},
                                {"at": 3, "kind": "ring", "xy": (236, 897), "r": 34}, {"at": 3, "kind": "ring", "xy": (395, 897), "r": 34, "delay": 0.3}]),
-    notes=[(1, "L1, L2: 22 µH, either way round"), (1, "Drum type ≤ 8.4 mm, legs 5 mm apart"), (2, "C27, C29: 470 µF, 8 mm, legs 3.5 mm"),
+    notes=[(1, "L1, L2: 22 µH, either way round"), (1, "Three holes: legs 5 mm or 3.2 mm apart"), (2, "C27, C29: 470 µF, 8 mm, legs 3.5 mm"),
            (2, "*+ leg in the square pad"), (3, "C28, C30: 1 µF ceramic"), (3, "Inductors last, pushed down flat")],
     pause=6, do="Pause and fit the six filter parts")
 
