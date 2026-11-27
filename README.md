@@ -28,8 +28,8 @@ as more real shots come in.
   [docs/build_guide/](docs/build_guide/).
 - **Parts list with prices:** [docs/RB_BLIPR_Parts_List.xlsx](docs/RB_BLIPR_Parts_List.xlsx); the board's own list is
   `pcb/out/RBBLIPR_BOM.csv`.
-- **Assembly video:** a narrated, step-by-step build on circuit board v1.2 (about 38 minutes), coming to YouTube soon. Chapters and
-  how it's made: [tools/video/README.md](tools/video/README.md).
+- **Assembly video:** [watch on YouTube](https://youtu.be/nRWELvyEKN8): a narrated, step-by-step build on circuit board v1.2
+  (about 39 minutes). How it's made: [tools/video/README.md](tools/video/README.md).
 - **Circuit board:** upload `pcb/out/RBBLIPR_PCB_v1.2_gerbers.zip` to PCBWay (or JLCPCB, OSH Park, Aisler) with the
   standard settings; `pcb/README.txt` has the details and the soldering order.
 - **Firmware:** ready-made files in `firmware/prebuilt/`; source and the change history in `firmware/`.
