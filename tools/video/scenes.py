@@ -710,8 +710,8 @@ add("case_inserts", "case", "Heat-set inserts", [
 ], visual=switch([(0, seq_view("baseonly", [(0, 0, 0, 0, 0)], overlays=[
     {"at": 1, "kind": "ring", "xy": (225, 435), "r": 22, "delay": 0.0}, {"at": 1, "kind": "ring", "xy": (564, 665), "r": 22, "delay": 0.2}, {"at": 1, "kind": "ring", "xy": (706, 236), "r": 22, "delay": 0.5}, {"at": 1, "kind": "ring", "xy": (1044, 466), "r": 22, "delay": 0.8}, {"at": 1, "kind": "tag", "xy": (60, 120), "text": "corner columns", "delay": 0.2}])),
     (2, drawing(lambda ctx, c, x, y, w, h: DG.compare(ctx, c, x, y, w, h, DG.insert_section(True), DG.insert_section(False), line=2, line2=3))),
-    (4, image_view(CASE + "preview_base_bottom.png", overlays=[{"at": 4, "kind": "ring", "xy": (382, 460), "r": 40, "delay": 0.5},
-                                                              {"at": 4, "kind": "tag", "xy": (330, 420), "text": "1/4-20 tripod insert", "delay": 0.8, "anchor": "r"}]))]),
+    (4, image_view(CASE + "preview_base_bottom.png", overlays=[{"at": 4, "kind": "ring", "xy": (310, 307), "r": 40, "delay": 0.5},
+                                                              {"at": 4, "kind": "tag", "xy": (262, 300), "text": "1/4-20 tripod insert", "delay": 0.8, "anchor": "r"}]))]),
     notes=[(1, "8 × M3: corners + board posts"), (1, "Holes 4.1 mm wide, 7.5 mm deep"), (3, "*Straight, a hair below the top"), (4, "Let each cool"),
            (4, "1/4-20 under the floor (tripod)")], pause=6, do="Pause and set the inserts")
 
@@ -771,10 +771,10 @@ add("case_screen", "case", "Screen into the lid", [
     "The screen goes into the pocket under the lid's window, its four wires already soldered on, pointing toward the board.",
     "Screw it to the four corner pads with the tiny M2 by four screws. Snug only. The holes are plastic.",
     "Under the lid you can also see the rib that presses on the radar's foam.",
-], visual=image_view(CASE + "preview_lid_sensors_under.png", overlays=[{"at": 1, "kind": "box", "xywh": (395, 452, 135, 85)},
-                                                                     {"at": 1, "kind": "tag", "xy": (540, 520), "text": "screen pocket, 4 pads", "delay": 0.4},
-                                                                     {"at": 2, "kind": "ring", "xy": (599, 249), "r": 40},
-                                                                     {"at": 2, "kind": "tag", "xy": (650, 200), "text": "radar hold-down rib", "delay": 0.4}]),
+], visual=image_view(CASE + "preview_lid_sensors_under.png", overlays=[{"at": 1, "kind": "box", "xywh": (298, 340, 112, 72)},
+                                                                     {"at": 1, "kind": "tag", "xy": (355, 440), "text": "screen pocket, 4 pads", "anchor": "c", "delay": 0.4},
+                                                                     {"at": 2, "kind": "ring", "xy": (459, 217), "r": 34},
+                                                                     {"at": 2, "kind": "tag", "xy": (459, 172), "text": "radar hold-down rib", "anchor": "c", "delay": 0.4}]),
     notes=[(1, "4 × M2×4, snug only"), (2, "The rib presses the radar's top foam")], pause=4, do="Pause and fit the screen")
 
 add("case_lid", "case", "Close the lid", [

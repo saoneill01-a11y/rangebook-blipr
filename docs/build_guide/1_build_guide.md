@@ -310,7 +310,7 @@ Passing all three checkpoints means the hardware is ready for test firmware.
 
 The v0.12 case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and prints in four parts with no supports (six with the sensor pod and its roof).
 
-&#91;image: The base from the front (radar window), from the rear, and from above\]
+&#91;image: The base v0.12 from the front (radar window), from the rear, and from above\]
 
 &#91;image: Base v0.8: the battery holder's four pads and the tripod post; the left wall's USB-C hole and 14 × 10 mm button slot\]
 
@@ -328,9 +328,9 @@ The v0.12 case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and prints in
 
 ASA warps, so use an enclosure or a draft shield, a brim on the base, and a bed around 100 °C.
 
-&#91;image: Lid with OLED window, and its underside: screen pocket with four M2 screw pads\]
+&#91;image: Lid v0.12 with the 13 mm screen window, and its underside: screen pocket with four M2 screw pads\]
 
-&#91;image: lid\_sensors underside: screen screw pads and the radar hold-down rib\]
+&#91;image: lid\_sensors v0.12 underside: screen screw pads and the radar hold-down rib\]
 
 **Assembly order**
 

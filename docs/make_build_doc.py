@@ -393,6 +393,8 @@ def build():
     picture(IMG / "case_base_walls.png", 6.9, "The two side walls from outside. Left: the battery holder's USB-C "
             "charge hole and the 14 × 10 mm power-button slot. Right: the Teensy's USB hole, 24-32 mm up, which "
             "matches the Teensy sitting on its 8.5 mm sockets (a 12 × 5.5 mm plug fits).")
+    picture(CASE / "preview_lid.png", 6.4, "Lid v0.12 from above and below: the 13 mm screen window, and the screen pocket with "
+            "its four M2 pads underneath. lid_sensors is the same with the sensor pod's two risers and cable slot.")
     rich(("What changed in v0.10 to v0.12: ", True), "the Teensy USB hole moved up to 24-32 mm (it had been too "
          "low for the socketed Teensy), the leftover stubs beside the two left battery pads are gone, and the lid's "
          "screen window is 13 mm tall (1 mm more toward the front, so the screen's top line shows).")
