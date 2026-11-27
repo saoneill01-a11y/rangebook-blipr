@@ -1,4 +1,4 @@
-# Range Book BLIPR firmware (ESP32 0.2.20, Teensy 0.2.8)
+# Range Book BLIPR firmware (ESP32 0.2.20, Teensy 0.2.9)
 
 Firmware for Range Book BLIPR (Ballistic Launch Inspection Portable Radar), the DIY radar chronograph. Step-by-step setup and the bench tests are in the
 build guide's **Firmware** tab; this file is the quick reference.
@@ -50,12 +50,20 @@ Type these in the Teensy's Serial Monitor (or send them over Bluetooth, see PROT
 - `set cal=0`: calibration in parts per million (+1000 reads 0.1 % faster)
 - `set band=15`: in-band trigger level (dB; `band=0` = the old whole-block trigger at `trig`); `set qc=11` quick check,
   `set fade=6` interference check (both dB, 0 = off, not saved)
+- `set hold=1500`: ms after a shot before the next trigger (not saved)
 - Settings outside sensible ranges are refused (for example `vmin` and `vmax` 100 to 5,500 fps with `vmin` below `vmax`, `f0` 23.9 to 24.4 GHz)
 - `arm` / `disarm`, `live`, `rec`, `sim 2800`, `test`, `defaults`, `reboot`
 - `drive` / `drive off`: USB drive mode (below; it turns on by itself when you plug into a computer)
 - `time 1792480000`: set the clock (Range Book does this every time it connects), so raw recordings have the date and time
 
 ESP32-only commands: `STATUS`, `SYNC n`, `STRING`, `UNITS fps|mps`, `BATV 3.97`, `BRIGHT 0-4`, `THEME 0-3`, `INVERT 0|1`, `FLIP 0|1`, `QUIET 0|1`, `ANIM 0|1`, `LEVEL` / `LEVEL OFF`, `COMPASS CAL START|STOP`, `COMPASS MATCH deg`, `COMPASS OFFSET deg`, `COMPASS REVERSE 0|1`, `COMPASS ROT 0|90|180|270`.
+
+## What changed in Teensy 0.2.9 (Nov 27, from the .38 Special string with the Athlon)
+
+- After each shot BLIPR now waits 1.5 s before it can trigger again (was 0.25 s). On Nov 27 two false shots at
+  ~1135 fps came ~0.5 s after re-arming, both times while the ESP32 was drawing the shot on its screen (the old
+  +55.7 kHz I2C line, `recordings-kept/2026-11-27_38spl_athlon/` s01062, s01066). `set hold=<ms>` changes it
+  (0-10000, not saved; back to 1500 after a restart). The velocity code (`radar_dsp.cpp`) is unchanged.
 
 ## What changed in Teensy 0.2.8 (Nov 26, from the first real .22 echoes)
 

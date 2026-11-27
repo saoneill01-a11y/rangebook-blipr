@@ -167,8 +167,8 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      the expected speed. Window 600-1200 after that: 9 of 10 read, **-3.1 fps avg vs the Athlon (SD 4.0, -8.9 to +3.3)**,
      so `cal` stays 0 for now (the .22's +17 was against a different day). 1 shot "noisy" (accel +252, s01063).
      2 false reads ~1135 fps ~0.8 s after a shot (s01062, s01066: +55.7 kHz line, the old ESP32 I2C line): the ESP32
-     drawing the shot result while the Teensy is re-armed. Fix next: Teensy ignores triggers for ~1.5 s after a shot
-     (or the ESP32 tells it when the screen is busy).
+     drawing the shot result while the Teensy is re-armed. **Teensy 0.2.9 flashed Nov 27:** no trigger for 1.5 s after a
+     capture (was 0.25 s; `set hold=<ms>`, not saved). Not live-fire tested yet: check the false reads are gone.
   1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
   1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,
      GPIO20 = RX from the Teensy, GPIO21 = TX to the Teensy; display/sensors not needed for the test), armed, no shots,

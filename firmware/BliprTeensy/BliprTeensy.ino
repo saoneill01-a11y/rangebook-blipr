@@ -30,7 +30,7 @@
 #endif
 #include "radar_dsp.h"
 
-#define FW_VERSION "0.2.8"
+#define FW_VERSION "0.2.9"
 
 // ---------------- pins and sizes ----------------
 static const int PIN_I = A0;      // pin 14
@@ -136,6 +136,8 @@ static uint32_t trigBlk = 0;         // block where the shot started
 static int trigIdx = 0;              // sample within that block
 static uint32_t armedAtBlk = 0;
 static uint32_t holdoffUntil = 0;
+static uint32_t holdMs = 1500;      // "set hold=": no new trigger for this long after a capture (ms). The ESP32 drawing the
+                                     // shot on its screen made ~1135 fps false shots ~0.5 s after re-arming (Nov 27); was 250. Not saved.
 static uint32_t rejects = 0;         // triggers the quick check dropped
 static float qcDb = 0.0f;            // "set qc=": the quick check's line threshold (dB); 0 = off (default since 0.2.8: a .22 sets the
                                      // in-band trigger off late, and the check, looking only after it, dropped 2 of 5 real shots). Not saved.
@@ -448,7 +450,7 @@ static void processCapture() {
   abI.clearInterrupt();
   abQ.clearInterrupt();
   lastIntI = lastIntQ = 0;
-  holdoffUntil = millis() + 250;
+  holdoffUntil = millis() + holdMs;
   state = LISTEN;
   digitalWriteFast(PIN_LED, LOW);
 }
@@ -488,6 +490,7 @@ static bool setKey(const char* k, float v) {
   else if (!strcmp(k, "cal")) { if (!in(-50000, 50000)) return false; }
   else if (!strcmp(k, "f0")) { if (!in(23.9e9f, 24.4e9f)) return false; }
   else if (!strcmp(k, "snr") || !strcmp(k, "trig") || !strcmp(k, "qc") || !strcmp(k, "band") || !strcmp(k, "fade")) { if (!in(0, 60)) return false; }
+  else if (!strcmp(k, "hold")) { if (!in(0, 10000)) return false; }
   else if (!strcmp(k, "fs")) { if (!in(100000, 1000000)) return false; }
   if (!strcmp(k, "vmin")) cfg.vminFps = v;
   else if (!strcmp(k, "vmax")) cfg.vmaxFps = v;
@@ -500,6 +503,7 @@ static bool setKey(const char* k, float v) {
   else if (!strcmp(k, "qc")) qcDb = v;
   else if (!strcmp(k, "band")) cfg.bandDb = v;
   else if (!strcmp(k, "fade")) fadeDb = v;
+  else if (!strcmp(k, "hold")) holdMs = (uint32_t)v;
   else if (!strcmp(k, "save")) cfg.saveRaw = v != 0;
   else if (!strcmp(k, "arm")) cfg.armed = v != 0;
   else if (!strcmp(k, "fs")) cfg.fsReq = (uint32_t)v;
@@ -516,6 +520,7 @@ static void printHelp() {
     "                    keys: vmin vmax (fps), lat behind (m), cal (ppm), snr trig (dB),\n"
     "                          save (0/1), arm (0/1), fs (Hz, needs restart), f0 (Hz),\n"
     "                          band (in-band trigger dB, 0 = old trigger), qc fade (dB, 0 = off; not saved)\n"
+    "                          hold (ms with no new trigger after a shot, default 1500; not saved)\n"
     "  arm / disarm      listen for shots, or not\n"
     "  live              toggle a twice-a-second readout of the radar signal\n"
     "  live <Hz>         the same, with the strength of a tone at <Hz> (interference hunting)\n"
