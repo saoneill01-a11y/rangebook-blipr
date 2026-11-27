@@ -1,6 +1,6 @@
 """Builds docs/BLIPR Build Guide.docx (and the case pictures it uses, docs/img/case_*.png).
-Same layout as the NO-SNITCH and NOT-ASS guides. Covers the circuit board (v1.1) build, case v0.11,
-Teensy firmware 0.2.2 and ESP32 firmware 0.2.3. Needs: pip install python-docx pillow numpy matplotlib.
+Covers the circuit board (v1.1) build, case v0.12, Teensy firmware 0.2.8 and ESP32 firmware 0.2.20,
+with both 5 V filters and the direct-wired screen. docs/make_build_pdf.py turns it into the PDF. Needs: pip install python-docx pillow numpy matplotlib.
 Run from the repo root: python docs/make_build_doc.py"""
 import sys
 from pathlib import Path
@@ -242,7 +242,8 @@ def build():
     para("Ballistic Launch Inspection Portable Radar", size=13, align=WD_ALIGN_PARAGRAPH.CENTER, space=2)
     para("Build guide: a bench-side radar chronograph for Range Book", bold=True, size=16,
          align=WD_ALIGN_PARAGRAPH.CENTER, space=14)
-    picture(CASE / "assembly_from_your_seat.png", 5.2)
+    hero = IMG / "hero.png"
+    picture(hero if hero.exists() else CASE / "assembly_from_your_seat.png", 6.0 if hero.exists() else 5.2)
     para("A 24 GHz Doppler radar chronograph that sits on the bench beside the rifle and sends each shot's muzzle "
          "velocity over Bluetooth to Range Book. Nothing goes downrange. This guide covers everything: parts, "
          "printing the case, loading and bench-testing the firmware, soldering the circuit board, wiring, the "
@@ -250,7 +251,10 @@ def build():
          align=WD_ALIGN_PARAGRAPH.CENTER)
     para("Parts → Print → Flash and bench test → Solder → Check → Wire → Case → Range",
          bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
-    para("Circuit board v1.1 · Case v0.11 · Teensy firmware 0.2.2 · ESP32 firmware 0.2.3 · November 2026",
+    para("Status, Nov 26, 2026: built and tested live on .22 LR. 9 of 10 shots read on the first two strings, "
+         "averaging within about 1% of an Athlon chronograph with the same rifle and ammo.",
+         size=11, align=WD_ALIGN_PARAGRAPH.CENTER)
+    para("Circuit board v1.1 · Case v0.12 · Teensy firmware 0.2.8 · ESP32 firmware 0.2.20 · November 2026",
          size=10, color=(90, 90, 90), align=WD_ALIGN_PARAGRAPH.CENTER)
     doc.add_page_break()
 
@@ -258,7 +262,7 @@ def build():
     doc.add_heading("How it works", 1)
     para("The RFbeam K-LC5 radar sends out a 24 GHz signal and gives back two very weak signals, called I and Q, "
          "whose pitch rises with the bullet's speed: about 161 Hz per m/s, so roughly 150 kHz for a 3,000 fps "
-         "bullet. A two-stage amplifier boosts each one about 500 times. The Teensy 4.1 samples both 600,000 "
+         "bullet. A two-stage amplifier boosts each one about 500 times. The Teensy 4.1 samples both 500,000 "
          "times a second, finds the shot, measures its pitch and works out the velocity, and saves a raw "
          "recording of every shot to its SD card. The ESP32-C3 shows the speed on the small screen and sends it to "
          "your phone over Bluetooth.")
@@ -268,6 +272,10 @@ def build():
          "on and off (there's no separate switch). 5 V feeds the Teensy, the ESP32 through diode D1, and a separate "
          "low-noise 3.3 V regulator (U3) that powers only the radar and the amplifiers. That keeps digital noise "
          "out of the weakest signals in the build.")
+    rich(("Two 5 V filters. ", True), "The radar hears more than bullets. The battery holder's boost converter "
+         "whistles at about 494 kHz, and the ESP32's Bluetooth radio draws its current in bursts. Both reached the "
+         "radar through the shared 5 V, so each gets a small filter in its wires: L1 (22 µH) with C27 and C28 at the "
+         "holder, and L2 (22 µH) with C29 and C30 at the ESP32. The board's copper is unchanged.")
     doc.add_page_break()
 
     # ---------------------------------------------------------------- 1 parts
@@ -275,10 +283,11 @@ def build():
     doc.add_heading("Modules", 2)
     checkbox_list(["RFbeam K-LC5-RFB-00C radar (the 3.3 V version: don't substitute another suffix)",
                    "Teensy 4.1 with pins",
-                   "ESP32-C3 SuperMini (spares are handy)",
+                   "ESP32-C3 SuperMini (buy a pack: a spare is worth having)",
                    "18650 battery holder with 5 V output and its own power button, plus a name-brand 18650 cell",
-                   "0.96\" SSD1306 I2C OLED screen (the white version reads best)",
-                   "microSD card, 8 to 32 GB, name brand, marked A1 or Class 10, formatted FAT32 or exFAT",
+                   "0.96\" SSD1306 I2C OLED screen, 4-pin (white reads best). It gets soldered wires, no header",
+                   "microSD card, name brand, A1, FAT32 or exFAT. A 32 GB A1 card worked; an 8 GB card that had been in another "
+                   "device wasn't read",
                    "RB BLIPR circuit board v1.1 (from PCBWay)",
                    "A micro-USB DATA cable (Teensy) and a USB-C DATA cable (ESP32). Many cables only charge: "
                    "if the computer doesn't see the board, try another cable first"])
@@ -310,13 +319,16 @@ def build():
            ("ESP32 socket", "2 × 1x8 female header", ""),
            ("J1, J5", "1x3 header, or wires soldered straight in", "J1 battery, J5 ammo-probe jack (optional, can stay empty)"),
            ("J2", "Wires soldered straight in", "Radar: never a plug here"),
-           ("J3", "1x4 header or wires", "OLED"),
-           ("J4", "1x4 FEMALE header, or wires", "Sensor kit. The board's list says male, but the sensor cable ends in "
-                                                "male pins, so fit a female header")],
+           ("J3", "Wires soldered straight in", "Screen: soldered at the OLED end too, no header (a header plus "
+                                                "plug-on jumpers stands too tall under the lid)"),
+           ("J4", "1x4 FEMALE header, or wires", "Sensor kit: the sensor cable ends in male pins"),
+           ("L1, L2", "22 µH inductor, 1 A or more", "Off the board: L1 in the holder's red wire, L2 in the ESP32's 5 V"),
+           ("C27, C29", "470 µF electrolytic, 10 V or more", "Off the board: across J1, and across the ESP32's 5V and GND"),
+           ("C28, C30", "1 µF ceramic", "Off the board, beside C27 and C29")],
           [1.75, 2.35, 2.8], size=10)
 
     doc.add_heading("Printed parts (ASA recommended)", 2)
-    checkbox_list(["base.stl (case v0.11)",
+    checkbox_list(["base.stl (case v0.12)",
                    "lid_oled.stl (or lid_sensors.stl with the sensor kit, or lid_plain.stl with no screen)",
                    "front_cover.stl, in natural, white or grey filament (never black or any filled filament: the "
                    "radar looks through it)",
@@ -367,13 +379,14 @@ def build():
            ("sensor_pod, sensor_pod_roof", "Pod upright; roof flat side down", "Same as the base")],
           [1.8, 2.1, 3.0], size=10.5)
     tip("ASA warps: use an enclosure or a draft shield and a bed around 100 °C.")
-    picture(IMG / "case_base_above.png", 5.4, "Base v0.11 from above, front at the top. The battery bay is on the "
+    picture(IMG / "case_base_above.png", 5.4, "Base v0.12 from above, front at the top. The battery bay is on the "
             "right of this view with its four round pads; the main board's four posts and the tripod post are on the left.")
     picture(IMG / "case_base_walls.png", 6.9, "The two side walls from outside. Left: the battery holder's USB-C "
             "charge hole and the 14 × 10 mm power-button slot. Right: the Teensy's USB hole, 24-32 mm up, which "
             "matches the Teensy sitting on its 8.5 mm sockets (a 12 × 5.5 mm plug fits).")
-    rich(("What changed in v0.10 and v0.11: ", True), "the Teensy USB hole moved up to 24-32 mm (it had been too "
-         "low for the socketed Teensy), and the leftover stubs beside the two left battery pads are gone.")
+    rich(("What changed in v0.10 to v0.12: ", True), "the Teensy USB hole moved up to 24-32 mm (it had been too "
+         "low for the socketed Teensy), the leftover stubs beside the two left battery pads are gone, and the lid's "
+         "screen window is 13 mm tall (1 mm more toward the front, so the screen's top line shows).")
     doc.add_page_break()
 
     # ---------------------------------------------------------------- 4 firmware
@@ -381,7 +394,7 @@ def build():
     para("Do this before any soldering, with each board loose on the bench and powered from the computer's USB. "
          "It proves the Teensy measures a shot and the ESP32 sends it to your phone, with no radar, amplifier or "
          "battery involved. It also has to happen before you cut the Teensy's VIN-VUSB trace in section 5.")
-    rich(("With Claude Code: ", True), "plug the board in and say so; Claude Code builds the firmware, finds the "
+    rich(("With Claude Code (optional): ", True), "plug the board in and say so; Claude Code builds the firmware, finds the "
          "board, flashes it and runs the checks below. The build settings and port names are in the project's "
          "CLAUDE.md.")
     rich(("By hand: ", True), "Arduino IDE 2 with the Teensy and esp32 (3.3.x) board packages and the libraries "
@@ -393,7 +406,10 @@ def build():
                                "It sits flush; there's no click."),
               ("Plug in ", "with the micro-USB data cable and load BliprTeensy. The first time, the Teensy Loader "
                            "may ask you to press the Teensy's white button."),
-              ("Check: ", "the status should show 0 overruns and SD ok, firmware 0.2.2.")])
+              ("Check: ", "type stat: 0 overruns and SD ok, firmware 0.2.8."),
+              ("Set the sample rate: ", "set fs=500000 (saved). The battery holder's converter whistles at about "
+                                        "494 kHz; sampled at 500 kHz it reads near 100 fps, out of the way, instead "
+                                        "of near 2,150 fps at the default 600 kHz.")])
     tip("If it says SD missing, unplug, re-seat the card and plug in again (it only looks for the card at start-up). "
         "Still missing: try another card. An 8 GB card that had been in another device wasn't read; a 32 GB A1 "
         "card worked straight away.")
@@ -414,6 +430,8 @@ def build():
                            "the red LED is on, the cable is charge-only: swap it. If the upload won't connect, hold "
                            "BOOT, tap RESET, let go of BOOT."),
               ("Check on your phone: ", "Bluefy (iPhone) or nRF Connect should list RB BLIPR and connect to it.")])
+    tip("Load the ESP32 over USB now (firmware 0.2.20). Once its 5 V filter is fitted (section 8), the computer sees "
+        "it only when it's out of BLIPR's socket, and Range Book updates it over Bluetooth from then on.")
 
     doc.add_heading("d. The two boards together", 2)
     para("Leave both on their own USB cables and add three wires. Don't join 5 V or VIN between them.", space=4)
@@ -445,8 +463,8 @@ def build():
               ("Electrolytic capacitors. ", "The + leg (longer) goes in the square pad; the stripe on the can is the "
                                             "minus side. C3 (100 µF) is the small 16 V or 25 V one; C4, C7, C10 are "
                                             "10 µF 25 V."),
-              ("Headers. ", "J1, J3 and J5 as headers or wires. J4 a FEMALE 1x4 header if you'll fit the sensor kit. "
-                            "J2 (radar) gets wires soldered straight in, never a plug."),
+              ("Headers. ", "J1 and J5 as headers or wires. J4 a FEMALE 1x4 header if you'll fit the sensor kit. "
+                            "J2 (radar) and J3 (screen) get wires soldered straight in, never a plug."),
               ("Teensy and ESP32 sockets. ", "Plug each module into its female headers, set it in place and solder "
                                              "the headers with the module in them, so they come out straight. Then "
                                              "lift the modules out again."),
@@ -474,13 +492,17 @@ def build():
     numbered([("Check the holder first. ", "Cell in, holder on: red probe on its 5 V pad, black on GND must read "
                                            "about +5 V, not -5 V. Nothing on the board protects against those two "
                                            "swapped. Then take the cell out."),
-              ("Wire it. ", "Holder 5 V to J1 +5V, holder GND to J1 GND (use its solder pads, not the USB-A socket). "
-                            "Set the holder's mode switch to \"power on\"."),
+              ("Wire it. ", "Holder 5 V through L1 (22 µH, either way round) to J1 +5V, holder GND to J1 GND (use its "
+                            "solder pads, not the USB-A socket). Set the holder's mode switch to \"power on\"."),
+              ("Filter capacitors. ", "C27 (470 µF, stripe to GND) and C28 (1 µF) across J1's +5V and GND, on the "
+                                      "board side of L1, as close to J1 as you can. Keep the red and black wires side "
+                                      "by side and heat-shrink every joint."),
               ("Battery gauge. ", "With the cell out, tin the holder's + end tab and quickly solder one leg of R25 "
                                   "(10 kΩ) straight onto it. Heat-shrink it, solder a wire (orange) to its other leg "
                                   "and run that to J1 BAT. A nicked wire then can't short the cell. About 10 cm of "
                                   "wire reaches the board."),
               ("Leave out ", "the op-amps, Teensy, ESP32 and radar for now.")])
+    picture(PICS / "power_filter.png", 6.4, "The battery holder's 5 V filter: L1 in the red wire, C27 and C28 across J1.")
     doc.add_heading("Checkpoint 1: power (meter on DC volts, black probe on GND)", 2)
     para("Cell in, press the holder's button.", space=4)
     check([("J1 +5V", "4.9-5.2 V", "Holder off (press its button) or cell flat"),
@@ -511,9 +533,22 @@ def build():
               ("Solder them straight into J2 ", "(Q, VCC, I, GND as printed). Keep the bundle away from the ESP32.")])
     picture(PICS / "04_teensy.png", 5.6, "The Teensy's pins this build uses. It plugs into its sockets with its USB "
             "toward the right wall.")
-    rich(("OLED. ", True), "VCC to the ESP32's 3V3, GND to GND, SDA to GPIO6, SCL to GPIO7 (through J3). Go by the "
-         "labels on your screen, since makers order them differently. Use 15 cm wires and solder them straight to "
-         "the screen's pads: it sits 5 mm above the Teensy, so a straight header won't fit.")
+    rich(("Screen (OLED), wired directly. ", True), "VCC to the ESP32's 3V3, GND to GND, SDA to GPIO6, SCL to GPIO7, "
+         "through J3. Go by the labels on your screen, since makers order them differently. Solder four 15 cm wires "
+         "straight to the screen's pads and straight into J3: no header and no plug-on jumpers. If your screen came "
+         "with header pins fitted, unsolder or clip them off first. It sits in the lid about 5 mm above the Teensy, "
+         "and a header plus Dupont plugs stands too tall to fit.")
+    doc.add_heading("The ESP32's 5 V filter", 2)
+    picture(PICS / "esp_filter.png", 6.6)
+    numbered([("Firmware first. ", "Load the ESP32 over USB (section 4) before this step."),
+              ("Cut its 5V pin. ", "Module out of BLIPR, cut its 5V pin off under the black plastic with flush cutters, "
+                                   "holding the module flat. Don't lever it: the first build's module got an "
+                                   "intermittent USB joint here. Nothing on the board is cut."),
+              ("L2 (22 µH). ", "From the socket's empty 5V hole (solder a short header pin to L2 and push it in) or from "
+                              "D1's leg on the square-pad side, to the pin's stub on top of the module."),
+              ("C29 and C30. ", "470 µF (stripe to GND) and 1 µF across the module's 5V stub and its GND pin, close in. "
+                                "Lay L2 and C29 flat so the lid clears them."),
+              ("Beep test. ", "The 5V stub to D1's square pad beeps (through L2); 5V to GND must not.")])
 
     doc.add_heading("Checkpoint 3: everything powered", 2)
     para("Beep J2's VCC hole to the 3.3 V supply and GND to ground, then check by eye that the two pin-1 marks "
@@ -543,8 +578,10 @@ def build():
                                "right-wall hole."),
               ("Radar plug ", "on, pin 1 to pin 1. Dress the wires down along the pocket, away from the ESP32."),
               ("Front cover. ", "Slide it down the slot behind the front wall, recessed side toward the radar."),
-              ("OLED ", "into the pocket under the lid's window, four M2 × 4 screws, snug only."),
-              ("Lid. ", "Four M3 × 8 screws into the corner inserts. It also holds the front cover down.")])
+              ("OLED ", "(its wires already soldered on) into the pocket under the lid's window, wires toward the "
+                        "board, four M2 × 4 screws, snug only."),
+              ("Lid. ", "Tuck the screen wires in so nothing gets pinched, then four M3 × 8 screws into the corner "
+                        "inserts. It also holds the front cover down.")])
     picture(IMG / "case_base_under.png", 2.6, "The tripod insert under the floor, at the balance point.")
 
     # ---------------------------------------------------------------- 10 sensor kit
@@ -570,25 +607,42 @@ def build():
     doc.add_page_break()
 
     # ---------------------------------------------------------------- 11 range
-    doc.add_heading("11. First time at the range", 1)
-    numbered([("Connect. ", "Range Book in Chrome (Android) or Bluefy (iPhone): Tools › BLIPR Chronograph › Connect "
-                            "chronograph › RB BLIPR. Test shot should show 2,700 fps. Range Book sets BLIPR's clock, "
-                            "units, velocity window and radar position."),
-              ("Set it up. ", "Beside the muzzle on the bench, radar window facing downrange. For the first minute the "
-                              "screen shows a bubble level (with the sensor kit): shim it until it says LEVEL."),
-              ("Check the noise ", "before shooting, with Claude Code and the Teensy's USB plugged in: the live "
-                                   "readout shows the radar's noise floor. Plugging into a computer pauses shot "
-                                   "detection (screen says PAUSED) until it's armed again."),
-              ("Shoot a string. ", "If someone has another chronograph beside you, read out its numbers: one session "
-                                   "against it sets BLIPR's calibration (each radar differs by up to about 0.4%, "
-                                   "around 10 fps at 2,700 fps)."),
-              ("Bring the recordings home. ", "With BLIPR on, plug the Teensy's USB into the computer: the SD card "
-                                              "shows up as a drive (on a Mac with the free OpenMTP app). Copy the "
-                                              "shots folder and log.csv. They're used to tune the shot detection.")])
+    doc.add_heading("11. First power-up and first shot", 1)
+    para("Press the holder's button. After the start-up animation the screen shows a bubble level (with the sensor "
+         "kit), the weather for 10 s, READY for 2 s, and then BLIPR arms itself and the screen goes dark. Dark means "
+         "listening. After each shot the speed and the string show for the \"Show each shot for\" time (Range Book's "
+         "chronograph settings, default 3 s). BLIPR doesn't listen while the screen is lit: a lit screen adds noise "
+         "the radar can hear, so keep that time short.")
+    picture(PICS / "screen_sequence.png", 6.9)
+    numbered([("Connect. ", "Range Book 2.44 or later in Chrome (Android) or Bluefy (iPhone): Tools › BLIPR "
+                            "Chronograph › Connect chronograph › RB BLIPR. Test shot should show 2,700 fps. Range Book "
+                            "sets BLIPR's clock and units, and its settings show BLIPR's window and position."),
+              ("Set the window ", "a little wider than your load, in Range Book's settings (a button sets it from the "
+                                  "load) or on the Teensy: set vmin=950 vmax=1200 for .22 LR standard velocity."),
+              ("Place it. ", "Beside the rifle, behind the muzzle, front window downrange and the screen corner nearest "
+                             "you (about 1 o'clock from your seat), level and parallel to the bore. The first .22 tests "
+                             "had it about 10 cm to the side and 10 cm behind the muzzle; for a rifle start further "
+                             "back, out of the blast (about 30 cm behind, 12 cm to the side). Enter where it sits in "
+                             "Range Book's settings."),
+              ("Level it. ", "Shim it until the screen says LEVEL and hold 3 s. After each shot BLIPR checks it hasn't "
+                             "been knocked (more than 1° tilt or 5° turn) and shows the level again if so. Re-level "
+                             "and update the heading (Range Book) shows it any time; Disable the level is for "
+                             "shooting at an angle."),
+              ("One radar at a time. ", "Two 24 GHz radar chronographs side by side interfere: with an Athlon "
+                                        "Rangecraft beside it, BLIPR saw a steady line near 1,700 fps. Use one at a "
+                                        "time or set them well apart."),
+              ("Shoot a string. ", "Compare with another chronograph if you have one: one session against it sets "
+                                   "BLIPR's calibration (each radar differs by up to about 0.4%, around 10 fps at "
+                                   "2,700 fps)."),
+              ("Keep the recordings. ", "With set save=1 every shot is saved. With BLIPR on, plug the Teensy's USB "
+                                        "into the computer: the SD card shows up as a drive (on a Mac with the free "
+                                        "OpenMTP app), and shots pause until you unplug it. Copy the shots folder and "
+                                        "log.csv.")])
     warn("never send commands or handle BLIPR while someone is on the rifle. Anything at the bench waits for a break "
          "between strings.")
-    rich(("Later updates. ", True), "Range Book can update the ESP32 over Bluetooth (Settings › Firmware › Update the "
-         "Bluetooth board, about 2 minutes, phone close). The Teensy is updated over its USB cable with BLIPR switched on.")
+    rich(("Later updates. ", True), "Range Book updates the ESP32 over Bluetooth (Settings › Firmware › Update the "
+         "Bluetooth board, about 30 s with ESP32 0.2.12 or later, phone close). Over USB the computer sees the ESP32 "
+         "only out of BLIPR's socket. The Teensy is updated over its USB cable with BLIPR switched on.")
 
     # ---------------------------------------------------------------- troubleshooting
     doc.add_heading("Troubleshooting", 1)
@@ -604,17 +658,28 @@ def build():
            ("Op-amp output stuck at 0 or 3.3 V", "Feedback part missing or bridged, or the op-amp in backwards"),
            ("U3 hot", "Short on 3.3 V, or the radar plug turned round"),
            ("Radar I/Q at 0 V", "Radar not powered (VCC at J2) or pin 1 the wrong way"),
-           ("Every shot reads the same speed", "A steady tone (interference) is being tracked instead of the bullet: "
-                                               "send the recordings so the detection can be tuned")],
+           ("Every shot reads the same speed, or false shots", "Interference. On the Teensy type live (the strongest "
+                                                         "line and its speed) or rec (record 100 ms). Check both 5 V "
+                                                         "filters, set fs=500000, keep the window clear of the line"),
+           ("A steady line near 1,700 fps", "Another 24 GHz radar chronograph close by: one at a time, or far apart"),
+           ("Shots missed or \"weak\"", "Window (get) covers the speed? Screen time short? Level, close to the muzzle, "
+                                       "parallel to the bore? Send the recordings"),
+           ("Holder's button won't switch on after charging", "Seen once after a night on the charger: take the cell "
+                                                              "out, put it back, press the button"),
+           ("Computer doesn't see the ESP32 in BLIPR", "Normal with its 5 V filter: flash it out of the socket, or "
+                                                      "update over Bluetooth"),
+           ("Bluetooth update stops partway", "Needs ESP32 0.2.12 or later (once over USB); phone close, screen on")],
           [2.6, 4.3], size=10.5)
     doc.add_heading("Where things are", 2)
     table([("What", "Where in the project"),
            ("Firmware", "firmware/BliprTeensy, firmware/BliprBLE (ready-made files in firmware/prebuilt)"),
            ("Case files", "case/out (STL and STEP); case/blipr_case.py rebuilds them"),
            ("Circuit board", "pcb/out (Gerbers, BOM, assembly drawing)"),
+           ("Parts list with prices", "docs/RB_BLIPR_Parts_List.xlsx (docs/make_parts_list.py)"),
+           ("Assembly video", "see README.md"),
            ("Wiring pictures", "pictures/out"),
            ("Session logger, recordings", "tools/blipr_log.py, tools/pull_shots.py"),
-           ("This guide", "docs/make_build_doc.py rebuilds it")],
+           ("This guide", "docs/make_build_doc.py rebuilds it; docs/make_build_pdf.py makes the PDF")],
           [2.0, 4.9], size=10.5)
 
     doc.save(OUT)

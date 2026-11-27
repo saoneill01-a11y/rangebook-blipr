@@ -1,6 +1,6 @@
 # Firmware: setup and bench tests
 
-Today's goal is to load both programs, check that the Teensy measures a fake bullet correctly, and see shots arrive on your phone over Bluetooth. You don't need the radar, amplifier or battery for any of it. Do it before you cut the Teensy's VIN–VUSB trace (build guide Step 1): these tests run the Teensy from USB alone, and once the trace is cut it only runs when BLIPR is switched on. Everything is in **RB\_BLIPR\_firmware\_v0.2.3.zip**. Version 0.2.2 or later is needed for circuit board v1.1 (0.2.3 adds the DFRobot 10-DoF sensor board; its Teensy part is still 0.2.2): the Teensy now talks to the ESP32 on pins 34 and 35 (Serial8), not 0 and 1. It also fixes the compass calibration and sets the radar frequency default to 24.150 GHz.
+Today's goal is to load both programs, check that the Teensy measures a fake bullet correctly, and see shots arrive on your phone over Bluetooth. You don't need the radar, amplifier or battery for any of it. Do it before you cut the Teensy's VIN–VUSB trace (build guide Step 1): these tests run the Teensy from USB alone, and once the trace is cut it only runs when BLIPR is switched on. Do it before the ESP32's 5 V filter too (build guide Step 4): after that, the computer only sees the ESP32 when it's out of BLIPR's socket. The current firmware is **Teensy 0.2.8** and **ESP32 0.2.20**, in the project's `firmware/` folder, with ready-made files in `firmware/prebuilt/`. Circuit board v1.1 needs 0.2.2 or later: the Teensy talks to the ESP32 on pins 34 and 35 (Serial8), not 0 and 1.
 
 ## What you need
 
@@ -28,11 +28,13 @@ Today's goal is to load both programs, check that the Teensy measures a fake bul
 4. Open the Serial Monitor (magnifying glass, top right). Press the Teensy's button or replug it if the screen is blank. You should see:
 
 ```
-Range Book BLIPR, Teensy firmware 0.2.2
-Sample rate 600000 Hz (asked for 600000). SD card found.
+Range Book BLIPR, Teensy firmware 0.2.8
+Sample rate 600000 Hz (asked for 600000). SD card found. Type 'help' for commands.
 ```
 
 5. Type `stat` and press Enter. **overruns** should be 0. If the status says SD missing, unplug, re-seat the card and plug in again (it only looks at start-up). Still missing: try another card. On the first build an 8 GB card from another device wasn't read; a 32 GB A1 card worked.
+
+6) Type `set fs=500000`. It's saved, and the next start-up line says 500000 Hz. The battery holder's converter whistles at about 494 kHz: at 600 kHz sampling that lands near 2,150 fps, at 500 kHz near 100 fps, out of the way (build guide Step 6). `defaults` puts 600000 back.
 
 If the IDE won't build it, use the ready-made file instead. Open the Teensy Loader app, choose File › Open HEX File › `prebuilt/BliprTeensy.hex`, then press the Teensy's button.
 
@@ -60,7 +62,9 @@ With nothing on A0/A1 the inputs pick up stray noise, so touching the board can 
 1. Open `BliprBLE/BliprBLE.ino` in a **second** IDE window, so each board keeps its own Serial Monitor.
 2. Tools menu: Board **Nologo ESP32C3 Super Mini** (or ESP32C3 Dev Module), **USB CDC On Boot: Enabled**, and its Port.
 3. Click Upload. If it can't connect: hold the **BOOT** button, tap **RESET**, let go of BOOT, and upload again. Tap RESET once it's done. If the computer doesn't see the ESP32 at all while its red LED is on, the USB-C cable is charge-only: swap it (on a Mac, also look for an "Allow accessory to connect?" pop-up).
-4. Serial Monitor at **115200**: you should see *BLIPR ESP32-C3 firmware 0.2.3 ready*.
+4. Serial Monitor at **115200**: you should see *BLIPR ESP32-C3 firmware 0.2.20 ready*.
+
+Load the ESP32 over USB now. Once its 5 V filter is fitted (build guide Step 4) the computer sees it only out of BLIPR's socket, and from then on Range Book updates it over Bluetooth (section 10).
 
 ## 5. Connect the two boards
 
@@ -85,13 +89,13 @@ In the ESP32's Serial Monitor type `TEST`. The Teensy makes up a shot, and the E
 
 ## 7. OLED (if it has arrived)
 
-OLED VCC → ESP32 **3V3**, GND → GND, SDA → **GPIO6**, SCL → **GPIO7**. Press RESET on the ESP32. It shows *READY*, and after a `TEST` shot a big speed with the string's count, average, SD and ES underneath.
+In BLIPR the OLED gets four soldered wires, with no header and no plug-on jumpers (build guide Step 4): VCC → ESP32 **3V3**, GND → GND, SDA → **GPIO6**, SCL → **GPIO7**. If yours still has its header pins, you can try it here on jumper wires first; remove the pins before it goes into BLIPR. Press RESET on the ESP32: it plays its start-up, shows *READY*, then goes dark (it lights only for a shot). After a `TEST` shot it shows a big speed with the string's count, average, SD and ES underneath for 3 seconds.
 
 ## 8. Connect from Range Book
 
-Range Book 2.43 talks to the chronograph directly. Open Range Book through its https:// address in Chrome on the Android phone (or in the Bluefy app on the iPhone), go to **Tools › BLIPR Chronograph** and tap **Connect chronograph**, then pick **RB BLIPR**. Tap **Test shot**: a 2,700 fps shot appears in big numbers and in the string. The same button is on each range trip (under Chronograph) and on each ladder group.
+Range Book 2.44 or later talks to the chronograph directly. Open Range Book through its https:// address in Chrome on the Android phone (or in the Bluefy app on the iPhone), go to **Tools › BLIPR Chronograph** and tap **Connect chronograph**, then pick **RB BLIPR**. Tap **Test shot**: a 2,700 fps shot appears in big numbers and in the string. The same button is on each range trip (under Chronograph) and on each ladder group.
 
-When it connects, Range Book sets the chronograph's clock, its screen units, the velocity window and the radar position. Settings (the pill at the bottom right) has the battery, calibration against another chronograph, screen brightness and, with the sensor kit, compass calibration.
+When it connects, Range Book sets the chronograph's clock and screen units. Its settings (the pill at the bottom right) show BLIPR's own velocity window and radar position, and change them when you type a value (a button sets the window from the load). They also have the battery, calibration against another chronograph, screen brightness, **Show each shot for** (default 3 s), **Re-level and update the heading**, **Disable the level** and, with the sensor kit, compass calibration.
 
 ## 9. Copy recordings off the SD card (USB drive mode)
 
@@ -110,18 +114,37 @@ The bench tests above still work while plugged in, because `sim` and `arm` switc
 
 ## 10. Later updates to the Bluetooth board
 
-Once firmware 0.2.2 or later is on the ESP32 (with the USB-C cable, step 4), Range Book can update it over Bluetooth. In the chronograph settings, scroll to **Firmware** and tap **Update the Bluetooth board**. It takes about 2 minutes: keep the phone close with its screen on, and don't shoot until it's done. BLIPR's screen shows UPDATING and a progress bar, then restarts and reconnects by itself.
+Once firmware 0.2.2 or later is on the ESP32 (with the USB-C cable, step 4), Range Book can update it over Bluetooth. In the chronograph settings, scroll to **Firmware** and tap **Update the Bluetooth board**. It takes about 30 seconds with ESP32 0.2.12 or later (older versions could stop partway, so install 0.2.12 or later over USB first): keep the phone close with its screen on, and don't shoot until it's done. BLIPR's screen shows UPDATING and a progress bar, then restarts and reconnects by itself.
 
 If the connection drops partway, nothing changes: BLIPR stays on its old firmware, and you try again. It only switches once the whole file has arrived and checks out, and if the new firmware doesn't start properly it goes back to the old one. The radar board (Teensy) is still updated with the USB cable.
 
-## Send me
+With the ESP32's 5 V filter fitted, this is the normal way to update it: over USB the computer sees the ESP32 only when it's out of BLIPR's socket.
 
-- The Teensy's two start-up lines and one `sim 2800` result.
+## 11. Commands worth knowing
+
+Type these in the Teensy's Serial Monitor (BLIPR switched on, USB plugged in). Settings changed with `set` are saved.
+
+| Command | What it does |
+| --- | --- |
+| `stat` | Status: armed, shots, overruns (should be 0), SD card |
+| `get` | Every setting: window, position, calibration, sample rate, trigger levels |
+| `set vmin=950 vmax=1200` | The velocity window, in fps. Keep it a little wider than your load |
+| `set fs=500000` | Sample rate (500000 recommended; `defaults` puts 600000 back) |
+| `set save=1` | Save every shot's raw recording to the SD card (for tuning) |
+| `live` / `live 114000` | Twice a second: noise, DC level, clipping and the strongest line; with a number, also the level at that frequency. `live` again stops it |
+| `rec` | Record 100 ms now and say what's in it: the way to find an interference tone |
+| `arm` / `disarm` | Start or stop listening for shots |
+| `sim 2800` | A fake bullet on pin 2 (bench test only, amplifier disconnected) |
+
+## Asking for help
+
+- The Teensy's two start-up lines, `get`, and one `sim 2800` result.
 - Any red error text from building or uploading, copied and pasted as text.
-- Later, from the range: the `/shots` folder from the SD card (the `.bin` files and `log.csv`).
+- From the range: the `/shots` folder from the SD card (the `.bin` files and `log.csv`), with what you shot and where BLIPR sat.
 
 ## Limits of this version
 
-- **Calibration.** Each radar module's exact frequency varies a little from unit to unit, which can shift readings by up to about 0.4% (around 10 fps at 2,700 fps). One session beside a known chronograph, such as someone's Garmin, will set the `cal` value.
-- **Tuned on simulated shots.** The shot detection was tested only against simulated shots: it read them within about 1 fps and rejected muzzle blast. Real captures from the SD card will be used to tune it.
-- **First build (Nov 8).** Both boards passed every bench test: fake shots at 2800, 1100, 3300 and 2500 fps read within 0.3 fps, and the 2500 fps one reached the phone. Saving a shot to the card took 0.3–3.6 s; whether a shot that arrives during a save is missed is still to check.
+- **Tested on .22 LR so far.** First live strings (Nov 26, 2026, Teensy 0.2.8): 9 of 10 shots read, average 1029 fps, against 1017 fps from an Athlon chronograph with the same rifle and ammo on another day (about 1% apart). Rifles haven't been tested yet.
+- **Calibration.** Each radar module's exact frequency varies a little from unit to unit, which can shift readings by up to about 0.4% (around 10 fps at 2,700 fps). A session beside a known chronograph sets the `cal` value.
+- **Interference.** The radar hears switching converters, the ESP32 and a lit screen. The two 5 V filters, `fs=500000`, the dark screen while listening and the firmware's rejection of steady lines deal with what the first build met; `live` and `rec` show anything new (build guide Troubleshooting).
+- **Saving.** Saving a shot to the card takes 0.3–3.6 s; whether a shot that arrives during a save is missed is still to check.

@@ -260,6 +260,9 @@ Notes:
 
 ## Prebuilt files
 
+Current: Teensy 0.2.8 and ESP32 0.2.20 (Nov 26, 2026). `BliprBLE.app.bin` is the same file Range Book ships for
+Bluetooth updates (780544 bytes, md5 aac87886042cb86a6981281b70e53d8a).
+
 - `prebuilt/BliprTeensy.hex` (built with USB Type Serial + MTP Disk): open the Teensy Loader app (installed with the Teensy package), File > Open HEX File, press the Teensy's button.
 - `prebuilt/BliprBLE.app.bin`: the app image alone, the file Range Book sends for a Bluetooth update (not for the web flasher).
 - `prebuilt/BliprBLE.merged.bin`: flash with the web flasher at https://espressif.github.io/esptool-js/ in Chrome (address 0x0).

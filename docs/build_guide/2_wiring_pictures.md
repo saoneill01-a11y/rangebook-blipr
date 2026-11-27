@@ -4,6 +4,8 @@ Every connection, drawn with the parts as they look. They fit both builds: on th
 
 How to read them: each coloured line is one wire (or one solder trail on perfboard). A black dot joins wires; lines that cross without a dot don't touch. Pins with a red ring are the ones this project uses. Red is +5 V, black ground, orange 3.3 V, green radar I, blue radar Q (and SDA), yellow SCL and data.
 
+The two 5 V noise filters (sections 12 and 13) sit in the wires, off the board, and aren't drawn in the other pictures. The screen's four wires are soldered at both ends (OLED pads and J3): no header, no plug-on jumpers.
+
 ## 1. Everything that leaves the main board
 
 &#91;image: How everything connects\]
@@ -51,3 +53,13 @@ This is the chip side, the way the module sits on the board. The pin names are p
 ## 11. Telling the parts apart
 
 &#91;image: Resistor colour bands and capacitor codes\]
+
+## 12. 5 V filter at the battery holder (L1, C27, C28)
+
+&#91;image: 5 V noise filter at the battery holder: L1 in the red wire, C27 and C28 across J1\]
+
+## 13. 5 V filter at the ESP32 (L2, C29, C30)
+
+&#91;image: 5 V noise filter at the ESP32: its 5V pin cut, L2 from the socket's 5V hole to the pin stub, C29 and C30 at the module\]
+
+Flash the ESP32 over USB before cutting its 5V pin: afterwards the computer sees it only out of BLIPR's socket, and Range Book updates it over Bluetooth.
