@@ -1,6 +1,38 @@
-# Range Book BLIPR Bluetooth interface (v0.2, firmware 0.2.2)
+# BLIPR Bluetooth API
 
-Device name: **RB BLIPR** (earlier test firmware called itself RB Blip or RB Chrono). One custom service; all values are UTF-8 text (JSON or plain commands).
+**Interface version 0.3**, for ESP32 firmware 0.2.20 and Teensy firmware 0.2.8 (November 2026).
+
+This is how any app or script can talk to BLIPR over Bluetooth Low Energy: read each shot's velocity as it happens,
+read battery and status, change settings, and send commands. Range Book uses exactly this interface; nothing in it
+is private to Range Book. Anyone may write their own client. A working example is in
+[`tools/blipr_ble_example.py`](../tools/blipr_ble_example.py) (Python), and a short browser one is at the end of this page.
+
+Device name: **RB BLIPR** (earlier test firmware called itself RB Blip or RB Chrono). Find it by its service UUID
+rather than the name if you can. One custom service; all values are UTF-8 text (JSON or plain commands).
+
+## Stability
+
+BLIPR is still being tested, so this is version 0.x: it can change between firmware versions. To keep a client
+working across updates:
+
+- **Ignore fields you don't know.** New fields get added; that is not a breaking change.
+- **Fields you can rely on** (they will keep their names and meaning in 0.x): Shot `n`, `b`, `ok`, `v`, `why`, `test`;
+  Status `bat`, `arm`, `fw`, `efw`, `b`, `shots`, `sens`; Config `vmin`, `vmax`, `units`; Sensors `t`, `rh`, `p`, `hd`,
+  `pi`, `ro`; the commands `ARM`, `DISARM`, `SET vmin= vmax=`, `GET`, `STATUS`, `TIME`, `SYNC`, `STRING`, `TEST`;
+  and the firmware update steps.
+- **Diagnostic fields** (Shot `a`, `p`, `q`, `r`, `d0`, `d1`; Status `t`, `rdy`, `fs`, `nz`, `ovr`, `sd`, `cc`; the radar
+  tuning settings `snr`, `trig`, `band`, `fs`, `f0`, `lat`, `behind`, `cal`) are there for testing and may change meaning
+  or disappear.
+- Velocities are **always fps** on the wire, whatever the screen shows.
+- A breaking change raises the interface version above and gets a line in `firmware/README.md`.
+
+## A client in five steps
+
+1. Scan for the service `239d0001-5192-4fb5-95ad-180af63137b3` and connect.
+2. Turn on notifications for Shot, Status and Config (and Sensors if you want weather, heading and level).
+3. Send `TIME <unix seconds>` so stored shots get the right time.
+4. Send `SYNC <last shot number you have>` (or `SYNC 0`) to get shots fired while you were disconnected.
+5. Each Shot notification is one shot. Keep shots unique by (`b`, `n`).
 
 | Characteristic | UUID | Properties | Contents |
 |---|---|---|---|
@@ -35,7 +67,7 @@ No read (the radar saw something but couldn't measure it):
 
 ## Status
 ```json
-{"bat":87,"bv":3.98,"arm":1,"shots":12,"t":1,"rdy":1,"fs":600000,"nz":12.3,"ovr":0,"sd":1,"fw":"0.2.0","efw":"0.2.0","b":"1a2b3c4d","sens":"TPACL","cc":2}
+{"bat":87,"bv":3.98,"arm":1,"shots":12,"t":1,"rdy":1,"fs":500000,"nz":7.8,"ovr":0,"sd":1,"fw":"0.2.8","efw":"0.2.20","b":"1a2b3c4d","sens":"TPACL","cc":2}
 ```
 `bat` percent (−1 = not wired), `bv` volts, `arm` listening for shots, `shots` last shot number, `t` Teensy is talking,
 `rdy` ready for the next shot, `sd` SD card found, `ovr` missed sample blocks (should stay 0), `fw`/`efw` Teensy / ESP32
@@ -44,8 +76,11 @@ C = compass, L = level), `cc` compass calibration (0 never, 1 calibrating now, 2
 
 ## Config
 ```json
-{"vmin":300,"vmax":4500,"lat":0.100,"behind":0.100,"cal":0,"f0":24150000000,"snr":12.0,"trig":9.0,"fs":600000,"save":1,"arm":1,"band":15.0,"units":"fps","batcal":1.0000,"bright":2,"anim":0,"theme":0,"inv":0,"hoff":0.0,"hrev":0,"hrot":0}
+{"vmin":600,"vmax":3500,"lat":0.100,"behind":0.100,"cal":0,"f0":24150000000,"snr":12.0,"trig":9.0,"fs":600000,"save":1,"arm":1,"band":15.0,"units":"fps","batcal":1.0000,"bright":2,"anim":0,"theme":0,"inv":0,"hoff":0.0,"hrev":0,"hrot":0,"quiet":1,"show":3,"lvl":1}
 ```
+`vmin`/`vmax` the speed window in fps (each 100-5500; values the Teensy refuses are ignored), `save` raw captures to
+the SD card, `arm` listening at power-up, `quiet` screen dark while waiting for shots, `show` seconds each shot stays on
+the screen, `lvl` level check on (1) or off. The Teensy keeps its settings (`vmin` through `band`) through a power-off.
 `bright` screen brightness 0–4, `anim` bullet animation after each shot (1 = on), `theme` screen look (0–3), `inv` screen inverted (1 = on), `hoff` compass offset (degrees), `hrev` compass turns backwards (only used without an
 accelerometer), `hrot` IMU board rotation (0/90/180/270, counter-clockwise seen from above).
 
@@ -53,7 +88,7 @@ accelerometer), `hrot` IMU board rotation (0/90/180/270, counter-clockwise seen 
 ```json
 {"t":21.50,"rh":40.1,"p":980.21,"am":24.12,"hd":271.3,"pi":0.3,"ro":-1.2,"cc":2}
 ```
-Only the fitted sensors appear. `t` air °C (from the SHT45; from the BMP390 if there's no SHT45, which reads warm in
+Only the fitted sensors appear. While BLIPR is quiet (waiting for shots) the sensors are paused, so the values stay as they were when it went quiet; they are read again after each shot. `t` air °C (from the SHT45; from the BMP390 if there's no SHT45, which reads warm in
 the case), `rh` % humidity, `p` station pressure hPa (not sea-level), `am` ammo probe °C, `hd` heading in degrees
 (0 = north, magnetic plus your offset), `pi` nose-up pitch, `ro` right-side-down roll (degrees), `cc` as in Status.
 After `COMPASS CAL STOP` it sends `{"compass":"calibrated"}` or `{"compass":"not enough turning"}` once.
@@ -105,7 +140,22 @@ firmware is kept once it has run for 15 s; a crash or reset before that rolls ba
 | `TEST` | send a made-up shot |
 | `REC` | record 100 ms now (bench testing) |
 
-Web Bluetooth (Chrome on Android/desktop, Bluefy on iPhone/iPad; the page must be https):
+The ESP32 handles `SYNC`, `STRING`, `STATUS`, `UNITS`, `BRIGHT`, `BATV`, `COMPASS`, `THEME`, `INVERT`, `FLIP`, `QUIET`,
+`SHOW`, `LEVELCHK`, `ANIM` and `LEVEL` itself and passes everything else (`SET`, `GET`, `ARM`, `DISARM`, `TIME`, `TEST`,
+`REC`, `DRIVE`, ...) on to the Teensy, which ignores commands it doesn't know. A changed setting comes back as a Config
+notification.
+
+## USB serial
+
+The Teensy also takes text commands on its USB serial port (115200 baud), with a few more for bench testing (`live`,
+`sim`, `defaults`, `reboot`). They are listed in [`firmware/README.md`](README.md); `tools/blipr_log.py` logs a session that way.
+
+## Examples
+
+Python (any computer with Bluetooth; `pip install bleak`): [`tools/blipr_ble_example.py`](../tools/blipr_ble_example.py)
+finds BLIPR, prints each shot and its status, and can send a command.
+
+Web Bluetooth (Chrome on Android or a computer, Bluefy on iPhone/iPad; the page must be https):
 ```js
 const dev = await navigator.bluetooth.requestDevice({ filters: [{ services: ["239d0001-5192-4fb5-95ad-180af63137b3"] }] });
 const svc = await (await dev.gatt.connect()).getPrimaryService("239d0001-5192-4fb5-95ad-180af63137b3");

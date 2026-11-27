@@ -33,6 +33,13 @@ as more real shots come in.
 
 See [BUILDING.md](BUILDING.md) for what to expect before you start.
 
+## Bluetooth API
+
+Any app or script can read BLIPR's shots, status and weather and change its settings over Bluetooth Low Energy: the
+interface Range Book uses is documented in [firmware/PROTOCOL.md](firmware/PROTOCOL.md) (interface version 0.3, still
+subject to change while BLIPR is tested). [tools/blipr_ble_example.py](tools/blipr_ble_example.py) is a short Python
+client to start from.
+
 ## What's in here
 
 | Folder | What it is |
@@ -53,7 +60,7 @@ SD card, then sends the result over a serial link to an ESP32-C3. The ESP32 hand
 **RB BLIPR**), a 0.96" OLED that stays dark while BLIPR listens, the battery gauge and an optional sensor kit (SHT45
 plus a DFRobot 10-DoF for level, compass and pressure) in a vented pod on the lid. Power is one 18650 cell in a holder
 with a 5 V boost output; small LC filters keep the holder's converter and the ESP32's radio out of the radar's supply.
-Range Book connects with Web Bluetooth (Chrome, or Bluefy on iPhone) and can update the ESP32's firmware over
+Range Book connects over Bluetooth (the Range Book app on iPhone and iPad, Bluefy, or Chrome) and can update the ESP32's firmware over
 Bluetooth.
 
 ## Working on it with Claude Code
