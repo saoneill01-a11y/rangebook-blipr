@@ -1,4 +1,4 @@
-Range Book BLIPR - case files, v0.9
+Range Book BLIPR - case files, v0.12
 
 SIDES: "+X side" is the side wall with the Teensy's USB hole. On the bench it faces the gun and you
 (you sit behind it, across the gun, with the chronograph at about 1 o'clock). The "far side" is the other one.

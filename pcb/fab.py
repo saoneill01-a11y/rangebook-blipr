@@ -582,7 +582,11 @@ def write_all(pads, wires, vias):
 def bom(path):
     rows = {}
     for ref, p in D.P.items():
-        if ref.startswith("J"):
+        if ref == "J4":
+            key = ("Header, 1x4 FEMALE (the sensor cable ends in male pins; or solder its wires straight in)", "")
+        elif ref in ("J2", "J3"):
+            key = ("No header: solder the wires straight in (radar J2, screen J3)", "")
+        elif ref.startswith("J"):
             key = ("Header, 1x%d male (or solder wires straight in)" % len(p["fp"]["pads"]), "")
         elif ref in ("U4",):
             key = ("Female header 1x8 (socket for the ESP32-C3 SuperMini)", "2 per board")
@@ -604,6 +608,11 @@ def bom(path):
         for (part, note), refs in sorted(rows.items(), key=lambda kv: kv[1][0]):
             q = len(refs) * (2 if "per board" in note else 1)
             w.writerow([q, part, " ".join(sorted(refs, key=lambda r: (r[0], int(''.join(c for c in r if c.isdigit()) or 0)))), note])
+        # Off the board (Nov 2026): the two 5 V noise filters, soldered in the wires (build guide, Step 2 and Step 4)
+        w.writerow([1, "Resistor 1/4 W 10k", "R25", "off-board: soldered on the battery holder's + tab (battery gauge)"])
+        w.writerow([2, "Inductor 22uH, 1 A or more", "L1 L2", "off-board: L1 in the battery holder's red wire, L2 in the ESP32's 5 V feed"])
+        w.writerow([2, "Electrolytic capacitor, 10 V or more 470uF", "C27 C29", "off-board: C27 across J1 +5V/GND, C29 across the ESP32's 5V/GND"])
+        w.writerow([2, "Ceramic capacitor 1uF", "C28 C30", "off-board: beside C27 and C29"])
 
 # ------------------------------------------------------------------ pictures
 def picture(pads, wires, vias, path, side="top", pour_mask=None, res=0.05, assembly=False):

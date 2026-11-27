@@ -42,8 +42,8 @@ ASSEMBLED BOARDS (PCBA)
   out/pcba/ has what PCBWay needs to quote boards with the parts already soldered on (everything except
   the wire headers J1-J5): BOM with part numbers, part positions, assembly drawing and README_PCBA.txt
   with the quote-form answers. Rebuild them with python3 pcba_files.py.
-  NOTE on J4 (sensors): the BOM below lists a 1x4 MALE header, but the STEMMA QT-to-pins cable also ends
-  in male pins. Fit a 1x4 FEMALE header at J4 if you want that cable to plug in, or solder its wires straight in.
+  NOTE on J4 (sensors): fit a 1x4 FEMALE header at J4 (the STEMMA QT-to-pins cable ends in male pins), or
+  solder its wires straight in.
 
 ASSEMBLY ORDER (lowest parts first, so the board sits flat while you solder)
   1. Cut the VIN-VUSB trace on the underside of the Teensy (see the build guide) before it goes in,
@@ -56,14 +56,19 @@ ASSEMBLY ORDER (lowest parts first, so the board sits flat while you solder)
   4. U3 (MCP1700): flat face toward the board's front edge, legs GND - IN - OUT left to right.
      Its legs are closer together than the holes: spread the two outer legs a little.
   5. Electrolytic capacitors: the + leg goes in the SQUARE pad (the stripe on the can is the - side).
-  6. Headers J1 to J5 (or solder wires straight into them; do that for J2, the radar, so nothing
-     there can be plugged in backwards), then the female headers for the
+  6. Headers J1 and J5 (or solder wires straight into them). Solder the wires straight into J2 (the radar,
+     so nothing there can be plugged in backwards) and J3 (the screen: wires soldered to the OLED's pads,
+     no header on the OLED, because a header plus plug-on jumpers stands too tall under the lid).
+     J4 (sensor kit) gets a 1x4 FEMALE header. Then the female headers for the
      Teensy (2 x 24) and ESP32 (2 x 8). Plug the modules into their headers while you solder the
      headers, so they come out straight. The ESP32 goes in chip side UP (USB socket and buttons
      on top), USB toward the back, its antenna end at the board's front edge.
   7. Battery holder to J1 (no switch: the holder's own button is on/off). Before soldering its
      wires, meter its 5V and GND pads with the cell in: +5 V, not -5 V. Nothing on the board
      protects against those two swapped.
+     The red wire runs through L1 (22 uH, 1 A+), and C27 (470 uF, stripe to GND) and C28 (1 uF) go
+     across J1's +5V and GND (pictures/out/power_filter.png). The ESP32 gets its own filter (L2, C29,
+     C30; pictures/out/esp_filter.png). Both are off the board; the copper is unchanged.
   8. Power test BEFORE plugging in the op-amps and modules (the build guide's Step 2 checkpoint):
      +5 V at J1, 3.3 V at U3's OUT leg, about 1.65 V at VREF (the + leg of C10).
   9. Op-amps into the sockets (each chip's dot beside the SQUARE pad), Teensy and ESP32 in, then
