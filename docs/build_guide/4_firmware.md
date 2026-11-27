@@ -1,6 +1,6 @@
 # Firmware: setup and bench tests
 
-Today's goal is to load both programs, check that the Teensy measures a fake bullet correctly, and see shots arrive on your phone over Bluetooth. You don't need the radar, amplifier or battery for any of it. Do it before you cut the Teensy's VIN–VUSB trace (build guide Step 1): these tests run the Teensy from USB alone, and once the trace is cut it only runs when BLIPR is switched on. Do it before the ESP32's 5 V filter too (build guide Step 4): after that, the computer only sees the ESP32 when it's out of BLIPR's socket. The current firmware is **Teensy 0.2.8** and **ESP32 0.2.20**, in the project's `firmware/` folder, with ready-made files in `firmware/prebuilt/`. Circuit board v1.1 needs 0.2.2 or later: the Teensy talks to the ESP32 on pins 34 and 35 (Serial8), not 0 and 1.
+Today's goal is to load both programs, check that the Teensy measures a fake bullet correctly, and see shots arrive on your phone over Bluetooth. You don't need the radar, amplifier or battery for any of it. Do it before you cut the Teensy's VIN–VUSB trace (build guide Step 1): these tests run the Teensy from USB alone, and once the trace is cut it only runs when BLIPR is switched on. On a v1.1 board, do it before the ESP32's hand-wired 5 V filter too (build guide Step 4): after that, the computer only saw the ESP32 when it was out of BLIPR's socket. The current firmware is **Teensy 0.2.8** and **ESP32 0.2.20**, in the project's `firmware/` folder, with ready-made files in `firmware/prebuilt/`. Circuit boards v1.1 and v1.2 need 0.2.2 or later: the Teensy talks to the ESP32 on pins 34 and 35 (Serial8), not 0 and 1.
 
 ## What you need
 
@@ -64,7 +64,7 @@ With nothing on A0/A1 the inputs pick up stray noise, so touching the board can 
 3. Click Upload. If it can't connect: hold the **BOOT** button, tap **RESET**, let go of BOOT, and upload again. Tap RESET once it's done. If the computer doesn't see the ESP32 at all while its red LED is on, the USB-C cable is charge-only: swap it (on a Mac, also look for an "Allow accessory to connect?" pop-up).
 4. Serial Monitor at **115200**: you should see *BLIPR ESP32-C3 firmware 0.2.20 ready*.
 
-Load the ESP32 over USB now. Once its 5 V filter is fitted (build guide Step 4) the computer sees it only out of BLIPR's socket, and from then on Range Book updates it over Bluetooth (section 10).
+Load the ESP32 over USB now. From then on Range Book can update it over Bluetooth (section 10). On a v1.1 board with the hand-wired filter, the computer saw the ESP32 only out of BLIPR's socket.
 
 ## 5. Connect the two boards
 
@@ -118,7 +118,7 @@ Once firmware 0.2.2 or later is on the ESP32 (with the USB-C cable, step 4), Ran
 
 If the connection drops partway, nothing changes: BLIPR stays on its old firmware, and you try again. It only switches once the whole file has arrived and checks out, and if the new firmware doesn't start properly it goes back to the old one. The radar board (Teensy) is still updated with the USB cable.
 
-With the ESP32's 5 V filter fitted, this is the normal way to update it: over USB the computer sees the ESP32 only when it's out of BLIPR's socket.
+This is the normal way to update the ESP32 once it's in BLIPR (on the first v1.1 build, the computer didn't see it over USB while it was in its socket).
 
 ## 11. Commands worth knowing
 

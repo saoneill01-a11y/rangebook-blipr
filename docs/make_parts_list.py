@@ -19,14 +19,14 @@ ROWS = [
     ("RFbeam K-LC5-RFB-00C radar module (3.3 V version)", "Required", "DigiKey", "DigiKey 2012-K-LC5-RFB-00C-ND", 1, 40, 50,
      "https://www.digikey.com/en/products/result?keywords=K-LC5-RFB-00C",
      "Order the -00C: it is the 3.3 V version the circuit is built for. Check the supply voltage before substituting another suffix. Not sold on Amazon/AliExpress."),
-    ("RB BLIPR circuit board v1.1 (5 boards)", "Required", "PCBWay (or JLCPCB, OSH Park, Aisler)", "RBBLIPR_PCB_v1.1_gerbers.zip (pcb/out/)", 1, 20, 30,
+    ("RB BLIPR circuit board v1.2 (5 boards)", "Required", "PCBWay (or JLCPCB, OSH Park, Aisler)", "RBBLIPR_PCB_v1.2_gerbers.zip (pcb/out/)", 1, 20, 30,
      "https://www.pcbway.com/orderonline.aspx",
-     "Upload the Gerber zip unopened, standard settings (2 layers, FR-4, 1.6 mm, HASL, 1 oz). About $5 plus $15-25 shipping. Order v1.1, never v1.0. Or hand-wire the circuit on a 70 x 90 mm double-sided perfboard."),
+     "Upload the Gerber zip unopened, standard settings (2 layers, FR-4, 1.6 mm, HASL, 1 oz). About $5 plus $15-25 shipping. Order v1.2: it has both 5 V filters on the board. v1.1 (pcb/v1.1/) also works with the filters wired by hand; never order v1.0. Or hand-wire the circuit on a 70 x 90 mm double-sided perfboard."),
     ("Teensy 4.1 (with pins)", "Required", "PJRC", "TEENSY41_PINS", 1, 35.5, 35.5,
      "https://pjrc.com/store/teensy41_pins.html", "Buy direct; Amazon resellers often mark it up."),
     ("ESP32-C3 SuperMini (2-3 pack)", "Required", "Amazon / AliExpress", "ESP32-C3 SuperMini", 1, 8, 12,
      AMZ + "ESP32-C3+SuperMini",
-     "Buy the 16-pin SuperMini: 22.5 x 18 mm, USB-C at one end, ceramic antenna at the other, pin names on the underside. Get a pack: a spare is worth having (the first build's module got an intermittent USB joint after its 5V pin was cut). Boards sold as ESP32-C3 Mini, Pro Mini or HW-466 can have other pinouts."),
+     "Buy the 16-pin SuperMini: 22.5 x 18 mm, USB-C at one end, ceramic antenna at the other, pin names on the underside. Get a pack: a spare is worth having (on the v1.1 build, the module got an intermittent USB joint after its 5V pin was cut; v1.2 needs no cut). Boards sold as ESP32-C3 Mini, Pro Mini or HW-466 can have other pinouts."),
     ("Microchip MCP6022-E/P op-amp (DIP-8)", "Required", "DigiKey", "MCP6022-E/P", 4, 1.86, 1.86,
      "https://www.digikey.com/en/products/detail/microchip-technology/MCP6022-E-P/683219",
      "U1, U2. Two needed, two spares. Order with the radar to save shipping."),
@@ -43,16 +43,16 @@ ROWS = [
      "In the Teensy; stores raw shot recordings. A name-brand 32 GB A1 card worked on the first build; an 8 GB card that had been in another device wasn't read. FAT32 or exFAT."),
     ("Resistor + ceramic capacitor assortment kits", "Required", "Amazon / AliExpress", "resistor assortment kit 1/4W; ceramic capacitor assortment kit", 1, 15, 20,
      AMZ + "resistor+assortment+kit+1%2F4W",
-     "Resistors: 10, 100, 330, 470, 1k, 4.7k, 10k, 100k. Ceramic: 1 nF, 10 nF, 100 nF, 1 uF (the 1 uF also covers C28 and C30 in the filters). No 22 pF needed (board v1.1)."),
+     "Resistors: 10, 100, 330, 470, 1k, 4.7k, 10k, 100k. Ceramic: 1 nF, 10 nF, 100 nF, 1 uF (the 1 uF also covers C28 and C30 in the filters). No 22 pF needed (boards v1.1 and v1.2)."),
     ("Electrolytic capacitor assortment kit", "Required", "Amazon / AliExpress", "electrolytic capacitor assortment kit", 1, 10, 15,
      AMZ + "electrolytic+capacitor+assortment+kit",
      "10 uF (C4, C7, C10) and 100 uF (C3), 10 V or more; C3 no wider than 6.3 mm (16 V or 25 V types)."),
-    ("470 uF electrolytic capacitor, 10 V or more", "Required", "Amazon / DigiKey", "470uF 16V radial electrolytic", 2, 0.3, 1,
-     AMZ + "470uF+16V+radial+electrolytic+capacitor",
-     "C27 (battery filter, across J1) and C29 (ESP32 filter, across the module's 5V and GND). Stripe (-) to GND. Often in the assortment kit."),
-    ("22 uH inductor, 1 A or more, through-hole", "Required", "Amazon / DigiKey", "22uH radial inductor 1A", 2, 0.5, 1.5,
-     AMZ + "22uH+radial+power+inductor+1A",
-     "L1 in the battery holder's red 5 V wire, L2 in the ESP32's own 5 V feed. Either way round. Added Nov 2026: the holder's converter and the ESP32's Bluetooth bursts reached the radar through the 5 V supply."),
+    ("470 uF electrolytic capacitor, 10 V or more, 8 mm across, 3.5 mm lead spacing", "Required", "DigiKey / Mouser", "Nichicon UKA1A471MPD1TD", 2, 0.3, 1,
+     "https://www.digikey.com/en/products/result?keywords=UKA1A471MPD1TD",
+     "C27 and C29. Board v1.2: both solder onto the board (+ leg in the square pad), so check the size: 8 mm across, leads 3.5 mm apart. Board v1.1: C27 across J1 and C29 across the ESP32's 5V and GND, by hand (any 470 uF 10 V+ fits)."),
+    ("22 uH inductor, 1 A or more, radial drum, up to 8.4 mm across, 5 mm lead spacing", "Required", "DigiKey / Mouser", "Wurth 744772220", 2, 0.8, 1.5,
+     "https://www.digikey.com/en/products/result?keywords=744772220",
+     "L1 and L2, either way round. Board v1.2: both solder onto the board, so check the size (up to 8.4 mm across, leads 5 mm apart). Board v1.1: L1 goes in the battery holder's red wire and L2 in the ESP32's own 5 V feed, by hand. Added Nov 2026: the holder's converter and the ESP32's Bluetooth bursts reached the radar through the 5 V supply."),
     ("1N5817 Schottky diodes", "Required", "Amazon / AliExpress", "1N5817 schottky diode", 1, 5, 7,
      AMZ + "1N5817+schottky+diode", "D1: stops the ESP32's USB back-feeding the battery rail. The bag may say IN5817: same part."),
     ("DIP-8 IC sockets", "Required", "Amazon / AliExpress", "DIP 8 pin IC socket", 1, 5, 7,
@@ -66,7 +66,7 @@ ROWS = [
     ("26 AWG stranded hookup wire, several colours", "Required", "Amazon / AliExpress", "26 AWG silicone wire kit", 1, 10, 14,
      AMZ + "26+AWG+silicone+stranded+wire+kit", "Radar, battery and screen wires; red/black plus 2+ signal colours."),
     ("Heat-shrink tubing assortment", "Required", "Amazon / AliExpress", "heat shrink tubing assortment", 1, 5, 8,
-     AMZ + "heat+shrink+tubing+assortment", "Covers R25 at the cell tab and every joint of the two 5 V filters."),
+     AMZ + "heat+shrink+tubing+assortment", "Covers R25 at the cell tab (and, on a v1.1 board, every joint of the two hand-wired 5 V filters)."),
     ("M3 heat-set inserts (4.6-5 mm OD, up to 7 mm long)", "Required", "Amazon / AliExpress", "M3 heat set inserts", 1, 8, 10,
      AMZ + "M3+heat+set+inserts+brass", "8: 4 in the base corners for the lid, 4 in the board posts (+2 for the sensor pod). Holes are 4.1 mm across, 7.5 mm deep."),
     ("M3 screw assortment (M3x6, M3x8, self-tapping M3x6)", "Required", "Amazon / AliExpress", "M3 screw assortment kit", 1, 8, 12,
@@ -115,8 +115,8 @@ def main():
     ws.data_validations.dataValidation = []
 
     ws["A1"] = "Range Book BLIPR — Parts List"
-    ws["A2"] = ("Updated Nov 26, 2026 for circuit board v1.1, case v0.12, Teensy firmware 0.2.8 and ESP32 0.2.20. New since the first "
-                "build: the two 5 V noise filters (L1, C27, C28 at the battery holder; L2, C29, C30 at the ESP32), the DFRobot "
+    ws["A2"] = ("Updated Nov 26, 2026 for circuit board v1.2 (v1.1 notes kept), case v0.12, Teensy firmware 0.2.8 and ESP32 0.2.20. New since the first "
+                "build: the two 5 V noise filters (L1, C27, C28 at the battery holder; L2, C29, C30 at the ESP32; on the board from v1.2), the DFRobot "
                 "10-DoF sensor board, and the screen wired directly. Prices are estimates before shipping and tax. Set Bought? "
                 "to Yes as you order; the Remaining total updates.")
     r = 5

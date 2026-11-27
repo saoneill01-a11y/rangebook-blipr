@@ -1,5 +1,5 @@
 """Builds docs/BLIPR Build Guide.docx (and the case pictures it uses, docs/img/case_*.png).
-Covers the circuit board (v1.1) build, case v0.12, Teensy firmware 0.2.8 and ESP32 firmware 0.2.20,
+Covers the circuit board build (v1.2, with the v1.1 steps kept), case v0.12, Teensy firmware 0.2.8 and ESP32 firmware 0.2.20,
 with both 5 V filters and the direct-wired screen. docs/make_build_pdf.py turns it into the PDF. Needs: pip install python-docx pillow numpy matplotlib.
 Run from the repo root: python docs/make_build_doc.py"""
 import sys
@@ -260,7 +260,7 @@ def build():
     para("Status, Nov 26, 2026: built and tested live on .22 LR. 9 of 10 shots read on the first two strings, "
          "averaging within about 1% of an Athlon chronograph with the same rifle and ammo.",
          size=11, align=WD_ALIGN_PARAGRAPH.CENTER)
-    para("Circuit board v1.1 · Case v0.12 · Teensy firmware 0.2.8 · ESP32 firmware 0.2.20 · November 2026",
+    para("Circuit board v1.2 (v1.1 notes kept) · Case v0.12 · Teensy firmware 0.2.8 · ESP32 firmware 0.2.20 · November 2026",
          size=10, color=(90, 90, 90), align=WD_ALIGN_PARAGRAPH.CENTER)
     doc.add_page_break()
 
@@ -280,8 +280,9 @@ def build():
          "out of the weakest signals in the build.")
     rich(("Two 5 V filters. ", True), "The radar hears more than bullets. The battery holder's boost converter "
          "whistles at about 494 kHz, and the ESP32's Bluetooth radio draws its current in bursts. Both reached the "
-         "radar through the shared 5 V, so each gets a small filter in its wires: L1 (22 µH) with C27 and C28 at the "
-         "holder, and L2 (22 µH) with C29 and C30 at the ESP32. The board's copper is unchanged.")
+         "radar through the shared 5 V, so each gets a small filter: L1 (22 µH) with C27 and C28 at J1, and L2 (22 µH) "
+         "with C29 and C30 in the ESP32's 5 V feed. On circuit board v1.2 both are on the board; on a v1.1 board they "
+         "go in the wires, by hand (marked \"If you have a v1.1 board\" below).")
     doc.add_page_break()
 
     # ---------------------------------------------------------------- 1 parts
@@ -294,7 +295,7 @@ def build():
                    "0.96\" SSD1306 I2C OLED screen, 4-pin (white reads best). It gets soldered wires, no header",
                    "microSD card, name brand, A1, FAT32 or exFAT. A 32 GB A1 card worked; an 8 GB card that had been in another "
                    "device wasn't read",
-                   "RB BLIPR circuit board v1.1 (from PCBWay)",
+                   "RB BLIPR circuit board v1.2 (from PCBWay; a v1.1 board also works, see the v1.1 notes)",
                    "A micro-USB DATA cable (Teensy) and a USB-C DATA cable (ESP32). Many cables only charge: "
                    "if the computer doesn't see the board, try another cable first"])
 
@@ -312,7 +313,7 @@ def build():
            ("R10, R17", "330 Ω", "Output filter"),
            ("R19, R20", "100 kΩ", "Battery gauge"),
            ("R22", "100 Ω", "Ammo-probe jack"),
-           ("R23, R24", "1 kΩ (brown, black, red)", "Serial link between the Teensy and the ESP32"),
+           ("R23, R24", "1 kΩ (brown, black, red)", "Serial link between the Teensy and the ESP32. v1.2: they stand on end"),
            ("R25", "10 kΩ", "Soldered on the battery holder's + tab, not on the board"),
            ("C1, C2, C14, C17, C21, C24", "1 µF ceramic", "Either way round"),
            ("C5, C8, C9, C11, C26", "100 nF ceramic", "Either way round"),
@@ -328,9 +329,11 @@ def build():
            ("J3", "Wires soldered straight in", "Screen: soldered at the OLED end too, no header (a header plus "
                                                 "plug-on jumpers stands too tall under the lid)"),
            ("J4", "1x4 FEMALE header, or wires", "Sensor kit: the sensor cable ends in male pins"),
-           ("L1, L2", "22 µH inductor, 1 A or more", "Off the board: L1 in the holder's red wire, L2 in the ESP32's 5 V"),
-           ("C27, C29", "470 µF electrolytic, 10 V or more", "Off the board: across J1, and across the ESP32's 5V and GND"),
-           ("C28, C30", "1 µF ceramic", "Off the board, beside C27 and C29")],
+           ("L1, L2", "22 µH inductor, 1 A or more", "v1.2: on the board; drum type up to 8.4 mm across, leads 5 mm apart "
+                                                     "(e.g. Würth 744772220). v1.1: in the holder's red wire and the ESP32's 5 V"),
+           ("C27, C29", "470 µF electrolytic, 10 V or more", "v1.2: on the board; 8 mm across, leads 3.5 mm apart (e.g. Nichicon "
+                                                            "UKA1A471MPD1TD). v1.1: across J1, and across the ESP32's 5V and GND"),
+           ("C28, C30", "1 µF ceramic", "v1.2: on the board. v1.1: beside C27 and C29")],
           [1.75, 2.35, 2.8], size=10)
 
     doc.add_heading("Printed parts (ASA recommended)", 2)
@@ -436,7 +439,7 @@ def build():
                            "the red LED is on, the cable is charge-only: swap it. If the upload won't connect, hold "
                            "BOOT, tap RESET, let go of BOOT."),
               ("Check on your phone: ", "Bluefy (iPhone) or nRF Connect should list RB BLIPR and connect to it.")])
-    tip("Load the ESP32 over USB now (firmware 0.2.20). Once its 5 V filter is fitted (section 8), the computer sees "
+    tip("Load the ESP32 over USB now (firmware 0.2.20). On a v1.1 board, once its hand-wired filter is fitted (section 8), the computer sees "
         "it only when it's out of BLIPR's socket, and Range Book updates it over Bluetooth from then on.")
 
     doc.add_heading("d. The two boards together", 2)
@@ -457,10 +460,12 @@ def build():
 
     # ---------------------------------------------------------------- 6 solder the board
     doc.add_heading("6. Solder the circuit board", 1)
-    picture(PCB / "pcb_assembly.png", 5.6, "Where each part goes (top view, front edge at the bottom).")
+    picture(PCB / "pcb_assembly.png", 5.6, "Board v1.2: where each part goes (top view, front edge at the bottom). "
+            "The v1.1 drawing is in pcb/v1.1/out/.")
     para("Lowest parts first, so the board sits flat on the bench while you solder:")
     numbered([("Resistors. ", "Measure each with the meter before it goes in (10 Ω, 330 Ω, 470 Ω, 4.7 kΩ and 10 kΩ "
-                              "look alike). R23 and R24 are 1 kΩ."),
+                              "look alike). R23 and R24 are 1 kΩ; on v1.2 they stand on end: bend one lead back down "
+                              "beside the body, with the body over the hole inside the drawn square."),
               ("D1 (1N5817). ", "Stripe to the right, on the square pad."),
               ("Ceramic capacitors ", "(either way round), then the two 8-pin sockets with their notch pointing "
                                       "right, as drawn."),
@@ -468,7 +473,9 @@ def build():
                                  "Spread the two outer legs a little to reach the holes."),
               ("Electrolytic capacitors. ", "The + leg (longer) goes in the square pad; the stripe on the can is the "
                                             "minus side. C3 (100 µF) is the small 16 V or 25 V one; C4, C7, C10 are "
-                                            "10 µF 25 V."),
+                                            "10 µF 25 V. On v1.2 also C27 and C29 (470 µF, 8 mm across)."),
+              ("L1 and L2 (v1.2). ", "22 µH, either way round, pushed down flat. On a v1.1 board these and C27-C30 have no "
+                                     "holes: they go in the wires (sections 7 and 8)."),
               ("Headers. ", "J1 and J5 as headers or wires. J4 a FEMALE 1x4 header if you'll fit the sensor kit. "
                             "J2 (radar) and J3 (screen) get wires soldered straight in, never a plug."),
               ("Teensy and ESP32 sockets. ", "Plug each module into its female headers, set it in place and solder "
@@ -498,17 +505,19 @@ def build():
     numbered([("Check the holder first. ", "Cell in, holder on: red probe on its 5 V pad, black on GND must read "
                                            "about +5 V, not -5 V. Nothing on the board protects against those two "
                                            "swapped. Then take the cell out."),
-              ("Wire it. ", "Holder 5 V through L1 (22 µH, either way round) to J1 +5V, holder GND to J1 GND (use its "
-                            "solder pads, not the USB-A socket). Set the holder's mode switch to \"power on\"."),
-              ("Filter capacitors. ", "C27 (470 µF, stripe to GND) and C28 (1 µF) across J1's +5V and GND, on the "
-                                      "board side of L1, as close to J1 as you can. Keep the red and black wires side "
-                                      "by side and heat-shrink every joint."),
+              ("Wire it. ", "Holder 5 V to J1 +5V, holder GND to J1 GND (use its solder pads, not the USB-A socket), "
+                            "side by side. On v1.2 the filter (L1, C27, C28) is already on the board. Set the holder's "
+                            "mode switch to \"power on\"."),
               ("Battery gauge. ", "With the cell out, tin the holder's + end tab and quickly solder one leg of R25 "
                                   "(10 kΩ) straight onto it. Heat-shrink it, solder a wire (orange) to its other leg "
                                   "and run that to J1 BAT. A nicked wire then can't short the cell. About 10 cm of "
                                   "wire reaches the board."),
               ("Leave out ", "the op-amps, Teensy, ESP32 and radar for now.")])
-    picture(PICS / "power_filter.png", 6.4, "The battery holder's 5 V filter: L1 in the red wire, C27 and C28 across J1.")
+    doc.add_heading("If you have a v1.1 board: the holder's filter by hand", 2)
+    numbered([("L1. ", "Cut the red wire and put L1 (22 µH, 1 A or more, either way round) in the gap."),
+              ("C27 and C28. ", "470 µF (stripe to GND) and 1 µF across J1's +5V and GND, on the board side of L1, as "
+                                "close to J1 as you can. Heat-shrink every joint.")])
+    picture(PICS / "power_filter.png", 6.0, "v1.1 only: L1 in the red wire, C27 and C28 across J1.")
     doc.add_heading("Checkpoint 1: power (meter on DC volts, black probe on GND)", 2)
     para("Cell in, press the holder's button.", space=4)
     check([("J1 +5V", "4.9-5.2 V", "Holder off (press its button) or cell flat"),
@@ -544,8 +553,10 @@ def build():
          "straight to the screen's pads and straight into J3: no header and no plug-on jumpers. If your screen came "
          "with header pins fitted, unsolder or clip them off first. It sits in the lid about 5 mm above the Teensy, "
          "and a header plus Dupont plugs stands too tall to fit.")
-    doc.add_heading("The ESP32's 5 V filter", 2)
-    picture(PICS / "esp_filter.png", 6.6)
+    doc.add_heading("If you have a v1.1 board: the ESP32's 5 V filter by hand", 2)
+    para("On v1.2 this filter (L2, C29, C30) is on the board and the ESP32 plugs in with all its pins: skip this part.",
+         space=4)
+    picture(PICS / "esp_filter.png", 6.0)
     numbered([("Firmware first. ", "Load the ESP32 over USB (section 4) before this step."),
               ("Cut its 5V pin. ", "Module out of BLIPR, cut its 5V pin off under the black plastic with flush cutters, "
                                    "holding the module flat. Don't lever it: the first build's module got an "
@@ -676,7 +687,7 @@ def build():
                                        "parallel to the bore? Send the recordings"),
            ("Holder's button won't switch on after charging", "Seen once after a night on the charger: take the cell "
                                                               "out, put it back, press the button"),
-           ("Computer doesn't see the ESP32 in BLIPR", "Normal with its 5 V filter: flash it out of the socket, or "
+           ("Computer doesn't see the ESP32 in BLIPR", "Seen on the v1.1 build with the hand-wired filter: flash it out of the socket, or "
                                                       "update over Bluetooth"),
            ("Bluetooth update stops partway", "Needs ESP32 0.2.12 or later (once over USB); phone close, screen on")],
           [2.6, 4.3], size=10.5)
@@ -684,7 +695,7 @@ def build():
     table([("What", "Where in the project"),
            ("Firmware", "firmware/BliprTeensy, firmware/BliprBLE (ready-made files in firmware/prebuilt)"),
            ("Case files", "case/out (STL and STEP); case/blipr_case.py rebuilds them"),
-           ("Circuit board", "pcb/out (Gerbers, BOM, assembly drawing)"),
+           ("Circuit board", "pcb/out: v1.2 (Gerbers, BOM, assembly drawing); pcb/v1.1: the v1.1 files"),
            ("Parts list with prices", "docs/RB_BLIPR_Parts_List.xlsx (docs/make_parts_list.py)"),
            ("Assembly video", "see README.md"),
            ("Wiring pictures", "pictures/out"),

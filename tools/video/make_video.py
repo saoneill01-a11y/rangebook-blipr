@@ -9,7 +9,8 @@ import numpy as np
 import cairo
 import engine as E
 from engine import FPS, BUILD
-import scenes as S
+import importlib
+S = importlib.import_module(os.environ.get("BLIPR_SCENES", "scenes"))   # scenes_v12 = the v1.2 add-on
 
 mode = sys.argv[1] if len(sys.argv) > 1 else "stills"
 only = sys.argv[2].split(",") if len(sys.argv) > 2 else None

@@ -25,6 +25,12 @@ the direct-wired screen, the dark-while-listening screen, and Sean's photos of t
 | 32:59 | First test: power-up, level, dark means listening, compass, bench placement, speed window, first shot |
 | 36:44 | Troubleshooting, including noise and interference (`live`, `rec`) |
 
+**Board v1.2 add-on** (about 2 minutes, `scenes_v12.py`): the main video shows board v1.1 with the filters wired by hand.
+The add-on covers the three differences on v1.2: six filter parts on the board, R23/R24 standing, and the two steps to skip.
+Make it with `BLIPR_SCENES=scenes_v12 BLIPR_VIDEO_BUILD=build/v12 BLIPR_VIDEO_TTS=build/tts python3 make_video.py render`, then `join`.
+Note: `board.py` draws whatever `pcb/design.py` is now (v1.2), so re-rendering the main video's board scenes would show v1.2
+parts the narration doesn't mention.
+
 Every hands-on step ends with a "Pause and …" bar so a viewer can stop and do it.
 
 ## Making it
