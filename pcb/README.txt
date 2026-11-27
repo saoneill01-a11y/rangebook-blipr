@@ -63,8 +63,8 @@ ASSEMBLED BOARDS (PCBA)
   out/pcba/ has what PCBWay needs to quote boards with the parts already soldered on (everything except
   the wire headers J1-J5): BOM with part numbers, part positions, assembly drawing and README_PCBA.txt
   with the quote-form answers. Rebuild them with python3 pcba_files.py.
-  NOTE on J4 (sensors): fit a 1x4 FEMALE header at J4 (the STEMMA QT-to-pins cable ends in male pins), or
-  solder its wires straight in.
+  NOTE on J4 (sensors): solder the STEMMA QT-to-pins cable's wires straight in (snip the pins off). A 1x4
+  header plus the cable's plug stands too tall under the lid (found on the first build).
 
 ASSEMBLY ORDER (lowest parts first, so the board sits flat while you solder)
   1. Cut the VIN-VUSB trace on the underside of the Teensy (see the build guide) before it goes in,
@@ -80,9 +80,9 @@ ASSEMBLY ORDER (lowest parts first, so the board sits flat while you solder)
   5. Electrolytic capacitors: the + leg goes in the SQUARE pad (the stripe on the can is the - side).
      That includes C27 and C29 (470 uF). Then L1 and L2 (either way round), pushed down flat.
   6. Headers J1 and J5 (or solder wires straight into them). Solder the wires straight into J2 (the radar,
-     so nothing there can be plugged in backwards) and J3 (the screen: wires soldered to the OLED's pads,
-     no header on the OLED, because a header plus plug-on jumpers stands too tall under the lid).
-     J4 (sensor kit) gets a 1x4 FEMALE header. Then the female headers for the
+     so nothing there can be plugged in backwards), J3 (the screen: female jumper wires on the OLED's pins,
+     or wires soldered to its pads) and J4 (sensor kit: the cable's wires, pins snipped off; a header plus
+     plug stands too tall under the lid). Then the female headers for the
      Teensy (2 x 24) and ESP32 (2 x 8). Plug the modules into their headers while you solder the
      headers, so they come out straight. The ESP32 goes in chip side UP (USB socket and buttons
      on top), USB toward the back, its antenna end at the board's front edge.

@@ -285,6 +285,13 @@ BG_SOFT = hexc("#FFFFFF")
 SIZE["foam_tape"] = (17, 17)
 
 
+def glue_stick(ctx):
+    setc(ctx, hexc("#EDEFF2")); rrect(ctx, -3, -14, 6, 28, 2.6); ctx.fill()
+    setc(ctx, hexc("#C8CDD4")); ctx.set_line_width(0.4); rrect(ctx, -3, -14, 6, 28, 2.6); ctx.stroke()
+    setc(ctx, hexc("#FFFFFF")); ctx.rectangle(-1.6, -12, 1.0, 24); ctx.fill()
+SIZE["glue_stick"] = (10, 30)
+
+
 def stemma_board(ctx, label="SHT45", col="#1A1C20"):
     setc(ctx, hexc(col)); rrect(ctx, -12.7, -8.9, 25.4, 17.8, 1.0); ctx.fill()
     for sx in (-1, 1):

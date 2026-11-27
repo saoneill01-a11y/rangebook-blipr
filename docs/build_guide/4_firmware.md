@@ -89,11 +89,11 @@ In the ESP32's Serial Monitor type `TEST`. The Teensy makes up a shot, and the E
 
 ## 7. OLED (if it has arrived)
 
-In BLIPR the OLED gets four soldered wires, with no header and no plug-on jumpers (build guide Step 4): VCC → ESP32 **3V3**, GND → GND, SDA → **GPIO6**, SCL → **GPIO7**. If yours still has its header pins, you can try it here on jumper wires first; remove the pins before it goes into BLIPR. Press RESET on the ESP32: it plays its start-up, shows *READY*, then goes dark (it lights only for a shot). After a `TEST` shot it shows a big speed with the string's count, average, SD and ES underneath for 3 seconds.
+In BLIPR the OLED gets four wires soldered into J3 (build guide Step 4): VCC → ESP32 **3V3**, GND → GND, SDA → **GPIO6**, SCL → **GPIO7**. If yours has pins, female jumper wires plug onto them, here and in BLIPR (they clear the lid). Press RESET on the ESP32: it plays its start-up, shows *READY*, then goes dark (it lights only for a shot). After a `TEST` shot it shows a big speed with the string's count, average, SD and ES underneath for 3 seconds.
 
 ## 8. Connect from Range Book
 
-Range Book 2.44 or later talks to the chronograph directly. Open Range Book through its https:// address in Chrome on the Android phone (or in the Bluefy app on the iPhone), go to **Tools › BLIPR Chronograph** and tap **Connect chronograph**, then pick **RB BLIPR**. Tap **Test shot**: a 2,700 fps shot appears in big numbers and in the string. The same button is on each range trip (under Chronograph) and on each ladder group.
+Range Book 2.44 or later talks to the chronograph directly. Open Range Book: on an iPhone or iPad, the Range Book app from the App Store (Range Book: Shooting Log); on Android, Chrome, through Range Book's https:// address (rangebook.org shows how to install Range Book), go to **Tools › BLIPR Chronograph** and tap **Connect chronograph**, then pick **RB BLIPR**. Tap **Test shot**: a 2,700 fps shot appears in big numbers and in the string. The same button is on each range trip (under Chronograph) and on each ladder group.
 
 When it connects, Range Book sets the chronograph's clock and screen units. Its settings (the pill at the bottom right) show BLIPR's own velocity window and radar position, and change them when you type a value (a button sets the window from the load). They also have the battery, calibration against another chronograph, screen brightness, **Show each shot for** (default 3 s), **Re-level and update the heading**, **Disable the level** and, with the sensor kit, compass calibration.
 

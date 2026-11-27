@@ -4,7 +4,7 @@ Every connection, drawn with the parts as they look. They fit both builds: on th
 
 How to read them: each coloured line is one wire (or one solder trail on perfboard). A black dot joins wires; lines that cross without a dot don't touch. Pins with a red ring are the ones this project uses. Red is +5 V, black ground, orange 3.3 V, green radar I, blue radar Q (and SDA), yellow SCL and data.
 
-On board v1.2 the two 5 V noise filters are on the board (Circuit board tab). On a v1.1 board they sit in the wires, as in sections 12 and 13; they aren't drawn in the other pictures. The screen's four wires are soldered at both ends (OLED pads and J3): no header, no plug-on jumpers.
+On board v1.2 the two 5 V noise filters are on the board (Circuit board tab). On a v1.1 board they sit in the wires, as in sections 12 and 13; they aren't drawn in the other pictures. The screen's four wires solder into J3; at the screen end, female jumper wires on its pins or wires soldered to its pads. The radar's four wires are short, with one ground and no twisting.
 
 ## 1. Everything that leaves the main board
 

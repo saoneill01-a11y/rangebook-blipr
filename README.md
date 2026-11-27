@@ -19,6 +19,9 @@ as more real shots come in.
 
 ## Build one
 
+- **You'll need Range Book:** [rangebook.org](https://rangebook.org) shows how to install it (free). On iPhone and iPad,
+  the [Range Book app](https://apps.apple.com/app/id6837895002) on the App Store connects to BLIPR over Bluetooth;
+  on Android, Chrome does.
 - **Build guide (PDF):** [docs/BLIPR Build Guide.pdf](docs/BLIPR%20Build%20Guide.pdf). Parts, printing, firmware and
   bench tests, soldering, the 5 V filters, wiring, the case, first power-up and first shot, troubleshooting. The same
   guide as Word: [docs/BLIPR Build Guide.docx](docs/BLIPR%20Build%20Guide.docx); a longer reference in five parts:

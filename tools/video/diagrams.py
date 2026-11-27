@@ -439,7 +439,7 @@ def pigtail(ctx, c, x, y, w, h, line0=0):
     text(ctx, "J2 RADAR", jx0 - 90, jy + 4, 26, INK, True, "r")
     text(ctx, "on the main board", jx0 - 90, jy + 34, 22, INK2, False, "r")
     specs = [(0, WIRE["Q"], "pin 1 → J2 Q (blue)"), (1, WIRE["3V3"], "pin 2 → J2 VCC (orange)"),
-             (2, WIRE["I"], "pin 3 → J2 I (green)"), (3, WIRE["GND"], "pin 4 → J2 GND (two black)")]
+             (2, WIRE["I"], "pin 3 → J2 I (green)"), (3, WIRE["GND"], "pin 4 → J2 GND (black)")]
     for n, (pi, col, lab) in enumerate(specs):
         li = line0 + 1 + n
         k = c.k(li, 1.3)
@@ -447,8 +447,6 @@ def pigtail(ctx, c, x, y, w, h, line0=0):
         tx, ty = jp[pi]
         lane = hy + 150 + n * 34
         wire_path(ctx, [(px, py + 14), (px, lane), (tx, lane), (tx, ty)], col, 9, k)
-        if pi == 3:
-            wire_path(ctx, [(px + 12, py + 14), (px + 12, lane + 14), (tx + 10, lane + 14), (tx + 10, ty)], col, 9, k)
         if k > 0:
             yy = y + h - 230 + n * 54
             setc(ctx, col, min(1, k * 2)); ctx.set_line_width(10); ctx.set_line_cap(cairo.LINE_CAP_ROUND); ctx.new_path()
@@ -459,9 +457,6 @@ def pigtail(ctx, c, x, y, w, h, line0=0):
         px, py = pins[4]
         cross(ctx, px, py + 64, 46, k5)
         tag(ctx, "pin 5: NO wire", px + 36, py + 64, 24, PAPER, BAD, k5)
-    k6 = c.k(line0 + 6)
-    if k6:
-        tag(ctx, "Twist I (green) with one black, Q (blue) with the other", x + w - 40, y + 60, 24, PAPER, INK, k6, "r")
 
 
 # ------------------------------------------------------------------ OLED wiring
@@ -692,10 +687,11 @@ def qt_chain(ctx, c, x, y, w, h, line0=0):
     for i, nm in enumerate(names):
         py = y + 480 + i * 56
         jp[nm] = py
-        setc(ctx, hexc("#202226")); ctx.rectangle(jx - 18, py - 18, 36, 36); ctx.fill()
-        dot(ctx, jx, py, 7, hexc("#666"))
+        setc(ctx, hexc("#D9D9D9")); ctx.new_path(); ctx.arc(jx, py, 16, 0, 2 * math.pi); ctx.fill()
+        dot(ctx, jx, py, 7, hexc("#111"))
         text(ctx, nm, jx - 34, py + 9, 24, hexc("#FFE680"), True, "r")
     text(ctx, "J4 on the main board", x + 165, y + 735, 22, INK2, True, "c")
+    text(ctx, "wires soldered in", x + 165, y + 765, 20, INK2, False, "c")
     sx, sy, ss = x + 560, y + 250, 11
     dx, dy, ds = x + 1000, y + 250, 10
     P(ctx, PT.stemma_board, sx, sy, ss, label="SHT45")
@@ -710,7 +706,7 @@ def qt_chain(ctx, c, x, y, w, h, line0=0):
         ty = sy + 15 - n * 10
         wire_path(ctx, [(jx + 18, jp[nm]), (vx, jp[nm]), (vx, ty), (sx - 8.5 * ss - 26, ty)], cols[nm], 6, k1, outline=False)
     if k1:
-        tag(ctx, "150 mm STEMMA QT-to-pins cable", x + 40, y + 40, 24, PAPER, INK, min(1, k1 * 2))
+        tag(ctx, "150 mm STEMMA QT-to-pins cable, pins snipped off", x + 40, y + 40, 24, PAPER, INK, min(1, k1 * 2))
     k2 = c.k(line0 + 1, 1.2)
     for n, nm in enumerate(order):
         o = (n - 1.5) * 8
@@ -790,6 +786,47 @@ def trouble(ctx, c, x, y, w, h, items):
 
 def outro(ctx, c, x, y, w, h):
     title(ctx, c, x, y, w, h, sub="Built. Now go shoot.", hero=REPO + "/docs/img/blipr_radar_side.jpg")
+    k = c.k(2)
+    if k:
+        text(ctx, "Range Book: rangebook.org", x + 60, y + 700, 30, INK, True, alpha=k)
+        text(ctx, "iPhone and iPad: Range Book: Shooting Log, on the App Store", x + 60, y + 742, 24, INK2, alpha=k)
+
+
+RB_URL = "https://rangebook.org"
+APP_URL = "https://apps.apple.com/app/id6837895002"
+
+
+def qr(ctx, data, x, y, size, alpha=1.0):
+    """A QR code, size px square (quiet zone included), top-left at x, y."""
+    import segno
+    m = segno.make(data, error="m").matrix
+    n = len(m) + 8
+    cell = size / n
+    setc(ctx, hexc("#FFFFFF"), alpha); rrect(ctx, x, y, size, size, 10); ctx.fill()
+    setc(ctx, hexc("#000000"), alpha)
+    for r, row in enumerate(m):
+        for col, v in enumerate(row):
+            if v:
+                ctx.rectangle(x + (col + 4) * cell, y + (r + 4) * cell, cell + 0.3, cell + 0.3)
+    ctx.fill()
+
+
+def qr_card(ctx, data, label, sub, cx, cy, k, size=300):
+    if k <= 0:
+        return
+    w, h = size + 80, size + 170
+    x0, y0 = cx - w / 2, cy - h / 2 + (1 - k) * 30
+    card(ctx, x0, y0, w, h)
+    qr(ctx, data, x0 + 40, y0 + 40, size, k)
+    text(ctx, label, cx, y0 + size + 95, 32, INK, True, "c", alpha=k)
+    text(ctx, sub, cx, y0 + size + 135, 22, INK2, True, "c", alpha=k)
+
+
+def rangebook_links(ctx, c, x, y, w, h):
+    text(ctx, "BLIPR works with Range Book", x + w / 2, y + 90, 44, INK, True, "c", alpha=c.k(0))
+    text(ctx, "Free, self-hosted shooting log and ballistics app", x + w / 2, y + 140, 28, INK2, True, "c", alpha=c.k(0))
+    qr_card(ctx, RB_URL, "rangebook.org", "how to install Range Book", x + w * 0.3, y + h / 2 + 90, c.k(1))
+    qr_card(ctx, APP_URL, "Range Book app", "App Store: iPhone and iPad", x + w * 0.7, y + h / 2 + 90, c.k(2))
 
 
 # ------------------------------------------------------------------ op-amp pin voltages

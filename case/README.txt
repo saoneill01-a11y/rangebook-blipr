@@ -135,8 +135,9 @@ PRINT FILES (out/)
 
 Outside size: 118.8 x 130.8 x 36.4 mm, plus the 2.4 mm lid.
 Hardware (v0.8 adds): 4 x M2 x 4 screws (screen), battery-holder screws to suit its 2.8 mm holes
-          (M3 x 6 self-tapping screws cut their own thread in a 2.8 mm hole), ~150 mm of
-          1 mm x 5 mm foam tape (radar sides, back and top).
+          (M3 x 6 self-tapping screws cut their own thread in a 2.8 mm hole), and hot glue for the
+          radar (a bead down each side; Sean's build, Nov 26: holds far better than the foam tape the
+          pocket was sized for).
 Hardware: 8 x M3 heat-set inserts (4.1 mm holes), 4 x M3x8 (lid), 4 x M3x6 (board),
           1 x 1/4-20 heat-set insert, up to 9 mm long (7.15 mm hole, 9 mm deep) for a tripod.
           Sensor pod: 2 x M3x8 + 2 more M3 heat-set inserts (in the lid's risers).  SHT45 and pod roof: 8 x M2.5x6 brass screws; DFRobot IMU: 2 x M3x6 brass screws.

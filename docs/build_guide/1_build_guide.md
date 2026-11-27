@@ -16,6 +16,8 @@ How it works, in one pass: the RFbeam K-LC5 radar sends out a 24 GHz signal and 
 
 **Firmware (Teensy 0.2.8, ESP32 0.2.20):** setup and bench tests are on the Firmware tab.
 
+**You'll need Range Book:** BLIPR sends its shots to Range Book, a free, self-hosted shooting log and ballistics app. [rangebook.org](https://rangebook.org) shows how to install it. On iPhone and iPad, get the [Range Book app](https://apps.apple.com/app/id6837895002) (Range Book: Shooting Log) from the App Store; on Android, use Chrome.
+
 **Status (Nov 26, 2026):** one BLIPR is built on circuit board v1.1 and has been tested live on .22 LR (CCI Standard Velocity). On its first two strings it read 9 of 10 shots, averaging 1029 fps (SD 22). An Athlon chronograph with the same rifle and ammo averaged 1017 fps on another day, so the two agree within about 1%. Rifles are next. Board v1.2, which puts both 5 V filters on the board, is designed but not built yet; this guide covers both boards. This guide also comes as a PDF and a Word file (`docs/` in the project), and there is a narrated assembly video.
 
 &#91;image: The first BLIPR on a small tripod: screen window in the lid's back corner, sensor pod in front\]
@@ -36,7 +38,7 @@ You need a temperature-controlled soldering iron, a multimeter, and calipers; ev
 | Hobby knife | Cutting the Teensy's VIN/VUSB trace |
 | Solder-tip for heat-set inserts (or the plain iron tip) | Setting the M3 and 1/4-20 inserts |
 | 26–28 AWG stranded wire in at least 4 colors | Point-to-point wiring (red = power, black = ground, other colors = signals) |
-| 1 mm thick × 5 mm wide foam tape (about 150 mm), 4 × M2 × 4 mm screws, 4 × M3 × 6 mm self-tapping screws | Holding the radar snug, the screen to the lid, and the battery holder to the base |
+| Hot glue, 4 × M2 × 4 mm screws, 4 × M3 × 6 mm self-tapping screws | Holding the radar in its pocket, the screen to the lid, and the battery holder to the base |
 | Isopropyl alcohol and an old toothbrush | Cleaning flux off the amplifier area |
 
 **Safety and handling**
@@ -61,7 +63,7 @@ The spreadsheet has prices and links; this table adds the reference names (R1, C
 | U3 | MCP1700-3302E/TO, 3.3 V low-dropout regulator (TO-92) | 1 | **new**, buy 2, about $0.40 at DigiKey |
 | — | DIP-8 IC sockets | 2 | **new**, so the op-amps can be swapped |
 | BT1 | 18650 battery holder (5 V output, its own power button) + name-brand 18650 cell | 1 |  |
-| OLED | 0.96" SSD1306 I2C display | 1 | Shows speed and battery level; white reads best. Wired directly with soldered wires, no header (Step 4) |
+| OLED | 0.96" SSD1306 I2C display | 1 | Shows speed and battery level; white reads best. Four wires into J3: female jumper wires on its pins, or wires soldered to its pads (Step 4) |
 | — | microSD card, 8–32 GB, name brand, A1 or Class 10, FAT32 or exFAT | 1 | In the Teensy. An 8 GB card that had been in another device wasn't read; a 32 GB A1 card worked |
 | — | Micro-USB and USB-C data cables | 1 each | Charge-only cables light the boards but the computer can't see them |
 | R1 | 10 Ω resistor | 1 | Op-amp supply filter |
@@ -84,7 +86,7 @@ The spreadsheet has prices and links; this table adds the reference names (R1, C
 | R25 | 10 kΩ | 1 | Soldered on the battery holder's + tab (battery gauge) |
 | C18, C25 | 1 nF ceramic | 2 | ADC input filter |
 | — | 70 × 90 mm double-sided perfboard | 1 | Or the RB BLIPR circuit board v1.2 (Circuit board tab; v1.1 also works) |
-| — | Female headers 2.54 mm | 2×24, 2×8, 1×5, 1×4 | Teensy, ESP32, radar plug, and J4 for the sensor kit (female 1×4: the sensor cable ends in male pins). The OLED gets no header: its wires are soldered on |
+| — | Female headers 2.54 mm | 2×24, 2×8, 1×5 | Teensy, ESP32, radar plug, none for J2, J3 or J4: their wires solder straight into the board (a header plus plug stands too tall under the lid) |
 | — | M3 heat-set inserts (about 4.6–5 mm OD) | 8 | **new**, 4 lid + 4 board posts |
 | — | M3 × 8 mm screws (lid), M3 × 6 mm screws (board) | 4 + 4 | **new** |
 | — | 1/4-20 heat-set insert, 13 mm long or shorter | 1 | Tripod mount |
@@ -253,13 +255,17 @@ Everything left is point-to-point wiring; the table at the end of this section i
 &#91;image: Battery gauge, sensor kit (SHT45 and DFRobot 10-DoF) and ammo jack\]
 
 1. **Radar pigtail.** Take a 1×5 female header. Find pin 1 on the K-LC5 (marked on the module and in the outline drawing of RFbeam's datasheet) and mark the matching end of the header. Mark pin 1 on the module too, with a paint pen. This plug is the one that can kill the radar: pins 2 (power) and 4 (ground) mirror each other, so a plug turned round swaps them, and no beep test catches it. It only ever goes on pin 1 to pin 1. Solder five wires about 8–10 cm long to the back of the header:
-   - pin 1 → Q (one color), pin 3 → I (another color), pin 2 → +3V3A (red), pin 5 → nothing at all (VCO stays unconnected), pin 4 → **two** black ground wires.
+   - pin 1 → Q (one color), pin 3 → I (another color), pin 2 → +3V3A (red), pin 5 → nothing at all (VCO stays unconnected), pin 4 → **one black ground wire**.
    - Solder C5 (100 nF) directly across header pins 2 and 4 (on the circuit board, C5 is already beside J2). Insulate with heat-shrink or a dab of hot glue.
-   - Twist the I wire with one ground wire and the Q wire with the other. Twisting pairs cuts pickup of digital noise.
-2. **Land the radar wires on the board.** I → **I-IN**, Q → **Q-IN**, red → +3V3A bus, both grounds → the GND bus right next to the amplifier. On the circuit board, solder the four wires straight into J2's holes rather than using a plug there: a 4-way plug turned round on J2 would put 3.3 V on the radar's I output. Keep this bundle away from the ESP32.
+   - Keep the wires short: just long enough to reach J2 with a little slack. One ground wire is enough, and they don't need twisting (the first build uses short, untwisted wires).
+2. **Land the radar wires on the board.** I → **I-IN**, Q → **Q-IN**, red → +3V3A bus, ground → the GND bus right next to the amplifier. On the circuit board, solder the four wires straight into J2's holes rather than using a plug there: a 4-way plug turned round on J2 would put 3.3 V on the radar's I output. Keep this bundle away from the ESP32.
 3. **ESP32-C3.** It sits chip side up. Wire its **5V** pin (the one you marked in Step 1) to +5V through D1 (1N5817 diode, striped end toward the ESP32), **GND** to GND, **GPIO20** (its RX) through a 1 kΩ resistor (R23) to Teensy **pin 35** (TX8), and **GPIO21** (its TX) through R24 (1 kΩ) to Teensy **pin 34** (RX8). TX always goes to RX. Firmware 0.2.2 and later use these pins. On board v1.2 the ESP32's own 5 V filter (L2, C29, C30) is on the board between D1 and the socket, so the module plugs in with all its pins. On a v1.1 board, see "If you have a v1.1 board" below this list.
 4. **Teensy power.** Teensy **VIN** to +5V and a Teensy **GND** pin to GND.
-5. **OLED.** OLED **VCC** to the ESP32-C3's **3V3** pin, **GND** to GND, **SDA** to ESP32 **GPIO6** and **SCL** to ESP32 **GPIO7**. These modules don't all put the pins in the same order, so go by the labels printed on yours. Wire it directly, with no plugs: solder four wires about 15 cm long straight to the OLED's pads, and their other ends straight into J3 on the board. If your OLED came with header pins fitted, unsolder or clip them off first. The screen sits in the lid's back corner about 5 mm above the Teensy, and a header plus plug-on (Dupont) jumpers stands too tall to fit.
+5. **OLED.** OLED **VCC** to the ESP32-C3's **3V3** pin, **GND** to GND, **SDA** to ESP32 **GPIO6** and **SCL** to ESP32 **GPIO7**. These modules don't all put the pins in the same order, so go by the labels printed on yours. Use four wires about 15 cm long, soldered straight into J3 on the board. If your OLED came with pins fitted, plug female jumper wires onto them: they clear the lid (the first build does this). If it has bare pads, solder the wires to the pads.
+
+&#91;image: The radar's plug with four short wires (one ground, not twisted), and the radar held in its pocket with hot glue at the sides\]
+
+&#91;image: A screen with pins: female jumper wires plugged on, their other ends soldered into J3\]
 
 **If you have a v1.1 board: the ESP32's filter by hand.** With its firmware loaded and the module out of BLIPR, cut its 5V pin off under the black plastic with flush cutters, holding the module flat (don't lever it). Run L2 (22 µH) from the socket's 5V hole (solder a short header pin to L2 and push it in) or from D1's leg on the square-pad side, to the pin's stub on top of the module. Solder C29 (470 µF, stripe to GND) and C30 (1 µF) across the module's 5V stub and its GND pin, close in, and lay L2 and C29 flat so the lid clears them. Beep test: the 5V stub to D1's square pad beeps; 5V to GND must not.
 
@@ -293,8 +299,8 @@ Passing all three checkpoints means the hardware is ready for test firmware.
 | +3V3A | Radar pin 2 (VCC), R1 |  |
 | R1 | +3V3OP bus, C7, U1 pin 8, U2 pin 8 | C8, C9 at the sockets |
 | +3V3OP | R2 → VREF → R3 → GND | C10, C11 on VREF |
-| Radar pin 3 (I) | I-IN → C12 → U1 pin 3 | Twisted with a ground |
-| Radar pin 1 (Q) | Q-IN → C19 → U2 pin 3 | Twisted with a ground |
+| Radar pin 3 (I) | I-IN → C12 → U1 pin 3 | Short wire |
+| Radar pin 1 (Q) | Q-IN → C19 → U2 pin 3 | Short wire |
 | Radar pin 5 (VCO) | nothing | Leave it unconnected |
 | Radar pin 4 | GND bus (two wires) |  |
 | U1 pin 7 | R10 → A0 point → Teensy pin 14 | C18 to GND at A0 |
@@ -318,7 +324,7 @@ The v0.12 case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and prints in
 
 &#91;image: Base v0.11: the leftover stubs beside the two left battery pads cleared (before and after, from above, front at the top)\]
 
-**What's where.** The radar sits in a pocket behind the front window, facing forward, held snug by foam tape, with a thin replaceable cover in front of it. The battery holder screws to four 8 mm round pads on the floor on the left (no walls around it; 2.9 mm screw holes); its USB-C charge port and its power button line up with two openings in the side wall (the button's is a 14 × 10 mm slot). The main board screws onto four 12 mm posts on the right, and the Teensy's USB port comes out of the right wall. A 1/4-20 insert in the floor takes a tripod screw. The base is Sean's own CAD design. v0.9 made the battery pads 8 mm across with 2.9 mm holes. v0.10 raised the Teensy's USB hole to 24–32 mm above the case bottom (13.5 × 8 mm), to match the Teensy on its 8.5 mm sockets and fit a 12 × 5.5 mm plug. v0.11 cleared the leftover wall stubs beside the two left battery pads. v0.12 made the lid's screen window 13 mm tall (1 mm more toward the front), because the old edge hid the screen's top line.
+**What's where.** The radar sits in a pocket behind the front window, facing forward, held by hot glue at its sides, with a thin replaceable cover in front of it. The battery holder screws to four 8 mm round pads on the floor on the left (no walls around it; 2.9 mm screw holes); its power button lines up with the rounded 14 × 10 mm slot toward the back of the left wall, and its USB-C charge port with the square opening toward the front. The main board screws onto four 12 mm posts on the right, and the Teensy's USB port comes out of the right wall. A 1/4-20 insert in the floor takes a tripod screw. The base is Sean's own CAD design. v0.9 made the battery pads 8 mm across with 2.9 mm holes. v0.10 raised the Teensy's USB hole to 24–32 mm above the case bottom (13.5 × 8 mm), to match the Teensy on its 8.5 mm sockets and fit a 12 × 5.5 mm plug. v0.11 cleared the leftover wall stubs beside the two left battery pads. v0.12 made the lid's screen window 13 mm tall (1 mm more toward the front), because the old edge hid the screen's top line.
 
 | File | Print orientation | Settings (ASA) |
 | --- | --- | --- |
@@ -335,14 +341,14 @@ ASA warps, so use an enclosure or a draft shield, a brim on the base, and a bed 
 **Assembly order**
 
 1. **Inserts.** Press M3 heat-set inserts into the four corner columns and the four board posts (all holes 4.1 mm across and 7.5 mm deep, so inserts up to 7 mm long fit). Press the 1/4-20 insert into the hole under the floor (7.15 mm across, 9 mm deep). Push them in straight and slightly below flush, and let each cool before moving on.
-2. **Fit the radar.** Put 1 mm × 5 mm foam tape down the module's two sides and across its back, then press it into its pocket from above, antenna face forward against the window frame, pins pointing back. It sits on a 3 mm ledge and the foam holds it snug against the window. Put a 20 mm strip on its top edge too: a rib under the lid presses down on it. No glue, so it can be rotated 90° after the first tests if needed (the datasheet is unclear about which axis has the 80° beam).
+2. **Fit the radar.** Press it into its pocket from above, antenna face forward and flat against the window frame, pins pointing back. It sits on a 3 mm ledge. Hold it square and run hot glue down both sides, where the module meets the pocket; keep glue off the antenna face and the pins. Hot glue holds it far better than foam tape (the first build), and still peels off if the radar has to come out.
 3. **Battery holder.** Set its mode switch to "power on" first. Screw it to the four mounts in the left bay with M3 × 6 mm self-tapping screws, its USB-C port and button lined up with the holes in the side wall. Drive the screws gently: they cut their own thread in the 2.9 mm holes.
 4. **Power button.** Nothing to fit: press the holder's own button through the hole in the side wall to turn BLIPR on and off.
 5. **Main board.** Screw the board onto the posts with four M3 × 6 mm pan-head screws (no wider than 5.5 mm in the back-right corner, next to the Teensy socket), the Teensy's USB facing the right-wall opening.
 6. **Radar connection.** Plug the radar pigtail onto the module (pin 1 to pin 1). Dress the wires down along the pocket and away from the ESP32.
 7. **Front cover.** Slide it down into the slot behind the front wall, recessed side toward the radar and the wider frame edge at the top.
 8. **OLED.** Seat the module (its four wires already soldered on) in the pocket under the lid's window, wires toward the board, and screw it to the four corner pads with M2 × 4 mm screws. Snug only: the pilot holes are plastic.
-9. **Lid.** Tuck the screen wires in so nothing gets pinched, then four M3 × 8 mm screws into the corner inserts. The lid also holds the front cover down, and the rib under it presses on the foam strip on top of the radar.
+9. **Lid.** Tuck the screen wires in so nothing gets pinched, then four M3 × 8 mm screws into the corner inserts. The lid also holds the front cover down, and the rib under it sits just above the radar.
 
 &#91;image: Front cover as printed: the recessed area is the 0.9 mm window\]
 
@@ -377,7 +383,7 @@ Plugging the Teensy into a computer turns on USB drive mode and pauses shots (th
 The case is built from datasheet and typical sizes, so one round of measuring before printing the final version will save reprints. Send me these numbers (a photo of each part next to calipers also helps), and I'll update the script and send new files.
 
 - [ ] **Battery holder:** does it sit on its four mounts with the USB-C port and button lined up with the side holes?
-- [ ] **Radar with its foam on:** does it press in snug without forcing, and does the lid close without lifting? Too tight: trim the foam. Loose: add a layer.
+- [ ] **Radar glued in:** is its face flat against the window frame, and does the lid close without lifting? Glue on the antenna face: peel it off.
 - [ ] **OLED module:** board size; where the glass sits on the board (distance from each edge); which edge the pins are on.
 - [ ] **Radar module:** do the pins come out of the back face or an edge? Where is pin 1? Total thickness including pins.
 - [ ] **Perfboard:** actual size and mounting hole centers.

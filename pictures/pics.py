@@ -73,7 +73,7 @@ def overview():
     label(ax, X(30) + 16, 18, "RADAR K-LC5\n(front pocket)", size=7.5, bold=True, ha="left")
     for k, kind in ((1, "Q"), (2, "3V3A"), (3, "I"), (4, "GND")):
         wire(ax, rp[k], pads["J2-%d" % k], kind, lw=2.2)
-    note(ax, X(46), 38, "Radar pins: 1 Q, 2 VCC, 3 I, 4 GND.\nPin 1 to J2 pin 1 \u2026 pin 4 to pin 4.\nPin 5 (VCO): no wire.\nTwist I with a GND wire, Q with the other.", size=7.2)
+    note(ax, X(46), 38, "Radar pins: 1 Q, 2 VCC, 3 I, 4 GND.\nPin 1 to J2 pin 1 \u2026 pin 4 to pin 4.\nPin 5 (VCO): no wire.\nShort wires, one ground, no twisting.", size=7.2)
     # --- legend + notes
     legend(ax, 262, 160, [("5V", "+5 V"), ("BAT", "battery + (gauge)"), ("GND", "ground"), ("3V3", "3.3 V"), ("I", "radar I"), ("Q", "radar Q / SDA"),
                           ("SCL", "SCL / probe data")], size=7.6)
@@ -124,7 +124,7 @@ def radar_pic():
         a, b = rp[k], J[k]
         yy = 86 + k * 3.0
         wire(ax, a, b, names[k][1], via=[(a[0], yy), (176 + k * 1.5, yy), (b[0], 60 - k * 1.2)], lw=2.6)
-    note(ax, 6, 25, "Pin 5 (VCO) gets no wire at all: RFbeam's datasheet allows it\nto be left open, and a long wire on it would pick up noise.\nPCB: C5 (VCC to GND) sits next to J2. Join both GND wires\nat the GND pin. Perfboard: solder C5 across radar pins 2\nand 4, right at the radar's header.\nWires 8 to 10 cm; twist I with one GND, Q with the other.", size=7.3)
+    note(ax, 6, 25, "Pin 5 (VCO) gets no wire at all: RFbeam's datasheet allows it\nto be left open, and a long wire on it would pick up noise.\nPCB: C5 (VCC to GND) sits next to J2. Perfboard: solder C5\nacross radar pins 2 and 4, right at the radar's header.\nKeep the wires short (just reach J2): one GND wire, no twisting.", size=7.3)
     save(fig, OUT + "/03_radar.png")
 
 # ------------------------------------------------------------------ 4. Teensy

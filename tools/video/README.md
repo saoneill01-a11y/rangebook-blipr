@@ -15,18 +15,18 @@ video; not needed with this one.)
 
 | Time | Chapter |
 |---|---|
-| 0:00 | Welcome: what BLIPR does, exploded view of every part, the plan |
-| 1:29 | What you need: parts, the two 5 V filters, case hardware, tools, optional sensor kit |
-| 5:14 | Safety |
-| 5:51 | Get ready: sort parts, cut the Teensy's VIN–VUSB trace |
-| 7:02 | Circuit board: soldering, lowest parts first, the filter parts (L1/L2, C27–C30), ESP32 direction check |
-| 15:30 | Power checks: battery holder straight to J1, checkpoints 1 and 2 |
-| 18:38 | Wiring: radar pigtail, the screen (soldered wires, no header), checkpoint 3 |
-| 22:25 | Firmware: Arduino IDE, Teensy (fs=500000), ESP32, test shot from Range Book |
-| 25:44 | The case: printing, inserts, holder, radar, board, cover, screen, lid |
-| 30:18 | Sensor pod (optional) |
-| 32:19 | First test: power-up, level, dark means listening, compass, bench placement, speed window, first shot |
-| 36:04 | Troubleshooting, including noise and interference (`live`, `rec`) |
+| 0:00 | Welcome: what BLIPR does, getting Range Book (rangebook.org, the App Store app), every part, the plan |
+| 1:56 | What you need: parts, the two 5 V filters, case hardware, tools, optional sensor kit |
+| 5:37 | Safety |
+| 6:14 | Get ready: sort parts, cut the Teensy's VIN–VUSB trace |
+| 7:25 | Circuit board: soldering, lowest parts first, the filter parts (L1/L2, C27–C30), ESP32 direction check |
+| 15:44 | Power checks: battery holder straight to J1, checkpoints 1 and 2 |
+| 18:52 | Wiring: radar pigtail (short wires, one ground), the screen (jumpers on its pins or soldered pads), checkpoint 3 |
+| 22:38 | Firmware: Arduino IDE, Teensy (fs=500000), ESP32, test shot from Range Book |
+| 26:00 | The case: printing, inserts, holder, radar (hot glue), board, cover, screen, lid |
+| 30:34 | Sensor pod (optional) |
+| 32:37 | First test: power-up, level, dark means listening, compass, bench placement, speed window, first shot |
+| 36:22 | Troubleshooting, including noise and interference (`live`, `rec`) |
 
 Every hands-on step ends with a "Pause and …" bar so a viewer can stop and do it.
 

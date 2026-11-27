@@ -255,6 +255,9 @@ def build():
          "printing the case, loading and bench-testing the firmware, soldering the circuit board, wiring, the "
          "electrical checks, putting it in the case and the first session at the range.",
          align=WD_ALIGN_PARAGRAPH.CENTER)
+    para("You'll need Range Book, free: rangebook.org shows how to install it. On iPhone and iPad, get the Range Book "
+         "app (Range Book: Shooting Log) from the App Store: apps.apple.com/app/id6837895002.",
+         bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     para("Parts → Print → Flash and bench test → Solder → Check → Wire → Case → Range",
          bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     para("Status, Nov 26, 2026: built and tested live on .22 LR. 9 of 10 shots read on the first two strings, "
@@ -292,7 +295,7 @@ def build():
                    "Teensy 4.1 with pins",
                    "ESP32-C3 SuperMini (buy a pack: a spare is worth having)",
                    "18650 battery holder with 5 V output and its own power button, plus a name-brand 18650 cell",
-                   "0.96\" SSD1306 I2C OLED screen, 4-pin (white reads best). It gets soldered wires, no header",
+                   "0.96\" SSD1306 I2C OLED screen, 4-pin (white reads best). Bare pads or pins both work",
                    "microSD card, name brand, A1, FAT32 or exFAT. A 32 GB A1 card worked; an 8 GB card that had been in another "
                    "device wasn't read",
                    "RB BLIPR circuit board v1.2 (from PCBWay; a v1.1 board also works, see the v1.1 notes)",
@@ -326,9 +329,10 @@ def build():
            ("ESP32 socket", "2 × 1x8 female header", ""),
            ("J1, J5", "1x3 header, or wires soldered straight in", "J1 battery, J5 ammo-probe jack (optional, can stay empty)"),
            ("J2", "Wires soldered straight in", "Radar: never a plug here"),
-           ("J3", "Wires soldered straight in", "Screen: soldered at the OLED end too, no header (a header plus "
-                                                "plug-on jumpers stands too tall under the lid)"),
-           ("J4", "1x4 FEMALE header, or wires", "Sensor kit: the sensor cable ends in male pins"),
+           ("J3", "Wires soldered straight in", "Screen: at the screen end, female jumper wires on its pins, or "
+                                                "wires soldered to its pads"),
+           ("J4", "Wires soldered straight in", "Sensor kit: snip the pins off the sensor cable and solder its wires in "
+                                              "(a header plus plug stands too tall under the lid)"),
            ("L1, L2", "22 µH inductor, 1 A or more", "v1.2: on the board; drum type up to 8.4 mm across, leads 5 mm or 3.2 mm "
                                                      "apart (three holes; e.g. Würth 744772220 or small 6.7 mm drums). v1.1: in the holder's red wire and the ESP32's 5 V"),
            ("C27, C29", "470 µF electrolytic, 10 V or more", "v1.2: on the board; 8 mm across, leads 3.5 mm apart (e.g. Nichicon "
@@ -347,7 +351,7 @@ def build():
                    "1 × 1/4-20 heat-set insert, 13 mm long or shorter (tripod mount)",
                    "4 × M3 × 8 mm screws (lid), 4 × M3 × 6 mm pan-head screws no wider than 5.5 mm (board)",
                    "4 × M3 × 6 mm self-tapping screws (battery holder), 4 × M2 × 4 mm screws (OLED)",
-                   "1 mm thick × 5 mm wide foam tape, about 150 mm (holds the radar snug)",
+                   "Hot glue gun and glue (holds the radar in its pocket)",
                    "26-28 AWG stranded wire in at least 4 colours, heat-shrink"])
     doc.add_heading("Sensor kit (optional)", 2)
     checkbox_list(["Adafruit SHT45 temperature and humidity board",
@@ -440,7 +444,7 @@ def build():
     numbered([("Plug in ", "with a USB-C DATA cable and load BliprBLE. If the computer shows nothing at all while "
                            "the red LED is on, the cable is charge-only: swap it. If the upload won't connect, hold "
                            "BOOT, tap RESET, let go of BOOT."),
-              ("Check on your phone: ", "Bluefy (iPhone) or nRF Connect should list RB BLIPR and connect to it.")])
+              ("Check on your phone: ", "the Range Book app (iPhone, iPad) or nRF Connect should list RB BLIPR and connect to it.")])
     tip("Load the ESP32 over USB now (firmware 0.2.20). On a v1.1 board, once its hand-wired filter is fitted (section 8), the computer sees "
         "it only when it's out of BLIPR's socket, and Range Book updates it over Bluetooth from then on.")
 
@@ -480,8 +484,8 @@ def build():
                                      "outer holes are 5 mm apart, the left and middle 3.2 mm apart for small drums. Use "
                                      "whichever pair fits; the third hole stays empty. On a v1.1 board these and C27-C30 have no "
                                      "holes: they go in the wires (sections 7 and 8)."),
-              ("Headers. ", "J1 and J5 as headers or wires. J4 a FEMALE 1x4 header if you'll fit the sensor kit. "
-                            "J2 (radar) and J3 (screen) get wires soldered straight in, never a plug."),
+              ("Headers. ", "J1 and J5 as headers or wires. J2 (radar), J3 (screen) and J4 (sensor kit) get wires "
+                            "soldered straight in later, no headers: a header plus plug stands too tall under the lid."),
               ("Teensy and ESP32 sockets. ", "Plug each module into its female headers, set it in place and solder "
                                              "the headers with the module in them, so they come out straight. Then "
                                              "lift the modules out again."),
@@ -546,17 +550,21 @@ def build():
     picture(PICS / "03_radar.png", 6.4)
     numbered([("Mark pin 1 ", "on the radar (it's marked on the module and in RFbeam's drawing) with a paint pen, and "
                               "on the matching end of a 1x5 female header."),
-              ("Five wires on the header, 8-10 cm: ", "pin 1 Q (blue), pin 3 I (green), pin 2 +3.3 V (orange), "
-                                                      "pin 4 GND, pin 5 nothing (VCO stays unconnected)."),
-              ("Twist ", "the I wire with one ground and the Q wire with another."),
+              ("Four short wires on the header, ", "just long enough to reach J2 with a little slack: pin 1 Q (blue), "
+                                                   "pin 2 +3.3 V (orange), pin 3 I (green), pin 4 GND (black), pin 5 "
+                                                   "nothing (VCO stays unconnected). One ground wire is enough, and "
+                                                   "they don't need twisting."),
               ("Solder them straight into J2 ", "(Q, VCC, I, GND as printed). Keep the bundle away from the ESP32.")])
+    picture(IMG / "blipr_radar_wired.jpg", 5.4, "The radar's plug with four short wires, and the radar held in its "
+            "pocket with hot glue at the sides.")
     picture(PICS / "04_teensy.png", 5.6, "The Teensy's pins this build uses. It plugs into its sockets with its USB "
             "toward the right wall.")
-    rich(("Screen (OLED), wired directly. ", True), "VCC to the ESP32's 3V3, GND to GND, SDA to GPIO6, SCL to GPIO7, "
-         "through J3. Go by the labels on your screen, since makers order them differently. Solder four 15 cm wires "
-         "straight to the screen's pads and straight into J3: no header and no plug-on jumpers. If your screen came "
-         "with header pins fitted, unsolder or clip them off first. It sits in the lid about 5 mm above the Teensy, "
-         "and a header plus Dupont plugs stands too tall to fit.")
+    rich(("Screen (OLED). ", True), "VCC to the ESP32's 3V3, GND to GND, SDA to GPIO6, SCL to GPIO7, "
+         "through J3. Go by the labels on your screen, since makers order them differently. Four wires about 15 cm "
+         "long, soldered straight into J3. If your screen came with pins fitted, plug female jumper wires onto them "
+         "(they clear the lid); if it has bare pads, solder the wires to the pads.")
+    picture(IMG / "blipr_screen_jumpers.jpg", 4.6, "A screen with pins: female jumper wires plugged on, their other "
+            "ends soldered into J3.")
     doc.add_heading("If you have a v1.1 board: the ESP32's 5 V filter by hand", 2)
     para("On v1.2 this filter (L2, C29, C30) is on the board and the ESP32 plugs in with all its pins: skip this part.",
          space=4)
@@ -571,7 +579,7 @@ def build():
                                 "Lay L2 and C29 flat so the lid clears them."),
               ("Beep test. ", "The 5V stub to D1's square pad beeps (through L2); 5V to GND must not.")])
 
-    picture(IMG / "blipr_inside.jpg", 5.4, "The first build with the lid off: the screen's four soldered wires (no header), "
+    picture(IMG / "blipr_inside.jpg", 5.4, "The first build with the lid off: the screen's four wires, "
             "the board with the Teensy and the ESP32, and the 18650 cell in its holder.")
     doc.add_heading("Checkpoint 3: everything powered", 2)
     para("Beep J2's VCC hole to the 3.3 V supply and GND to ground, then check by eye that the two pin-1 marks "
@@ -590,11 +598,12 @@ def build():
     numbered([("Inserts. ", "M3 inserts into the four corner columns and the four board posts (holes 4.1 mm, 7.5 mm "
                             "deep). The 1/4-20 insert into the hole under the floor (7.15 mm, 9 mm deep). Straight in, "
                             "slightly below flush; let each cool."),
-              ("Radar. ", "1 mm × 5 mm foam tape down its two sides and across its back, then press it into its pocket "
-                          "from above, antenna face forward, pins back. A 20 mm strip on its top edge: a rib under the "
-                          "lid presses on it. No glue."),
+              ("Radar. ", "Press it into its pocket from above, antenna face forward and flat against the window "
+                          "frame, pins back. Hold it square and run hot glue down both sides, where the module meets "
+                          "the pocket. Keep glue off the antenna face and the pins. Glue holds far better than foam "
+                          "tape, and still peels off if the radar has to come out."),
               ("Battery holder. ", "Mode switch on \"power on\", then screw it to the four round pads with M3 × 6 "
-                                   "self-tapping screws, USB-C and button lined up with the left-wall openings. Gently: "
+                                   "self-tapping screws, button lined up with the rounded slot (toward the back) and USB-C with the square opening (toward the front). Gently: "
                                    "the screws cut their own thread."),
               ("Main board. ", "Onto the four posts with M3 × 6 pan-head screws (no wider than 5.5 mm in the "
                                "back-right corner, next to the Teensy socket). The Teensy's USB lines up with the "
@@ -615,7 +624,7 @@ def build():
          "so you can add it any time; BLIPR works the same without it.")
     picture(CASE / "pod_layout_10dof.png", 5.0, "The pod from above, roof off: DFRobot 10-DoF at the gun end, SHT45 "
             "at the other.")
-    numbered([("Wiring. ", "A 150 mm QT-to-pins cable from J4 (black GND, red 3V3, blue SDA, yellow SCL) up through "
+    numbered([("Wiring. ", "A 150 mm QT-to-pins cable, pins snipped off and its wires soldered into J4 (black GND, red 3V3, blue SDA, yellow SCL), up through "
                            "the lid's slot into the SHT45's front socket. A second one from the SHT45's back socket to "
                            "the DFRobot board's own Gravity cable: red to +, black to -, yellow to C/R, blue to D/T. "
                            "DFRobot switch on I2C."),
@@ -639,7 +648,7 @@ def build():
          "chronograph settings, default 3 s). BLIPR doesn't listen while the screen is lit: a lit screen adds noise "
          "the radar can hear, so keep that time short.")
     picture(PICS / "screen_sequence.png", 6.9)
-    numbered([("Connect. ", "Range Book 2.44 or later in Chrome (Android) or Bluefy (iPhone): Tools › BLIPR "
+    numbered([("Connect. ", "Range Book 2.44 or later: the Range Book app on iPhone and iPad (App Store), or Chrome on Android: Tools › BLIPR "
                             "Chronograph › Connect chronograph › RB BLIPR. Test shot should show 2,700 fps. Range Book "
                             "sets BLIPR's clock and units, and its settings show BLIPR's window and position."),
               ("Set the window ", "a little wider than your load, in Range Book's settings (a button sets it from the "
