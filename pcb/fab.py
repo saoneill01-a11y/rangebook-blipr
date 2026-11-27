@@ -10,6 +10,7 @@ import design as D
 import route as RT
 
 OUT = "out"
+VERSION = "v1.2"            # v1.2 (Nov 2026): the two 5 V filters on the board; v1.1 is frozen in v1.1/
 POUR_CLR = 0.35          # pour to other-net copper
 EDGE_CLR = 0.5           # copper to board edge
 SPOKE_W = 0.5
@@ -192,7 +193,7 @@ class Gerber:
             self.body.append("X%sY%sD01*" % (self.c(x), self.c(y)))
         self.body.append("G37*")
     def write(self, path):
-        h = ["G04 RB BLIPR main board v1.1*", "%%TF.FileFunction,%s*%%" % self.func, "%FSLAX46Y46*%", "%MOMM*%", "%LPD*%", "G01*"]
+        h = ["G04 RB BLIPR main board %s*" % VERSION, "%%TF.FileFunction,%s*%%" % self.func, "%FSLAX46Y46*%", "%MOMM*%", "%LPD*%", "G01*"]
         for key, code in sorted(self.ap.items(), key=lambda kv: kv[1]):
             if key[0] == "C":
                 h.append("%%ADD%dC,%.4f*%%" % (code, key[1]))
@@ -392,7 +393,11 @@ def outline_paths(ref, p):
     return out
 
 # per-part label positions (ref text) relative to the part: put it beside the body
+LABEL_AT = {"L1": (0, 2.3), "L2": (0, 2.3), "C27": (0.6, 2.3), "C29": (0.6, 2.3), "R23": (0, -2.15), "R24": (0, -1.73)}
+
 def label_pos(ref, p):
+    if ref in LABEL_AT:   # v1.2: inside the big round parts; under the standing resistors
+        return (p["x"] + LABEL_AT[ref][0], p["y"] + LABEL_AT[ref][1], 0)
     b = p["fp"]["body"]
     if ref in ("U4", "U5") or ref.startswith("J"):
         return None
@@ -436,8 +441,10 @@ def build_silk(pads):
         p = D.P[ref]
         for i, nm in enumerate(names):
             q = P[(ref, str(i + 1))]
-            if p["rot"] == 90:
-                silk_text(g, nm, q["x"] + 1.4, q["y"], 1.0, "left", 0)
+            if ref == "J1":
+                silk_text(g, nm, q["x"] - 1.3, q["y"], 0.9, "right", 0)
+            elif p["rot"] == 90:
+                silk_text(g, nm, q["x"] + 1.4, q["y"], 0.9, "left", 0)
             else:
                 off = 1.75 if i % 2 == 0 else 3.05
                 silk_text(g, nm, q["x"], q["y"] + (off if ref == "J4" else -off), 0.9, "center", 0)
@@ -476,7 +483,7 @@ def build_silk(pads):
     silk_text(g, "UP", ux, uy - 11.3, 0.7, "center", 0)
     silk_text(g, "USB ^", ux, uy - 3.6, 0.9, "center", 0)
     silk_text(g, "ANTENNA", ux, uy - 16.2, 0.8, "center", 0)
-    silk_text(g, "RB BLIPR v1.1", 35.0, 88.2, 1.2, "center", 0)
+    silk_text(g, "RB BLIPR " + VERSION, 35.0, 88.2, 1.2, "center", 0)
     silk_text(g, "I CHANNEL", 28.0, 36.5, 0.8, "center", 0)
     silk_text(g, "Q CHANNEL", 46.0, 63.6, 0.8, "center", 0)
     # DIP pin-1 dots and TO-92 pin numbers
@@ -531,7 +538,7 @@ def write_all(pads, wires, vias):
     for v in vias:
         if v["net"] != "GND":
             gb.circle(v["x"], v["y"], v["d"] + 2 * POUR_CLR)
-    for poly in contours_of(islands, res):
+    for poly in contours_of(islands, res, grow=0.12):   # v1.2: a little wider, so no slivers are left at their edges
         gb.region(poly)
     gb.polarity(True)
     for a, b in spokes:
@@ -561,7 +568,7 @@ def write_all(pads, wires, vias):
     # drills
     def excellon(path, holes, plated):
         tools = sorted({round(d, 2) for _, _, d in holes})
-        L = ["M48", "; RB BLIPR main board v1.1, %s" % ("plated" if plated else "non-plated"), "FMAT,2", "METRIC,TZ",
+        L = ["M48", "; RB BLIPR main board %s, %s" % (VERSION, "plated" if plated else "non-plated"), "FMAT,2", "METRIC,TZ",
              "; #@! TF.FileFunction,%s,1,2,%s" % ("Plated" if plated else "NonPlated", "PTH" if plated else "NPTH")]
         for i, d in enumerate(tools):
             L.append("T%dC%.3f" % (i + 1, d))
@@ -595,12 +602,15 @@ def bom(path):
         elif ref in ("U1", "U2"):
             key = ("MCP6022-E/P op-amp + DIP-8 socket", "")
         else:
-            kind = {"R": "Resistor 1/4 W", "C": "Capacitor", "D": "Schottky diode", "U": "Regulator"}[ref[0]]
-            if ref[0] == "C" and p["fp"]["body"][0] == "circle":
+            kind = {"R": "Resistor 1/4 W", "C": "Capacitor", "D": "Schottky diode", "U": "Regulator",
+                    "L": "Inductor, radial drum, 1 A or more, up to 8.4 mm across, 5 mm lead spacing (e.g. Wurth 744772220)"}[ref[0]]
+            if ref[0] == "C" and p["fp"]["body"][0] == "circle" and p["fp"]["body"][1] >= 8:
+                kind = "Electrolytic capacitor, 10 V or more, 8 mm across, 3.5 mm lead spacing"
+            elif ref[0] == "C" and p["fp"]["body"][0] == "circle":
                 kind = "Electrolytic capacitor, 10 V or more"
             elif ref[0] == "C":
                 kind = "Ceramic capacitor, 5 mm lead spacing"
-            key = ("%s %s" % (kind, p["value"]), "")
+            key = ("%s %s" % (kind, p["value"]), "stands on end" if p["fp"].get("hairpin") else "")
         rows.setdefault(key, []).append(ref)
     with open(path, "w", newline="") as f:
         w = csv.writer(f)
@@ -608,11 +618,8 @@ def bom(path):
         for (part, note), refs in sorted(rows.items(), key=lambda kv: kv[1][0]):
             q = len(refs) * (2 if "per board" in note else 1)
             w.writerow([q, part, " ".join(sorted(refs, key=lambda r: (r[0], int(''.join(c for c in r if c.isdigit()) or 0)))), note])
-        # Off the board (Nov 2026): the two 5 V noise filters, soldered in the wires (build guide, Step 2 and Step 4)
+        # Off the board: one resistor on the battery holder. (v1.2 has the two 5 V filters on the board; v1.1 had them in the wiring.)
         w.writerow([1, "Resistor 1/4 W 10k", "R25", "off-board: soldered on the battery holder's + tab (battery gauge)"])
-        w.writerow([2, "Inductor 22uH, 1 A or more", "L1 L2", "off-board: L1 in the battery holder's red wire, L2 in the ESP32's 5 V feed"])
-        w.writerow([2, "Electrolytic capacitor, 10 V or more 470uF", "C27 C29", "off-board: C27 across J1 +5V/GND, C29 across the ESP32's 5V/GND"])
-        w.writerow([2, "Ceramic capacitor 1uF", "C28 C30", "off-board: beside C27 and C29"])
 
 # ------------------------------------------------------------------ pictures
 def picture(pads, wires, vias, path, side="top", pour_mask=None, res=0.05, assembly=False):
@@ -653,7 +660,7 @@ def picture(pads, wires, vias, path, side="top", pour_mask=None, res=0.05, assem
             if assembly and ref in ("U1", "U2", "U3"):
                 lp = None
             if lp:
-                txt = ref + ("\n" + pp["value"] if assembly and ref[0] in "RCD" else "")
+                txt = ref + ((" " if ref in ("R23", "R24") else "\n") + pp["value"] if assembly and ref[0] in "RCDL" else "")
                 ax.text(lp[0], lp[1], txt, color="white" if not assembly else "#ffe680", fontsize=4.6 if not assembly else 4.4,
                         ha="center", va="center", rotation=lp[2], fontweight="bold", linespacing=0.95)
         if assembly:
@@ -679,8 +686,11 @@ def picture(pads, wires, vias, path, side="top", pour_mask=None, res=0.05, assem
                 if ref in ("J3", "J4", "J5"):
                     n = len(HEADER_PINS[ref])
                     ax.text(1.0, pp["y"] + (n - 1) * 1.27 + 1.6, nm, color="#ffe680", fontsize=4.6, ha="left", va="bottom", fontweight="bold")
-                elif ref == "J1":
-                    ax.text(pp["x"] + 2.2, pp["y"], nm, color="#ffe680", fontsize=4.6, ha="left", va="center", fontweight="bold")
+                elif ref == "J1":   # v1.2: L1 is right of J1, so the label goes on its left
+                    ax.text(pp["x"] - 0.2, pp["y"] + 4.3, "J1 POWER", color="#ffe680", fontsize=4.4, ha="center", va="center", fontweight="bold")
+                    for i, pin in enumerate(HEADER_PINS["J1"]):
+                        q = [pp_ for pp_ in pads if pp_["ref"] == "J1" and pp_["pin"] == str(i + 1)][0]
+                        ax.text(q["x"] - 1.2, q["y"], pin, color="#ffe680", fontsize=3.7, ha="right", va="center", fontweight="bold")
                 else:
                     ax.text(pp["x"], pp["y"] - 2.6, nm, color="#ffe680", fontsize=4.8, ha="center", va="top", fontweight="bold")
             ax.text(42, 15.8, "U3", color="#ffe680", ha="center", fontsize=5, fontweight="bold")
@@ -717,7 +727,7 @@ if __name__ == "__main__":
     picture(pads, wires, vias, os.path.join(OUT, "pcb_top.png"), "top", pour_final, res)
     picture(pads, wires, vias, os.path.join(OUT, "pcb_bottom.png"), "bottom", pour_final, res)
     picture(pads, wires, vias, os.path.join(OUT, "pcb_assembly.png"), "top", None, res, assembly=True)
-    z = zipfile.ZipFile(os.path.join(OUT, "RBBLIPR_PCB_v1.1_gerbers.zip"), "w", zipfile.ZIP_DEFLATED)
+    z = zipfile.ZipFile(os.path.join(OUT, "RBBLIPR_PCB_%s_gerbers.zip" % VERSION), "w", zipfile.ZIP_DEFLATED)
     for fn in sorted(os.listdir(os.path.join(OUT, "gerber"))):
         z.write(os.path.join(OUT, "gerber", fn), fn)
     z.close()

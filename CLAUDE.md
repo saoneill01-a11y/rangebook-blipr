@@ -15,7 +15,7 @@ Sean will make it public once BLIPR is proven.
 | `firmware/PROTOCOL.md` | Bluetooth and serial interface; `firmware/README.md` has the commands and the change history |
 | `tools/` | `blipr_log.py` (session logger), `pull_shots.py` (copy recordings off the SD), `make_test_recordings.py` |
 | `case/` | 3D-printed case: `blipr_case.py` builds every part (`out/`); the base starts from Sean's CAD in `user_edits/` |
-| `pcb/` | Circuit board v1.1 (ordered from PCBWay: don't change the copper without asking) |
+| `pcb/` | Circuit board v1.2 (filters on the board; Nov 26, not ordered yet). v1.1 (Sean has 4 spare boards) is frozen in `pcb/v1.1/`: don't change either board's copper without asking |
 | `pictures/` | Wiring pictures (`pics.py`) |
 | `docs/` | This setup guide, ideas for later |
 
@@ -31,7 +31,7 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
   mirrored mockup once; both axes are flipped to match how he holds it).
 - Ask before anything that costs money (orders, PCBWay) or can't be undone (force-push, deleting files,
   wiping the SD card or settings).
-- Never change the PCB copper without asking; v1.1 is already made.
+- Never change the PCB copper without asking; v1.1 is already made (Sean has 4 spares and still needs its instructions).
 
 ## Range Book (only if Sean asks for app work)
 

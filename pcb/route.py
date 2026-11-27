@@ -1,5 +1,5 @@
 """Write a Specctra DSN from design.py, route it with Freerouting (headless under Xvfb), read the SES back."""
-import os, re, subprocess, json, sys
+import os, re, subprocess, json, sys, shutil
 import design as D
 
 U = 1000  # um per mm
@@ -72,8 +72,18 @@ def write_dsn(path):
     open(path, "w").write("\n".join(lines) + "\n")
 
 def run_freerouting(dsn, ses, passes=40):
-    jar = os.environ.get("FREEROUTING_JAR", os.path.expanduser("~/tools/freerouting-1.9.0.jar"))
-    cmd = ["xvfb-run", "-a", "java", "-Djava.awt.headless=false", "-jar", jar, "-de", dsn, "-do", ses, "-mp", str(passes), "-dct", "0"]
+    jar = os.environ.get("FREEROUTING_JAR", "")
+    for cand in (jar, os.path.expanduser("~/tools/freerouting-1.9.0.jar"),
+                 os.path.expanduser("~/Library/Caches/blipr-tools/freerouting/freerouting-1.9.0.jar")):
+        if cand and os.path.exists(cand):
+            jar = cand
+            break
+    java = shutil.which("java")
+    if sys.platform == "darwin" and os.path.exists("/opt/homebrew/opt/openjdk/bin/java"):
+        java = "/opt/homebrew/opt/openjdk/bin/java"   # Homebrew's Java (macOS has only a stub)
+    # Linux: run it under a virtual display; macOS: Freerouting opens its window briefly
+    cmd = ([] if sys.platform == "darwin" or not shutil.which("xvfb-run") else ["xvfb-run", "-a"]) + \
+          [java, "-Djava.awt.headless=false", "-jar", jar, "-de", dsn, "-do", ses, "-mp", str(passes), "-dct", "0"]
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
     log = (r.stdout + r.stderr)
     open(ses + ".log", "w").write(log)

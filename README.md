@@ -11,7 +11,7 @@ as more real shots come in.
 
 | | Version |
 |---|---|
-| Circuit board | v1.1 (plus two 5 V noise filters in the wires, no copper change) |
+| Circuit board | v1.2 (the two 5 V noise filters on the board; v1.1 boards fit them in the wiring) |
 | Case | v0.12 |
 | Teensy firmware | 0.2.8 |
 | ESP32 firmware | 0.2.20 (also delivered by Range Book over Bluetooth) |
@@ -27,7 +27,7 @@ as more real shots come in.
   `pcb/out/RBBLIPR_BOM.csv`.
 - **Assembly video:** a narrated, step-by-step build (about 39 minutes), coming to YouTube soon. Chapters and
   how it's made: [tools/video/README.md](tools/video/README.md).
-- **Circuit board:** upload `pcb/out/RBBLIPR_PCB_v1.1_gerbers.zip` to PCBWay (or JLCPCB, OSH Park, Aisler) with the
+- **Circuit board:** upload `pcb/out/RBBLIPR_PCB_v1.2_gerbers.zip` to PCBWay (or JLCPCB, OSH Park, Aisler) with the
   standard settings; `pcb/README.txt` has the details and the soldering order.
 - **Firmware:** ready-made files in `firmware/prebuilt/`; source and the change history in `firmware/`.
 

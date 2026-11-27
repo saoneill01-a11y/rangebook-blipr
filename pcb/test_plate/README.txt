@@ -1,4 +1,4 @@
-RB BLIPR PCB v1.1 - hole-check plate
+RB BLIPR PCB v1.2 - hole-check plate
 =====================================
 
 A 3D-printable copy of the circuit board with only its outline and holes: 70 x 90 x 1.6 mm, the same

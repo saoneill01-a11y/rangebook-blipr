@@ -1,0 +1,15 @@
+M48
+; RB BLIPR main board v1.1, non-plated
+FMAT,2
+METRIC,TZ
+; #@! TF.FileFunction,NonPlated,1,2,NPTH
+T1C3.200
+%
+G90
+G05
+T1
+X3.000Y3.000
+X67.000Y3.000
+X3.000Y87.000
+X67.000Y87.000
+M30

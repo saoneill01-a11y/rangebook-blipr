@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Files for a PCBWay assembly (PCBA) quote of the BLIPR board v1.1: parts list (BOM) with manufacturer part
+"""Files for a PCBWay assembly (PCBA) quote of the BLIPR board v1.2: parts list (BOM) with manufacturer part
 numbers, part positions (centroid), assembly drawing and a README with the quote-form answers.
     python3 pcba_files.py            ->  out/pcba/
 Everything on the board is through-hole. Fitted: all resistors and capacitors, D1, U3, the two DIP-8 sockets
@@ -21,7 +21,8 @@ LINES = [
     (["R22"], "100 ohm", RES[0], RES[1].format("100R"), RES[2], "Axial, 10.16 mm", "Equivalent OK"),
     (["R10", "R17"], "330 ohm", RES[0], RES[1].format("330R"), RES[2], "Axial, 10.16 mm", "Equivalent OK"),
     (["R6", "R9", "R13", "R16"], "470 ohm", RES[0], RES[1].format("470R"), RES[2], "Axial, 10.16 mm", "Equivalent OK"),
-    (["R23", "R24"], "1 kohm", RES[0], RES[1].format("1K"), RES[2], "Axial, 10.16 mm", "Equivalent OK"),
+    (["R23", "R24"], "1 kohm", RES[0], RES[1].format("1K"), "Resistor, metal film, 1/4 W, 1 %, axial, mounted STANDING (hairpin), 2.54 mm hole spacing",
+     "Axial, standing, 2.54 mm", "Body upright over the round hole inside the drawn square; equivalent OK"),
     (["R4", "R7", "R11", "R14", "R21"], "4.7 kohm", RES[0], RES[1].format("4K7"), RES[2], "Axial, 10.16 mm", "Equivalent OK"),
     (["R2", "R3", "R5", "R8", "R12", "R15"], "10 kohm", RES[0], RES[1].format("10K"), RES[2], "Axial, 10.16 mm", "Equivalent OK"),
     (["R19", "R20"], "100 kohm", RES[0], RES[1].format("100K"), RES[2], "Axial, 10.16 mm", "Equivalent OK"),
@@ -31,12 +32,16 @@ LINES = [
      "Equivalent OK: C0G/NP0 or X7R, 50 V or more, 5.0/5.08 mm leads"),
     (["C5", "C8", "C9", "C11", "C26"], "100 nF", "KEMET", "C330C104K1R5TA", "Ceramic capacitor, X7R, 100 V, radial", "Radial, 5.08 mm lead spacing",
      "Equivalent OK: X7R, 25 V or more, 5.0/5.08 mm leads"),
-    (["C1", "C2", "C14", "C17", "C21", "C24"], "1 uF", "KEMET", "C330C105K5R5TA", "Ceramic capacitor, X7R, 50 V, radial", "Radial, 5.08 mm lead spacing",
+    (["C1", "C2", "C14", "C17", "C21", "C24", "C28", "C30"], "1 uF", "KEMET", "C330C105K5R5TA", "Ceramic capacitor, X7R, 50 V, radial", "Radial, 5.08 mm lead spacing",
      "Equivalent OK: X7R, 25 V or more, 5.0/5.08 mm leads"),
     (["C4", "C7", "C10"], "10 uF", "Nichicon", "UVR1C100MDD", "Aluminium electrolytic capacitor, 16 V, 5 x 11 mm", "Radial, 5 mm dia, 2.0 mm lead spacing",
      "POLARISED: + lead in the SQUARE pad. Equivalent OK: 10 V or more, 5 mm dia, 2.0 mm leads"),
     (["C3"], "100 uF", "Nichicon", "UPW1C101MED", "Aluminium electrolytic capacitor, 16 V, 6.3 x 11 mm", "Radial, 6.3 mm dia, 2.5 mm lead spacing",
      "POLARISED: + lead in the SQUARE pad. Must be 6.3 mm diameter (8 mm crowds C4). Equivalent OK: 16 or 25 V, 6.3 mm, 2.5 mm leads"),
+    (["C27", "C29"], "470 uF", "Nichicon", "UKA1A471MPD1TD", "Aluminium electrolytic capacitor, 10 V, 8 x 11.5 mm", "Radial, 8 mm dia, 3.5 mm lead spacing",
+     "POLARISED: + lead in the SQUARE pad. Equivalent OK: 10 V or more, 8 mm dia (no bigger), 3.5 mm leads"),
+    (["L1", "L2"], "22 uH", "Wurth Elektronik", "744772220", "Inductor, radial drum core, 22 uH, 2.3 A, 8.3 mm dia", "Radial, 5 mm lead spacing",
+     "Not polarised. Equivalent OK: 22 uH, 1 A or more, 8.4 mm dia or less, 5 mm leads, 12 mm tall or less"),
     (["D1"], "1N5817", "onsemi", "1N5817RLG", "Schottky diode, 20 V, 1 A, DO-41", "Axial DO-41, 10.16 mm",
      "POLARISED: stripe (cathode) on the SQUARE pad (right-hand end, as drawn)"),
     (["U3"], "MCP1700-3302E/TO", "Microchip", "MCP1700-3302E/TO", "3.3 V LDO regulator", "TO-92",
@@ -69,7 +74,7 @@ def main():
     ws.title = "BOM"
     head = ["Item", "Qty per board", "Designators", "Value", "Manufacturer", "Manufacturer part number", "Description",
             "Package / footprint", "Type", "Notes for assembly"]
-    ws.append(["Range Book BLIPR main board v1.1 (70 x 90 mm, 2 layers): PCBA bill of materials. All parts through-hole, top side."])
+    ws.append(["Range Book BLIPR main board v1.2 (70 x 90 mm, 2 layers): PCBA bill of materials. All parts through-hole, top side."])
     ws.append([])
     ws.append(head)
     for c in range(1, len(head) + 1):
@@ -92,12 +97,12 @@ def main():
     for row in ws.iter_rows(min_row=4):
         for cell in row:
             cell.alignment = Alignment(wrap_text=True, vertical="top")
-    wb.save(os.path.join(OUT, "RBBLIPR_v1.1_PCBA_BOM.xlsx"))
+    wb.save(os.path.join(OUT, "RBBLIPR_v1.2_PCBA_BOM.xlsx"))
 
     # ---------- part positions (centroid) ----------
     fitted = [r for refs, value, *_ in LINES if value != "DNP" for r in refs]
     seen = []
-    with open(os.path.join(OUT, "RBBLIPR_v1.1_PCBA_positions.csv"), "w", newline="") as f:
+    with open(os.path.join(OUT, "RBBLIPR_v1.2_PCBA_positions.csv"), "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["Designator", "Mid X (mm)", "Mid Y (mm)", "Layer", "Rotation"])
         for r in fitted:
@@ -108,8 +113,8 @@ def main():
             w.writerow([r, "%.2f" % p["x"], "%.2f" % p["y"], "Top", p["rot"] % 360])
 
     # ---------- drawing and Gerbers ----------
-    shutil.copy(os.path.join(HERE, "out", "pcb_assembly.png"), os.path.join(OUT, "RBBLIPR_v1.1_assembly_drawing.png"))
-    shutil.copy(os.path.join(HERE, "out", "RBBLIPR_PCB_v1.1_gerbers.zip"), os.path.join(OUT, "RBBLIPR_PCB_v1.1_gerbers.zip"))
+    shutil.copy(os.path.join(HERE, "out", "pcb_assembly.png"), os.path.join(OUT, "RBBLIPR_v1.2_assembly_drawing.png"))
+    shutil.copy(os.path.join(HERE, "out", "RBBLIPR_PCB_v1.2_gerbers.zip"), os.path.join(OUT, "RBBLIPR_PCB_v1.2_gerbers.zip"))
     unique = len([l for l in LINES if l[1] != "DNP"])
     parts = sum(qty_per_board(l[0], l[1]) for l in LINES if l[1] != "DNP")
     print("BOM lines (unique parts): %d, parts per board: %d (%d soldered, %d op-amps pushed into sockets), positions: %d"

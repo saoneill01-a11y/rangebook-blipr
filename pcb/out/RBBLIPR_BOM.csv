@@ -1,19 +1,21 @@
 Qty,Part,References,Note
-6,"Ceramic capacitor, 5 mm lead spacing 1uF",C1 C2 C14 C17 C21 C24,
+8,"Ceramic capacitor, 5 mm lead spacing 1uF",C1 C2 C14 C17 C21 C24 C28 C30,
 3,"Electrolytic capacitor, 10 V or more 10uF",C4 C7 C10,
 4,"Ceramic capacitor, 5 mm lead spacing 10nF",C12 C15 C19 C22,
 2,"Ceramic capacitor, 5 mm lead spacing 1nF",C18 C25,
+2,"Electrolytic capacitor, 10 V or more, 8 mm across, 3.5 mm lead spacing 470uF",C27 C29,
 1,"Electrolytic capacitor, 10 V or more 100uF",C3,
 5,"Ceramic capacitor, 5 mm lead spacing 100nF",C5 C8 C9 C11 C26,
 1,Schottky diode 1N5817,D1,
 2,"Header, 1x3 male (or solder wires straight in)",J1 J5,
 2,"No header: solder the wires straight in (radar J2, screen J3)",J2 J3,
 1,"Header, 1x4 FEMALE (the sensor cable ends in male pins; or solder its wires straight in)",J4,
+2,"Inductor, radial drum, 1 A or more, up to 8.4 mm across, 5 mm lead spacing (e.g. Wurth 744772220) 22uH",L1 L2,
 2,Resistor 1/4 W 330,R10 R17,
 2,Resistor 1/4 W 10,R1 R18,
 2,Resistor 1/4 W 100k,R19 R20,
 1,Resistor 1/4 W 100,R22,
-2,Resistor 1/4 W 1k,R23 R24,
+2,Resistor 1/4 W 1k,R23 R24,stands on end
 6,Resistor 1/4 W 10k,R2 R3 R5 R8 R12 R15,
 5,Resistor 1/4 W 4.7k,R4 R7 R11 R14 R21,
 4,Resistor 1/4 W 470,R6 R9 R13 R16,
@@ -21,7 +23,4 @@ Qty,Part,References,Note
 1,Regulator MCP1700-3302E,U3,
 2,Female header 1x8 (socket for the ESP32-C3 SuperMini),U4,2 per board
 2,Female header 1x24 (socket for the Teensy 4.1),U5,2 per board
-1,Resistor 1/4 W 10k,R25,"off-board: soldered on the battery holder's + tab (battery gauge)"
-2,"Inductor 22uH, 1 A or more",L1 L2,"off-board: L1 in the battery holder's red wire, L2 in the ESP32's 5 V feed"
-2,"Electrolytic capacitor, 10 V or more 470uF",C27 C29,"off-board: C27 across J1 +5V/GND, C29 across the ESP32's 5V/GND"
-2,Ceramic capacitor 1uF,C28 C30,off-board: beside C27 and C29
+1,Resistor 1/4 W 10k,R25,off-board: soldered on the battery holder's + tab (battery gauge)

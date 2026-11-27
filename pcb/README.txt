@@ -1,6 +1,25 @@
-Range Book BLIPR main board v1.1 (PCB)
+Range Book BLIPR main board v1.2 (PCB)
 ================================
 
+v1.2 (Nov 2026) is the board to order. It is v1.1 with the two 5 V noise filters ON the board:
+  - L1 (22 uH) + C27 (470 uF) + C28 (1 uF): the battery holder's 5 V comes in at J1, through L1. On v1.1
+    L1 sat in the holder's red wire and C27/C28 were soldered across J1.
+  - L2 (22 uH) + C29 (470 uF) + C30 (1 uF): the ESP32's own 5 V, from D1 through L2 to the module's 5V
+    pin. On v1.1 the ESP32's 5V pin had to be cut and L2/C29/C30 wired to the module by hand.
+    (Why: the holder's boost converter and the ESP32's Bluetooth bursts both reached the radar through
+    the shared 5 V; see the build guide.)
+  - To make room: R19-R22 and C26 moved up 2.5 mm and right 0.9 mm; R23 and R24 now stand on end
+    (one lead bent back down beside the body).
+  - Same size, holes, connectors and module positions: the v1.1 case fits, and the ESP32 now plugs in
+    with ALL its pins (nothing to cut).
+  - The new parts are up to 12 mm tall; there is about 20 mm under the lid.
+  Inductors: 22 uH, 1 A or more, round (drum) type up to 8.4 mm across with leads 5 mm apart, e.g. Wurth
+  744772220 (8.3 mm, 2.3 A). 470 uF: 10 V or more, 8 mm across, leads 3.5 mm apart (e.g. Nichicon
+  UKA1A471MPD1TD). Check yours fit those sizes before soldering.
+  Building on a v1.1 board? Everything for v1.1 (Gerbers, pictures, the PCBA files and the source as it
+  was) is kept in v1.1/, and the build guide still covers the v1.1 way of fitting the filters.
+
+v1.1 history:
 v1.1 replaces v1.0. Do not order v1.0: its ESP32-C3 socket was mirrored and would have put 5 V on GPIO5.
 What changed in v1.1:
   - U4 (ESP32-C3 SuperMini) pin order fixed. Seen from the chip side with the USB at the top, the
@@ -21,7 +40,7 @@ M3 holes 3 mm in from the corners, so it drops onto the posts of the base you've
 from the parts list solders straight into it; the Teensy 4.1 and ESP32-C3 plug into female headers.
 
 FILES
-  RBBLIPR_PCB_v1.1_gerbers.zip   upload THIS to PCBWay (or JLCPCB, OSH Park, Aisler...)
+  RBBLIPR_PCB_v1.2_gerbers.zip   upload THIS to PCBWay (or JLCPCB, OSH Park, Aisler...)
   RBBLIPR_BOM.csv                what goes where, by reference (R1, C3, ...)
   pcb_assembly.png                where each part goes (print it and keep it on the bench)
   pcb_top.png, pcb_bottom.png     the copper, for reference
@@ -50,12 +69,14 @@ ASSEMBLY ORDER (lowest parts first, so the board sits flat while you solder)
      but only after the Firmware tab's bench tests: those run the Teensy from USB alone.
   2. Resistors (match the colour bands; picture 10 in the wiring pictures), then D1: its stripe goes
      to the right, on the SQUARE pad (the drawn band shows the same end). R23 and R24 are 1 k
-     (brown, black, red).
+     (brown, black, red) and stand on end: bend one lead back down beside the body, the body sits over
+     the hole inside the drawn square.
   3. Ceramic capacitors (no polarity), then the two DIP-8 sockets (notch matches the drawing: it
      points RIGHT on this board, the opposite of the perfboard steps).
   4. U3 (MCP1700): flat face toward the board's front edge, legs GND - IN - OUT left to right.
      Its legs are closer together than the holes: spread the two outer legs a little.
   5. Electrolytic capacitors: the + leg goes in the SQUARE pad (the stripe on the can is the - side).
+     That includes C27 and C29 (470 uF). Then L1 and L2 (either way round), pushed down flat.
   6. Headers J1 and J5 (or solder wires straight into them). Solder the wires straight into J2 (the radar,
      so nothing there can be plugged in backwards) and J3 (the screen: wires soldered to the OLED's pads,
      no header on the OLED, because a header plus plug-on jumpers stands too tall under the lid).
@@ -66,9 +87,8 @@ ASSEMBLY ORDER (lowest parts first, so the board sits flat while you solder)
   7. Battery holder to J1 (no switch: the holder's own button is on/off). Before soldering its
      wires, meter its 5V and GND pads with the cell in: +5 V, not -5 V. Nothing on the board
      protects against those two swapped.
-     The red wire runs through L1 (22 uH, 1 A+), and C27 (470 uF, stripe to GND) and C28 (1 uF) go
-     across J1's +5V and GND (pictures/out/power_filter.png). The ESP32 gets its own filter (L2, C29,
-     C30; pictures/out/esp_filter.png). Both are off the board; the copper is unchanged.
+     v1.2: the filters are on the board, so the holder's red and black wires go straight to J1. (v1.1: the
+     red wire runs through L1, C27/C28 go across J1, and the ESP32 gets L2/C29/C30 by hand; see v1.1/.)
   8. Power test BEFORE plugging in the op-amps and modules (the build guide's Step 2 checkpoint):
      +5 V at J1, 3.3 V at U3's OUT leg, about 1.65 V at VREF (the + leg of C10).
   9. Op-amps into the sockets (each chip's dot beside the SQUARE pad), Teensy and ESP32 in, then
@@ -108,4 +128,5 @@ WHAT WAS CHECKED
   screw no wider than 5.5 mm.
   Before ordering: print pcb_assembly.png at 100% (or the 3D-printed hole-check plate), lay the
   ESP32 on it chip side up and confirm its 5V pin sits over the hole marked 5V.
-  Not built yet: treat v1.1 as a first run. Order 5, build one, and tell Claude what you find.
+  v1.1 was built and works (Nov 2026, with the filters wired by hand). v1.2 is not built yet: it changes
+  only the filter parts and the few parts moved for them, but treat it as a first run of its own.
