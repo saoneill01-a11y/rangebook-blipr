@@ -30,6 +30,8 @@ as more real shots come in.
   `pcb/out/RBBLIPR_BOM.csv`.
 - **Assembly video:** [watch on YouTube](https://youtu.be/nRWELvyEKN8): a narrated, step-by-step build on circuit board v1.2
   (about 39 minutes). How it's made: [tools/video/README.md](tools/video/README.md).
+- **Case on MakerWorld:** [BLIPR Doppler Radar Chronograph](https://makerworld.com/en/models/3697742-blipr-doppler-radar-chronograph#profileId-4248561), ready to print (the STL, STEP
+  and 3MF files are also in `case/out/`).
 - **Circuit board:** upload `pcb/out/RBBLIPR_PCB_v1.2_gerbers.zip` to PCBWay (or JLCPCB, OSH Park, Aisler) with the
   standard settings; `pcb/README.txt` has the details and the soldering order.
 - **Firmware:** ready-made files in `firmware/prebuilt/`; source and the change history in `firmware/`.

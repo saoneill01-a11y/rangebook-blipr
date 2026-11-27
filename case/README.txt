@@ -93,6 +93,7 @@ WHAT CHANGED IN v0.4
 
 PRINT FILES (out/)
   BLIPR_Case.3mf                     Sean's print project with the parts laid out (also on MakerWorld)
+                                     https://makerworld.com/en/models/3697742-blipr-doppler-radar-chronograph
   base.stl / base.step               main body (v0.8, Sean's CAD + wider radar pocket); print floor-down
   lid_oled.stl / lid_oled.step       lid with a window for the 0.96" OLED; print top-face down
   lid_plain.stl / lid_plain.step     lid without the screen window
