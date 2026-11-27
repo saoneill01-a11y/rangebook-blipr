@@ -172,6 +172,11 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      Sean measured the setup: radar 6" (0.152 m) beside the bore, 3" (0.076 m) behind the muzzle; saved as lat/behind.
      Replaying the 10 .38 shots with it: 9 of 10, -0.6 fps vs the Athlon (was -3.1 with 0.102/0.102). Ask for these
      two numbers whenever BLIPR is moved.
+     **String 2, 15:14-15:20, Teensy 0.2.9 with lat 0.152 / behind 0.076** (`sessions/2026-11-27_1512`, kept with string 1):
+     10 of 10 read, **no false reads** (the 1.5 s hold-off works), +3.4 fps vs the Athlon (SD of the difference 4.2),
+     774-1057 fps. Replaying both strings (20 shots): lat 0.102 -3.5 fps (19/20), lat 0.13-0.14 / behind 0.076 -0.2 to
+     +0.2 (20/20), lat 0.152 +1.5 (19/20). The two strings differ by ~4-7 fps at the same setting, so this is about as close
+     as the data can pin it; `cal` stays 0.
   1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
   1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,
      GPIO20 = RX from the Teensy, GPIO21 = TX to the Teensy; display/sensors not needed for the test), armed, no shots,
