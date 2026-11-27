@@ -51,3 +51,5 @@ github.com/thewh1teagle/kokoro-onnx/releases in `build/tts/`.
 | `case3d.py`, `render3d.py` | 3D case views from the STL files |
 | `parts.py` | Drawings of each part and tool |
 | `engine.py`, `vis.py`, `draw.py` | Timing, captions, layout, drawing helpers |
+
+Thumbnail (1280x720, for YouTube): `python thumbnail.py` writes `build/BLIPR_thumbnail.jpg` from the photos in `docs/img/`.
