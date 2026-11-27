@@ -176,7 +176,9 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
      10 of 10 read, **no false reads** (the 1.5 s hold-off works), +3.4 fps vs the Athlon (SD of the difference 4.2),
      774-1057 fps. Replaying both strings (20 shots): lat 0.102 -3.5 fps (19/20), lat 0.13-0.14 / behind 0.076 -0.2 to
      +0.2 (20/20), lat 0.152 +1.5 (19/20). The two strings differ by ~4-7 fps at the same setting, so this is about as close
-     as the data can pin it; `cal` stays 0.
+     as the data can pin it; `cal` stays 0. Sean chose 5" (lat 0.13, behind 0.076) and will set it himself at the range;
+     BLIPR still has 0.152 saved. **Next:** supersonic ammo at the range (can't be shot at home). Set the window
+     well below the expected speed (the in-band trigger only hears the window) and check lat/behind for that setup.
   1. Pull the SD card into `recordings/` (s00999 was not a fault: the logs show s01000-s01015 saved later).
   1b. Agreed with Sean: run the ESP32 out of its socket on ~30 cm female-female jumpers, powered by BLIPR (5V, GND,
      GPIO20 = RX from the Teensy, GPIO21 = TX to the Teensy; display/sensors not needed for the test), armed, no shots,
