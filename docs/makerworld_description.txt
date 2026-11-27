@@ -1,0 +1,44 @@
+BLIPR - DIY 24 GHz Radar Chronograph (case v0.12)
+
+BLIPR (Ballistic Launch Inspection Portable Radar) is a Doppler radar chronograph you build yourself. It sits on the bench beside your rifle, measures each shot's muzzle velocity and sends it to Range Book over Bluetooth. Nothing goes downrange.
+
+This is the 3D-printed case. The electronics (circuit board, firmware, parts list, build guide) are free on GitHub, and there's a full step-by-step assembly video on YouTube.
+
+- Build video: https://youtu.be/nRWELvyEKN8
+- GitHub (board files, firmware, parts list, build guide): https://github.com/saoneill01-a11y/rangebook-blipr
+- Range Book app: https://rangebook.org
+
+WHAT'S IN THE CASE
+- Radar pocket behind a thin replaceable front window
+- Bay for a single-18650 battery holder (USB-C charging and power button through the side wall)
+- Mounts for the 70 x 90 mm BLIPR circuit board, with the Teensy's USB port out the right wall
+- Lid with a window for a 0.96" OLED screen
+- Optional sensor pod on the lid (temperature, humidity, air pressure, level and compass)
+- 1/4-20 tripod mount at the balance point
+
+Size: 118.8 x 130.8 mm, 38.8 mm tall with the lid.
+
+PARTS
+- base
+- lid: pick ONE
+    lid_oled: screen window (the usual one)
+    lid_sensors: screen window plus mounts for the sensor pod
+    lid_plain: no screen
+- front_cover: the radar window. Print in natural, white or gray, NOT black or any filled filament (carbon, glitter, metal), or the radar can't see through it
+- sensor_pod and sensor_pod_roof: only with lid_sensors
+
+PRINT SETTINGS (printed in ASA; no supports needed)
+- base: floor on the bed. 0.2 mm layers, 6 walls, 4 top/bottom layers, 25% gyroid infill. Use a brim.
+- lid: top face on the bed (the lettering comes out crisp). Same settings as the base.
+- front_cover: flat smooth face on the bed. 0.15 mm layers, 100% infill. The window is 0.9 mm thick.
+- ASA warps: use an enclosure or a draft shield and a bed around 100 C. PETG should work too.
+
+HARDWARE
+- 8 x M3 heat-set inserts (about 4.6-5 mm OD, up to 7 mm long): 4 lid corners + 4 board posts (2 more for the sensor pod)
+- 1 x 1/4-20 heat-set insert, 13 mm long or shorter (tripod)
+- 4 x M3 x 8 mm screws (lid), 4 x M3 x 6 mm pan-head screws (board)
+- 4 x M3 x 6 mm self-tapping screws (battery holder)
+- 4 x M2 x 4 mm screws (screen)
+- 1 mm x 5 mm foam tape and a little hot glue for the radar
+
+The full parts list, wiring, soldering steps and electrical checks are in the build guide on GitHub. BLIPR is a hobby project and still being tested: it has been proven on .22 LR so far, with centerfire rifles next.
