@@ -328,13 +328,13 @@ The v0.12 case is 118.8 × 130.8 mm and 38.8 mm tall with the lid, and prints in
 
 **What's where.** The radar sits in a pocket behind the front window, facing forward, held by hot glue at its sides, with a thin replaceable cover in front of it. The battery holder screws to four 8 mm round pads on the floor on the left (no walls around it; 2.9 mm screw holes); its power button lines up with the rounded 14 × 10 mm slot toward the back of the left wall, and its USB-C charge port with the square opening toward the front. The main board screws onto four 12 mm posts on the right, and the Teensy's USB port comes out of the right wall. A 1/4-20 insert in the floor takes a tripod screw. The base is Sean's own CAD design. v0.9 made the battery pads 8 mm across with 2.9 mm holes. v0.10 raised the Teensy's USB hole to 24–32 mm above the case bottom (13.5 × 8 mm), to match the Teensy on its 8.5 mm sockets and fit a 12 × 5.5 mm plug. v0.11 cleared the leftover wall stubs beside the two left battery pads. v0.12 made the lid's screen window 13 mm tall (1 mm more toward the front), because the old edge hid the screen's top line.
 
-| File | Print orientation | Settings (ASA) |
+| File | Print orientation | Settings |
 | --- | --- | --- |
 | base | Floor on the bed, open top up | 0.2 mm layers, 6 walls (makes the 2.4 mm walls solid), 4 top/bottom layers, 25% gyroid infill. Bridges are 34 mm or shorter |
 | lid\_oled or lid\_plain | Top face on the bed | Same settings. Print one lid: with or without the screen window |
 | front\_cover | Flat, smooth outside face on the bed | 0.15 mm layers, 100% infill. **Natural, white or gray filament**, not black or any filled filament. The window is 0.9 mm thick |
 
-ASA warps, so use an enclosure or a draft shield, a brim on the base, and a bed around 100 °C.
+**Filament:** PETG is recommended for most people. ASA is best if BLIPR will sit in strong sun, a hot car or a very hot climate; ASA warps, so use an enclosure or a draft shield, a brim on the base, and a bed around 100 °C. PLA is fine for a test fit but softens in a hot car. The first BLIPR was printed in PLA.
 
 &#91;image: Lid v0.12 with the 13 mm screen window, and its underside: screen pocket with four M2 screw pads\]
 

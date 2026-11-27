@@ -78,8 +78,8 @@ ROWS = [
      AMZ + "1%2F4-20+heat+set+threaded+insert", "Tripod mount. Hole is 7.15 mm across and 9 mm deep (check the seller's size)."),
     ("Hot glue gun and glue sticks", "Required", "Amazon", "mini hot glue gun", 1, 8, 12,
      AMZ + "mini+hot+glue+gun", "Holds the radar in its pocket: a bead down each side. Keep it off the antenna face and the pins. Holds far better than foam tape."),
-    ("ASA filament (plus natural/white for the front cover)", "Required", "Amazon / any", "ASA filament 1kg", 1, 20, 28,
-     AMZ + "ASA+filament", "Base, lid and pod. The front cover (radar window) must be natural, white or grey, never black or filled filament."),
+    ("PETG filament (plus natural/white for the front cover)", "Required", "Amazon / any", "PETG filament 1kg", 1, 20, 28,
+     AMZ + "PETG+filament", "Base, lid and pod. ASA instead for strong sun, a hot car or a very hot climate (needs an enclosure); PLA only for a test fit. The front cover (radar window) must be natural, white or grey, never black or filled filament."),
     ("Breadboard + jumper wire kit", "Required", "Amazon / AliExpress", "breadboard jumper wire kit", 1, 8, 10,
      AMZ + "breadboard+jumper+wire+kit", "Bench tests only (the fake-bullet test and the Teensy-ESP32 link). Nothing in the finished BLIPR uses plug-on jumpers."),
     # ---------------- sensor kit

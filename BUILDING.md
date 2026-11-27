@@ -3,7 +3,7 @@
 BLIPR is a hobby project shared as it is. One unit has been built and tested on .22 LR; it hasn't been tested on
 rifles yet. If you build one, you're helping test it.
 
-**What it takes.** About $250-340 in parts (the spreadsheet in `docs/` has prices), a 3D printer that handles ASA,
+**What it takes.** About $250-340 in parts (the spreadsheet in `docs/` has prices), a 3D printer that handles PETG (ASA for hot climates),
 a temperature-controlled soldering iron and a multimeter. Every part is through-hole, and the guide has a meter
 check after each stage. Plan on a few evenings. The two parts most worth care: the radar plug (pin 1 to pin 1 only)
 and the ESP32's direction in its socket (chip side up). The guide explains both.
