@@ -22,7 +22,7 @@ bax=fig.add_axes([0.04,0.865,0.30,0.11]); bax.imshow(ban); bax.axis("off")
 fig.text(0.96,0.94,"BLIPR radar chronograph vs Athlon",ha="right",fontsize=22,weight="bold",color=INK)
 fig.text(0.96,0.900,"Same 20 shots, both chronographs at once  ·  .38 Special 158 gr from a lever-action rifle",ha="right",fontsize=12.5,color=INK2)
 # stat tiles
-tiles=[("19 of 20","shots read by BLIPR"),
+tiles=[("19 of 20","read; 1 seen, held back as unsure"),
        (f"{st.mean(d):+.1f} fps","average difference vs Athlon"),
        (f"{st.mean([abs(x) for x in d]):.1f} fps",f"typical shot-to-shot gap ({100*st.mean([abs(x) for x in d])/st.mean(A):.1f}%)"),
        ("0","false readings in string 2")]
@@ -30,14 +30,14 @@ for i,(big,small) in enumerate(tiles):
     x=0.04+i*0.235; ax=fig.add_axes([x,0.725,0.215,0.135]); ax.axis("off")
     ax.add_patch(FancyBboxPatch((0.01,0.02),0.98,0.96,boxstyle="round,pad=0,rounding_size=0.08",fc="white",ec=GRID,lw=1.2,transform=ax.transAxes))
     ax.text(0.08,0.58,big,fontsize=24,weight="bold",color=TEAL,transform=ax.transAxes,va="center")
-    ax.text(0.08,0.24,small,fontsize=11,color=INK2,transform=ax.transAxes,va="center")
+    ax.text(0.08,0.24,small,fontsize=10.5,color=INK2,transform=ax.transAxes,va="center")
 # chart
 ax=fig.add_axes([0.07,0.26,0.89,0.40]); ax.set_facecolor(SURF)
 x=np.arange(20)+np.array([0]*10+[1]*10)*0.8
 w=0.38
 for i,(b,a) in enumerate(zip(Bv,A)):
     ax.bar(x[i]-w/2-0.01,a,w,color=AT,zorder=3)
-    if b is None: ax.text(x[i]+w/2,40,"no read",rotation=90,ha="center",va="bottom",fontsize=9.5,color=MUT,zorder=4)
+    if b is None: ax.text(x[i]+w/2,40,"seen, no speed",rotation=90,ha="center",va="bottom",fontsize=9.5,color=MUT,zorder=4)
     else: ax.bar(x[i]+w/2+0.01,b,w,color=BL,zorder=3)
 ax.set_ylim(0,1200); ax.set_yticks(range(0,1201,200)); ax.yaxis.grid(True,color=GRID,lw=1,zorder=0)
 ax.set_ylabel("Velocity (fps)",color=INK2)
