@@ -346,7 +346,7 @@ def pcb_bare(ctx):
     for i in range(24):
         for y in (-37.5, -22.3):
             ctx.arc(-29 + i * 2.54, y, 0.7, 0, 2 * math.pi); ctx.fill()
-    font(ctx, 3.0, True); setc(ctx, hexc("#FFE680")); ctx.move_to(-16, 10); ctx.show_text("RB BLIPR v1.1")
+    font(ctx, 3.0, True); setc(ctx, hexc("#FFE680")); ctx.move_to(-16, 10); ctx.show_text("RB BLIPR v1.2")
 SIZE["pcb_bare"] = (72, 92)
 
 

@@ -1,4 +1,4 @@
-"""The v1.1 main board, drawn from pcb/design.py (exact part positions), with parts that can be 'soldered in'."""
+"""The main board (v1.2), drawn from pcb/design.py (exact part positions), with parts that can be 'soldered in'."""
 import os as _os
 REPO = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", ".."))
 BUILD = _os.environ.get("BLIPR_VIDEO_BUILD", _os.path.join(REPO, "tools", "video", "build"))
@@ -131,7 +131,7 @@ class Board:
             if lp:
                 txt = ref + ("\n" + pp["value"] if ref[0] in "RCD" else "")
                 self._text(ctx, txt, lp[0], lp[1], 0.78, LABEL, lp[2])
-        for ref, nm in (("J1", "J1 POWER"), ("J2", "J2 RADAR  Q VCC I GND"), ("J3", "J3 OLED"), ("J4", "J4 SENSORS"), ("J5", "J5 not used")):
+        for ref, nm in (("J1", "J1 POWER"), ("J2", "J2 RADAR  Q VCC I GND"), ("J3", "J3 OLED"), ("J4", "J4 SENSORS")):   # J5 unlabelled: not used
             pp = D.P[ref]
             n = len(pp["fp"]["pads"])
             if ref == "J2":
@@ -166,7 +166,19 @@ class Board:
         ctx.push_group()
         self._enter(ctx, pp["x"], pp["y"], k)
         ctx.rotate(math.radians(pp["rot"]))
-        if ref.startswith("R"):
+        if fp.get("hairpin"):
+            # resistor standing on end over pad 1, its other lead bent down into pad 2 (top view)
+            setc(ctx, PT.LEAD); ctx.set_line_width(0.5); ctx.move_to(0, 0); ctx.line_to(2.54, 0); ctx.stroke()
+            setc(ctx, PT.BODY_BEIGE); ctx.arc(0, 0, 1.25, 0, 2 * math.pi); ctx.fill()
+            setc(ctx, hexc("#7A3E12")); ctx.set_line_width(0.3); ctx.arc(0, 0, 0.85, 0, 2 * math.pi); ctx.stroke()
+            setc(ctx, PT.LEAD); ctx.arc(0, 0, 0.35, 0, 2 * math.pi); ctx.fill()
+        elif ref.startswith("L"):
+            # small drum inductor (6.7 mm, leads 3.2 mm apart) in holes 1 and 3, seen from above
+            ctx.translate(-0.9, 0)
+            setc(ctx, hexc("#2D3036")); ctx.arc(0, 0, 3.35, 0, 2 * math.pi); ctx.fill()
+            setc(ctx, hexc("#B8642A")); ctx.set_line_width(0.5); ctx.arc(0, 0, 2.7, 0, 2 * math.pi); ctx.stroke()
+            setc(ctx, hexc("#45494F")); ctx.arc(0, 0, 1.6, 0, 2 * math.pi); ctx.fill()
+        elif ref.startswith("R"):
             pitch = 10.16
             PT.resistor(ctx, VAL_TO_CODE.get(pp["value"], "10k"), lead=pitch / 2 - 3.15)
         elif ref == "D1":

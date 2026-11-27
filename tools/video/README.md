@@ -1,12 +1,15 @@
 # BLIPR assembly video
 
-Scripts that make the narrated, step-by-step assembly video (about 39 minutes, 1080p) straight from the design
+Scripts that make the narrated, step-by-step assembly video (about 38 minutes, 1080p) straight from the design
 files in this repo: the board drawings come from `pcb/design.py`, the 3D case views from the STL files in
 `case/out/`, and the wiring pictures and screen animations from `pictures/out/`. Change the design, re-run, and
 the video follows. The finished MP4 is not kept in git (too large for GitHub).
 
-Current version (Nov 26, 2026): circuit board v1.1, case v0.12, Teensy 0.2.8, ESP32 0.2.20, with both 5 V filters,
-the direct-wired screen, the dark-while-listening screen, and Sean's photos of the first build at the start and end.
+Current version (Nov 26, 2026): circuit board v1.2 (both 5 V filters on the board: L1/L2 with three holes, C27-C30,
+R23/R24 standing), case v0.12, Teensy 0.2.8, ESP32 0.2.20, the direct-wired screen and the dark-while-listening
+screen, with Sean's photos of the first build at the start and end. v1.1 boards: one line in the parts chapter points
+to the build guide's "If you have a v1.1 board" section. (`scenes_v12.py` is the older 2-minute add-on for the v1.1
+video; not needed with this one.)
 
 ## Chapters
 
@@ -14,22 +17,16 @@ the direct-wired screen, the dark-while-listening screen, and Sean's photos of t
 |---|---|
 | 0:00 | Welcome: what BLIPR does, exploded view of every part, the plan |
 | 1:29 | What you need: parts, the two 5 V filters, case hardware, tools, optional sensor kit |
-| 5:04 | Safety |
-| 5:41 | Get ready: sort parts, cut the Teensy's VIN–VUSB trace |
-| 6:52 | Circuit board: soldering, lowest parts first, ESP32 direction check |
-| 14:19 | Power checks: battery holder wiring and its 5 V filter, checkpoints 1 and 2 |
-| 18:08 | Wiring: radar pigtail, the screen (soldered wires, no header), checkpoint 3 |
-| 21:55 | Firmware: Arduino IDE, Teensy (fs=500000), ESP32 (out of its socket), the ESP32's 5 V filter, test shot from Range Book |
-| 26:24 | The case: printing, inserts, holder, radar, board, cover, screen, lid |
-| 30:58 | Sensor pod (optional) |
-| 32:59 | First test: power-up, level, dark means listening, compass, bench placement, speed window, first shot |
-| 36:44 | Troubleshooting, including noise and interference (`live`, `rec`) |
-
-**Board v1.2 add-on** (about 2 minutes, `scenes_v12.py`): the main video shows board v1.1 with the filters wired by hand.
-The add-on covers the three differences on v1.2: six filter parts on the board, R23/R24 standing, and the two steps to skip.
-Make it with `BLIPR_SCENES=scenes_v12 BLIPR_VIDEO_BUILD=build/v12 BLIPR_VIDEO_TTS=build/tts python3 make_video.py render`, then `join`.
-Note: `board.py` draws whatever `pcb/design.py` is now (v1.2), so re-rendering the main video's board scenes would show v1.2
-parts the narration doesn't mention.
+| 5:14 | Safety |
+| 5:51 | Get ready: sort parts, cut the Teensy's VIN–VUSB trace |
+| 7:02 | Circuit board: soldering, lowest parts first, the filter parts (L1/L2, C27–C30), ESP32 direction check |
+| 15:30 | Power checks: battery holder straight to J1, checkpoints 1 and 2 |
+| 18:38 | Wiring: radar pigtail, the screen (soldered wires, no header), checkpoint 3 |
+| 22:25 | Firmware: Arduino IDE, Teensy (fs=500000), ESP32, test shot from Range Book |
+| 25:44 | The case: printing, inserts, holder, radar, board, cover, screen, lid |
+| 30:18 | Sensor pod (optional) |
+| 32:19 | First test: power-up, level, dark means listening, compass, bench placement, speed window, first shot |
+| 36:04 | Troubleshooting, including noise and interference (`live`, `rec`) |
 
 Every hands-on step ends with a "Pause and …" bar so a viewer can stop and do it.
 

@@ -22,10 +22,10 @@ R_BY_VALUE = [("10 Ω", ["R1", "R18"]), ("100 Ω", ["R22"]), ("330 Ω", ["R10", 
               ("1 kΩ", ["R23", "R24"]), ("4.7 kΩ", ["R4", "R7", "R11", "R14", "R21"]),
               ("10 kΩ", ["R2", "R3", "R5", "R8", "R12", "R15"]), ("100 kΩ", ["R19", "R20"])]
 ALL_R = [r for _, rs in R_BY_VALUE for r in rs]
-CER = [("1 µF (105)", ["C1", "C2", "C14", "C17", "C21", "C24"]), ("100 nF (104)", ["C5", "C8", "C9", "C11", "C26"]),
+CER = [("1 µF (105)", ["C1", "C2", "C14", "C17", "C21", "C24", "C28", "C30"]), ("100 nF (104)", ["C5", "C8", "C9", "C11", "C26"]),
        ("10 nF (103)", ["C12", "C15", "C19", "C22"]), ("1 nF (102)", ["C18", "C25"])]
 ALL_CER = [r for _, rs in CER for r in rs]
-ELEC = ["C3", "C4", "C7", "C10"]
+ELEC = ["C3", "C4", "C7", "C10", "C27", "C29", "L1", "L2"]   # electrolytics, then the inductors (board v1.2)
 HDRS = ["J1", "J2", "J3", "J4"]
 
 DONE_R = [(0, -100, ALL_R + ["D1"], 0)]
@@ -136,11 +136,11 @@ def _plan(ctx, c, x, y, w, h):
 # ================================================================== 2. WHAT YOU NEED
 add("kit_modules", "kit", "Parts: the big pieces", [
     "Let's lay out everything you need. Start with the big pieces.",
-    "The main circuit board, version one point one. The RFbeam K-LC5 radar. Order the dash zero zero C version, which runs on three point three volts.",
+    "The main circuit board, version one point two. The RFbeam K-LC5 radar. Order the dash zero zero C version, which runs on three point three volts.",
     "A Teensy 4.1 with pins, and an ESP32-C3 SuperMini. Buy a pack of those: a spare is worth having.",
     "A 0.96 inch SSD1306 I2C OLED screen with four pins, the 18650 battery holder, a button-top 18650 cell, and a microSD card. A name-brand thirty-two gigabyte A1 card works well.",
 ], visual=items_view([
-    (PT.pcb_bare, {}, "pcb_bare", "Main board v1.1", "PCBWay, through-hole"),
+    (PT.pcb_bare, {}, "pcb_bare", "Main board v1.2", "PCBWay, through-hole"),
     (PT.radar, {"side": "front"}, "radar", "Radar K-LC5-RFB-00C", "3.3 V version"),
     (PT.teensy, {}, "teensy", "Teensy 4.1", "with pins"),
     (PT.esp32, {}, "esp32", "ESP32-C3 SuperMini", "buy a pack: spares"),
@@ -152,12 +152,12 @@ add("kit_modules", "kit", "Parts: the big pieces", [
 
 add("kit_small", "kit", "Parts: the small pieces", [
     "Next, the small parts. Everything solders into its own labelled holes.",
-    "Resistors and ceramic capacitors from assortment kits, and four electrolytic capacitors.",
+    "Resistors and ceramic capacitors from assortment kits, and four small electrolytic capacitors.",
     "Two MCP6022-E/P amplifier chips with two eight-pin sockets, an MCP1700-3302E regulator, the three point three volt version, and a 1N5817 diode.",
     "Female headers: two strips of twenty-four for the Teensy, two of eight for the ESP32, a one-by-five for the radar, and a one-by-four for J4.",
 ], visual=items_view([
     (PT.resistor, {"value": "4.7k"}, "resistor", "Resistors, 1/4 W", "24 on the board, +1 (R25) at the battery"),
-    (PT.ceramic, {"code": "104"}, "ceramic", "Ceramic capacitors", "17: 1 µF, 100 nF, 10 nF, 1 nF"),
+    (PT.ceramic, {"code": "104"}, "ceramic", "Ceramic capacitors", "19: 1 µF, 100 nF, 10 nF, 1 nF"),
     (PT.electrolytic_side, {}, "electrolytic_side", "Electrolytic capacitors", "3 × 10 µF, 1 × 100 µF (6.3 mm wide)"),
     (PT.opamp_chip, {}, "esp32", "MCP6022-E/P × 2", "plus 2 DIP-8 sockets"),
     (PT.to92, {}, "to92", "MCP1700-3302E", "3.3 V version, TO-92"),
@@ -167,16 +167,17 @@ add("kit_small", "kit", "Parts: the small pieces", [
 ], cols=4, line_map=[1, 1, 1, 2, 2, 2, 3, 3]), full=True)
 
 add("kit_filters", "kit", "Parts: the two 5 V filters", [
-    "Six more small parts make two noise filters. They go in the wires, not on the board.",
-    "Two twenty-two microhenry inductors, rated one amp or more. One goes in the battery holder's red wire, and one in the ESP32's own five volt feed.",
-    "And at each one, a four hundred and seventy microfarad electrolytic capacitor, ten volts or more, with a one microfarad ceramic beside it.",
+    "Six more small parts make two noise filters, and on this board they solder straight on, like everything else.",
+    "Two twenty-two microhenry inductors, rated one amp or more: the round drum type, up to eight point four millimetres across.",
+    "Two four hundred and seventy microfarad electrolytic capacitors, ten volts or more, eight millimetres across. And two more one microfarad ceramics.",
     "Without them, the battery holder's converter and the ESP32's radio both whisper into the radar through the five volt supply.",
+    "Building on an older version one point one board? Those filters go in the wires instead. The build guide's section, If you have a v1.1 board, shows how.",
 ], visual=items_view([
     (PT.inductor, {}, "inductor", "Inductor 22 µH × 2", "L1, L2 · 1 A or more"),
-    (PT.electrolytic_side, {"d": 8, "h": 12}, "electrolytic_side", "470 µF × 2", "C27, C29 · 10 V or more"),
+    (PT.electrolytic_side, {"d": 8, "h": 12}, "electrolytic_side", "470 µF × 2", "C27, C29 · 8 mm across"),
     (PT.ceramic, {"code": "105"}, "ceramic", "1 µF ceramic × 2", "C28, C30"),
-    (PT.heatshrink, {}, "heatshrink", "Heat-shrink", "on every joint"),
-], cols=4, line_map=[1, 2, 2, 2]), full=True)
+    (PT.pcb_bare, {}, "pcb_bare", "All on board v1.2", "v1.1: see the build guide"),
+], cols=4, line_map=[1, 2, 2, 4]), full=True)
 
 add("kit_hardware", "kit", "Parts: case hardware", [
     "For the case: the printed parts, eight M3 heat-set inserts, and one quarter-twenty insert for a tripod, nine millimetres long or shorter.",
@@ -273,7 +274,7 @@ add("board_tour", "board", "Meet the board", [
                      overlays=[{"at": 0, "kind": "tag", "xy": (35, 5), "text": "FRONT EDGE · radar side", "anchor": "c", "until": 1},
                                {"at": 3, "kind": "box", "xywh": (6.5, 66, 63, 18), "until": 4},
                                {"at": 3, "kind": "box", "xywh": (7, 0.5, 20, 23), "delay": 1.5, "until": 4}]),
-    notes=[(0, "Front edge = radar side"), (4, "*Order: resistors, diode, ceramics, sockets, regulator, electrolytics, headers")])
+    notes=[(0, "Front edge = radar side"), (4, "*Order: resistors, diode, ceramics, sockets, regulator, electrolytics, inductors, headers")])
 
 add("board_howto", "board", "How to solder a through-hole part", [
     "If you're new to soldering, here's the whole technique.",
@@ -338,12 +339,12 @@ add("board_r2", "board", "Resistors, part 2: power and the left side", [
     "Now the rest of the resistors.",
     "Ten ohm: R1 and R18, in the power area at the front. Brown, black, black.",
     "One hundred k: R19 and R20, for the battery gauge. Brown, black, yellow.",
-    "One k: R23 and R24, at the front-left corner. Brown, black, red.",
+    "One k: R23 and R24, at the front-left corner. Brown, black, red. These two stand on end: bend one leg back down beside the body, and stand the resistor over the hole inside its drawn square.",
     "R21, four point seven k, and R22, one hundred ohm, were for an ammo probe BLIPR no longer uses. Fit them anyway. They do no harm.",
-], visual=board_view(B, [(0, FULL), (1, (48, 12, 60)), (2, (15, 38, 50)), (3, (12, 14, 50)), (4, (15, 42, 50))],
+], visual=board_view(B, [(0, FULL), (1, (48, 12, 60)), (2, (15, 38, 50)), (3, (21, 31, 34)), (4, (15, 42, 50))],
                      place=DONE_R[:0] + [(0, -100, ["R4", "R7", "R11", "R14", "R6", "R9", "R13", "R16", "R2", "R3", "R5", "R8", "R12", "R15", "R10", "R17"], 0),
                                          (1, 0.8, ["R1", "R18"], 0.4), (2, 0.8, ["R19", "R20"], 0.4), (3, 0.8, ["R23", "R24"], 0.4), (4, 1.0, ["R21", "R22"], 0.4)]),
-    notes=[(1, "10 Ω: R1 R18"), (2, "100 kΩ: R19 R20"), (3, "1 kΩ: R23 R24"), (4, "4.7 kΩ: R21 · 100 Ω: R22")],
+    notes=[(1, "10 Ω: R1 R18"), (2, "100 kΩ: R19 R20"), (3, "1 kΩ: R23 R24, standing on end"), (4, "4.7 kΩ: R21 · 100 Ω: R22")],
     pause=6, do="Pause and solder these resistors")
 
 add("board_d1", "board", "The diode, D1", [
@@ -359,13 +360,13 @@ add("board_d1", "board", "The diode, D1", [
 
 add("board_cer", "board", "Ceramic capacitors", [
     "Now the small ceramic capacitors. These have no direction.",
-    "One microfarad, code one oh five: C1, C2, C14, C17, C21 and C24.",
+    "One microfarad, code one oh five: C1, C2, C14, C17, C21 and C24, plus C28 and C30 up by the filters.",
     "One hundred nanofarad, code one oh four: C5, C8, C9, C11 and C26.",
     "Ten nanofarad, code one oh three: C12, C15, C19 and C22.",
     "And one nanofarad, code one oh two: C18 and C25.",
 ], visual=board_view(B, [(0, FULL)],
                      place=[(0, -100, ALL_R + ["D1"], 0)] + [(i + 1, 0.8, refs, 0.3) for i, (_, refs) in enumerate(CER)]),
-    notes=[(1, "1 µF (105): C1 C2 C14 C17 C21 C24"), (2, "100 nF (104): C5 C8 C9 C11 C26"), (3, "10 nF (103): C12 C15 C19 C22"),
+    notes=[(1, "1 µF (105): C1 C2 C14 C17 C21 C24 C28 C30"), (2, "100 nF (104): C5 C8 C9 C11 C26"), (3, "10 nF (103): C12 C15 C19 C22"),
            (4, "1 nF (102): C18 C25")], pause=6, do="Pause and solder the ceramics")
 
 add("board_sockets", "board", "The two chip sockets", [
@@ -390,15 +391,34 @@ add("board_u3", "board", "The regulator, U3", [
     notes=[(1, "*Flat face → front edge"), (1, "Legs: GND · IN · OUT, left to right"), (2, "Spread the outer legs slightly")], pause=5, do="Pause and solder U3")
 
 add("board_elec", "board", "Electrolytic capacitors", [
-    "The four electrolytic capacitors are polarised. They only go in one way.",
+    "The six electrolytic capacitors are polarised. They only go in one way.",
     "The long leg is plus, and it goes in the square pad. The stripe on the can marks the minus side.",
     "Ten microfarad: C4, C7 and C10. One hundred microfarad: C3.",
+    "Then the two big ones for the filters, four hundred and seventy microfarads: C27 and C29, in the top-left corner beside J1. Same rule: plus leg in the square pad.",
     "Check every one before you solder. A capacitor in backwards can swell or pop.",
 ], visual=switch([(0, drawing(lambda ctx, c, x, y, w, h: DG.compare(ctx, c, x, y, w, h, DG.elec_panel(True), DG.elec_panel(False), line=0, line2=1))),
-                  (2, board_view(B, [(2, (48, 11, 50))], place=[(0, -100, ALL_R + ["D1"] + ALL_CER + ["U3"], 0), (2, 0.6, ["C4", "C7", "C10"], 0.4), (2, 2.4, ["C3"], 0)],
+                  (2, board_view(B, [(2, (48, 11, 50)), (3, (16, 57, 34))],
+                                 place=[(0, -100, ALL_R + ["D1"] + ALL_CER + ["U3"], 0), (2, 0.6, ["C4", "C7", "C10"], 0.4), (2, 2.4, ["C3"], 0),
+                                        (3, 1.2, ["C27", "C29"], 0.5)],
                                  sockets=DONE_SOCK)),
-                  (3, drawing(lambda ctx, c, x, y, w, h: DG.compare(ctx, c, x, y, w, h, DG.elec_panel(True), DG.elec_panel(False), line=0, line2=0)))]),
-    notes=[(1, "*Long leg (+) → square pad"), (1, "Stripe = minus"), (2, "10 µF: C4 C7 C10 · 100 µF: C3")], pause=5, do="Pause and solder the electrolytics")
+                  (4, drawing(lambda ctx, c, x, y, w, h: DG.compare(ctx, c, x, y, w, h, DG.elec_panel(True), DG.elec_panel(False), line=0, line2=0)))]),
+    notes=[(1, "*Long leg (+) → square pad"), (1, "Stripe = minus"), (2, "10 µF: C4 C7 C10 · 100 µF: C3"), (3, "470 µF: C27 C29, top left")],
+    pause=5, do="Pause and solder the electrolytics")
+
+add("board_inductors", "board", "The inductors, L1 and L2", [
+    "Next, the two inductors, L1 and L2, beside the big capacitors. They're the heart of the two noise filters.",
+    "They have no direction: either way round is fine.",
+    "Each one has three holes in a row. The two outer holes are five millimetres apart. The left and middle holes are three point two millimetres apart, for the smaller drums.",
+    "Use whichever pair fits your inductor's legs. The third hole stays empty. Push it down flat, and solder.",
+], visual=board_view(B, [(0, (16, 57, 34)), (2, (12, 57, 26)), (3, (16, 57, 34))],
+                     place=[(0, -100, ALL_R + ["D1"] + ALL_CER + ["U3", "C3", "C4", "C7", "C10", "C27", "C29"], 0), (3, 1.0, ["L1", "L2"], 0.5)],
+                     sockets=DONE_SOCK,
+                     overlays=[{"at": 2, "kind": "ring", "xy": (7.9, 61.6), "r": 26, "until": 3}, {"at": 2, "kind": "ring", "xy": (12.9, 61.6), "r": 26, "until": 3},
+                               {"at": 2, "kind": "tag", "xy": (10.4, 58.8), "text": "outer pair: 5 mm", "anchor": "c", "until": 3},
+                               {"at": 2, "kind": "ring", "xy": (7.9, 52.5), "r": 26, "delay": 1.2, "until": 3}, {"at": 2, "kind": "ring", "xy": (11.1, 52.5), "r": 26, "delay": 1.2, "until": 3},
+                               {"at": 2, "kind": "tag", "xy": (10.4, 49.9), "text": "left + middle: 3.2 mm", "anchor": "c", "delay": 1.2, "until": 3}]),
+    notes=[(0, "L1, L2: 22 µH, 1 A or more"), (1, "Either way round"), (2, "Three holes: 5 mm or 3.2 mm apart"), (3, "*Use the pair that fits; push down flat")],
+    pause=5, do="Pause and solder L1 and L2")
 
 add("board_headers", "board", "Headers J1 to J4", [
     "Next, the connectors along the left side and the front.",
@@ -452,7 +472,7 @@ add("power_holder", "power", "Wire the battery holder", [
     "Time for power. The battery holder has its own button, and that button is BLIPR's on and off switch.",
     "Before you solder anything, put the cell in, turn the holder on, and meter its pads. The red probe on the five volt pad must read plus five, not minus five.",
     "Nothing on the board protects against those two swapped. Then take the cell out.",
-    "With no cell in the holder, solder a red wire to its five volt pad and a black wire to its ground pad. They go to J1 plus five volts and J1 ground. The red one gets a small filter on the way, in a moment.",
+    "With no cell in the holder, solder a red wire to its five volt pad and a black wire to its ground pad. They go straight to J1 plus five volts and J1 ground. The holder's noise filter is already on the board, right beside J1.",
     "Now the battery gauge. Tin the holder's plus end tab, and quickly solder one leg of a ten k resistor, R25, straight onto it. Cover it with heat-shrink.",
     "Solder a wire to R25's other leg. Brown in our pictures. It goes to J1 BAT. With the resistor right at the tab, a nicked wire can't short the cell.",
     "Set the holder's mode switch to power on. About ten centimetres of wire reaches from the holder to the board.",
@@ -460,15 +480,6 @@ add("power_holder", "power", "Wire the battery holder", [
     notes=[(1, "!First: meter its pads, +5 V not −5 V"), (2, "Then cell out while soldering"), (3, "Red: 5V pad → J1 +5V"), (3, "Black: GND pad → J1 GND"),
            (4, "R25 (10 kΩ) soldered on the + tab, heat-shrink"), (5, "R25 → J1 BAT"), (6, "Mode switch: power on")],
     pause=6, do="Pause and wire the holder")
-
-add("power_filter", "power", "The battery holder's 5 V filter", [
-    "Now the filter in that red wire. The holder makes its five volts with a tiny switching converter, and the radar can hear it whistle.",
-    "Cut the red wire and put L1, the twenty-two microhenry inductor, in the gap. It goes either way round.",
-    "At the board end, solder C27, four hundred and seventy microfarads, across J1's plus five volts and ground. Stripe to ground. Put C28, the one microfarad ceramic, right beside it.",
-    "Keep the red and black wires side by side, and heat-shrink every joint.",
-], visual=image_view(PIC + "power_filter.png"),
-    notes=[(1, "L1 22 µH in the red wire"), (1, "Either way round"), (2, "C27 470 µF: stripe to GND"), (2, "C28 1 µF beside it"),
-           (2, "*Capacitors on the board side, close to J1"), (3, "Heat-shrink every joint")], pause=6, do="Pause and fit the filter")
 
 add("power_check1", "power", "Checkpoint 1: power rails", [
     "Checkpoint one. The chips and modules are still out.",
@@ -644,29 +655,18 @@ add("fw_teensy", "firmware", "Load the Teensy", [
            (3, "*stat → overruns 0"), (4, "set fs=500000, then reboot")], pause=5, do="Pause and load the Teensy")
 
 add("fw_esp", "firmware", "Load the ESP32", [
-    "Now the ESP32. Take it out of BLIPR's socket and plug its USB into the computer. Open BliprBLE dot I N O in a second IDE window, so each board keeps its own Serial Monitor.",
+    "Now the ESP32. Plug a USB-C data cable into it. Open BliprBLE dot I N O in a second IDE window, so each board keeps its own Serial Monitor.",
     "Choose the Nologo ESP32C3 Super Mini board, with USB CDC On Boot enabled, and its port.",
     "Click Upload. If it can't connect, hold the BOOT button, tap RESET, let go of BOOT, and upload again.",
     "When it's done, tap RESET. The Serial Monitor shows the ESP32 firmware version, ready.",
-    "You only need the cable this once. After its filter goes on, the computer only sees the ESP32 when it's out of BLIPR, and Range Book updates it over Bluetooth in about thirty seconds.",
+    "You only need the cable this once. After this, Range Book updates the ESP32 over Bluetooth in about thirty seconds. If the computer ever can't see it while it's in BLIPR, take it out of its socket to flash it.",
 ], visual=switch([(0, drawing(lambda ctx, c, x, y, w, h: DG.ide(ctx, c, x, y, w, h, [
     (0, "Sketch", "BliprBLE.ino  (second window)"), (1, "Board", "Nologo ESP32C3 Super Mini"), (1, "USB CDC On Boot", "Enabled"),
-    (2, "Can't connect?", "hold BOOT, tap RESET, release")], intro="ESP32 out of BLIPR's socket\nUSB-C data cable into the ESP32"))),
+    (2, "Can't connect?", "hold BOOT, tap RESET, release")], intro="USB-C data cable into the ESP32"))),
     (3, drawing(lambda ctx, c, x, y, w, h: DG.serial(ctx, c, x, y, w, h, [(3, "BLIPR ESP32-C3 firmware 0.2.20 ready.", hexc("#9BE39B")),
                                                                               (3, "Sensors found: ...", None)])))]),
-    notes=[(0, "!ESP32 out of BLIPR for USB"), (1, "USB CDC On Boot: Enabled"), (2, "No connection? BOOT + tap RESET"), (4, "Later updates: Range Book, over Bluetooth")],
+    notes=[(1, "USB CDC On Boot: Enabled"), (2, "No connection? BOOT + tap RESET"), (4, "Later updates: Range Book, over Bluetooth")],
     pause=5, do="Pause and load the ESP32")
-
-add("fw_espfilter", "firmware", "The ESP32's own 5 V filter", [
-    "With its firmware on, the ESP32 gets its own filter. Its Bluetooth radio draws current in bursts, and those bursts reached the radar through the shared five volts.",
-    "Keep the module out of BLIPR. Hold it flat, and cut its five volt pin off just under the black plastic with flush cutters. Don't lever it. Nothing on the board is cut.",
-    "Solder L2, the second inductor, from the socket's five volt hole to the pin's stub on top of the module. A short header pin soldered to L2 pushes into the hole. Or solder it to D1's leg on the square-pad side.",
-    "Then C29, four hundred and seventy microfarads, stripe to ground, and C30, one microfarad, across the module's five volt stub and its ground pin, close in. Lay them flat so the lid clears them.",
-    "Beep test: the five volt stub to D1's square pad beeps, through L2. Five volts to ground must not beep. Then plug the ESP32 back in.",
-], visual=image_view(PIC + "esp_filter.png"),
-    notes=[(1, "Cut the module's 5V pin only"), (1, "!Hold it flat: don't lever it"), (2, "L2 22 µH: socket 5V hole → pin stub"),
-           (3, "C29 470 µF (stripe to GND) + C30 1 µF"), (3, "Lay them flat"), (4, "*5V stub → D1 square pad: beep"), (4, "!5V → GND: no beep")],
-    pause=6, do="Pause and fit the ESP32 filter")
 
 add("fw_phone", "firmware", "Talk to it from Range Book", [
     "Now let's see the two boards working together.",
@@ -935,14 +935,14 @@ add("trouble2", "trouble", "More fixes", [
 add("trouble3", "trouble", "Noise, and a few quirks", [
     "BLIPR's radar hears more than bullets. If it reads the same speed again and again, or reports shots nobody fired, look for a steady tone.",
     "On the Teensy, type live. Twice a second it shows the noise and the strongest line, with its speed. Type rec to record a tenth of a second and see what's in it.",
-    "Most tones come from switching converters or a lit screen. Check both five volt filters are fitted, the sample rate is five hundred thousand, and the window stays clear of the tone's speed.",
+    "Most tones come from switching converters or a lit screen. Check the five volt filter parts are all in, the sample rate is five hundred thousand, and the window stays clear of the tone's speed.",
     "If the holder's button won't turn BLIPR on after a night on the charger, take the cell out, put it back, and press the button.",
-    "And if the computer can't see the ESP32 while it's in BLIPR, that's normal with its filter: take it out to flash it, or update it over Bluetooth.",
+    "And if a Bluetooth update stops partway, keep the phone close with its screen on, and try again. Nothing changes until the whole file has arrived.",
 ], visual=drawing(lambda ctx, c, x, y, w, h: DG.trouble(ctx, c, x + 10, y + 10, w - 20, h - 20, [
     (0, "Same speed every time, or false shots", "A steady tone: type live (strongest line) or rec on the Teensy"),
-    (2, "Where tones come from", "Converters, a lit screen: both 5 V filters · fs=500000 · window clear of the line"),
+    (2, "Where tones come from", "Converters, a lit screen: filters fitted · fs=500000 · window clear of the line"),
     (3, "Button won't switch on after charging", "Take the cell out, put it back, press the button"),
-    (4, "Computer can't see the ESP32 in BLIPR", "Normal with its filter: flash it out of the socket, or over Bluetooth")]), BG), full=True)
+    (4, "Bluetooth update stops partway", "Phone close, screen on, try again: nothing changes until it's all arrived")]), BG), full=True)
 
 add("outro", "intro", "You built BLIPR", [
     "That's it. You've built BLIPR.",

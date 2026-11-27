@@ -82,7 +82,7 @@ def title(ctx, c, x, y, w, h, sub="Assembly, step by step", hero="turn_0119"):
     b = ramp(c.t, 0.8, 0.8)
     setc(ctx, FOCUS, b); ctx.rectangle(x + 60, y + 470, 120 * b, 6); ctx.fill()
     text(ctx, sub, x + 60, y + 540, 44, INK, weight="semi", alpha=b)
-    text(ctx, "Circuit board v1.1  ·  Case v0.12  ·  Firmware 0.2.8 / 0.2.20", x + 60, y + 600, 26, INK2, alpha=b)
+    text(ctx, "Circuit board v1.2  ·  Case v0.12  ·  Firmware 0.2.8 / 0.2.20", x + 60, y + 600, 26, INK2, alpha=b)
 
 
 # ------------------------------------------------------------------ bench top view
