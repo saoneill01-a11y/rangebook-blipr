@@ -19,7 +19,7 @@ before anything that costs money or can't be undone. The repo is saoneill01-a11y
 | `pictures/` | Wiring pictures (`pics.py`) |
 | `docs/` | This setup guide, ideas for later |
 
-The Range Book web app (the `chrono` branch of saoneill01-a11y/rangebook) is a separate repo. It ships the
+The Range Book web app (saoneill01-a11y/rangebook, `dev` and `main`) is a separate repo. It ships the
 ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is not part of this repo
 (see "Range Book" below for its rules).
 
@@ -35,15 +35,17 @@ ESP32 firmware file in `public/blipr/` for Bluetooth updates; changing that is n
 
 ## Range Book (only if Sean asks for app work)
 
-- BLIPR code in the app lives only on the `chrono` branch (version 2.44.x). `dev` and `main` are 2.43.x.
-- Merges go one way: `dev` into `chrono` after dev changes. **Never** merge chrono into dev or main, and
-  never release dev to main unless Sean says so. Sean calls chrono "private": keep BLIPR features off dev/main.
+- BLIPR is released (Nov 27, 2026): its app code is on `dev` and `main` (2.53.x). App work goes on `dev`; release
+  dev to `main` only when Sean says so (README-only fixes may be cherry-picked to main too; they don't trigger a build).
+- The `chrono` branch is fully merged. Sean keeps it but doesn't want it updated: don't push to it or merge into it.
+  Its image (`rangebook:chrono`) no longer gets updates; the release image is `rangebook:latest` (built on push to main).
 - Test the server only against a copy of the data folder (`DATA_DIR=<copy>`), never his real data.
 - An ESP32 firmware release for Bluetooth updates: copy the built `BliprBLE-<ver>.bin` into
   `public/blipr/` and update the `esp` entry in `public/blipr/firmware.json` (version, file, size in bytes, md5; the app image `BliprBLE.ino.bin`, not the merged file). The app
   checks the md5, and the ESP32 rolls back if the new firmware doesn't confirm within 15 s.
-  Currently shipped: 0.2.20 (780544 bytes, md5 aac87886042cb86a6981281b70e53d8a; chrono d9d3f8a, Nov 26). Sean updates his
-  server in Unraid (image ghcr.io/.../rangebook:chrono, built by GitHub Actions on every push to chrono), then updates in Bluefy.
+  Currently shipped: 0.2.20 (780544 bytes, md5 aac87886042cb86a6981281b70e53d8a; in main since 2.53.0). A new one goes on
+  `dev`, then a release to `main` (Sean's say-so). Sean's Unraid server may still be on the `:chrono` image: check which
+  image he runs before telling him an update will reach it.
 
 ## Where things stand (Nov 11, 2026)
 
