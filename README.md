@@ -10,6 +10,8 @@ on another day. Beside an Athlon on the same shots (.38 Special handloads from a
 19 of 20, each string averaging within about 3 fps of the Athlon. Supersonic rifle ammo hasn't been tested yet.
 Expect changes as more real shots come in.
 
+[![BLIPR and an Athlon radar chronograph on the same 20 shots of .38 Special: BLIPR read 19, +0.3 fps overall, typical gap 4.1 fps on a single shot](pictures/out/blipr_vs_athlon_2026-11-27.png)](pictures/out/blipr_vs_athlon_2026-11-27.png)
+
 | | Version |
 |---|---|
 | Circuit board | v1.2 (the two 5 V noise filters on the board; v1.1 boards fit them in the wiring) |
