@@ -22,6 +22,8 @@ How it works, in one pass: the RFbeam K-LC5 radar sends out a 24 GHz signal and 
 
 **Status (Nov 27, 2026):** one BLIPR is built on circuit board v1.1 and has been tested live. On .22 LR (CCI Standard Velocity) its first two strings read 9 of 10 shots, averaging 1029 fps (SD 22), within about 1% of an Athlon chronograph with the same rifle and ammo on another day. On Nov 27 it shot beside an Athlon on the same shots (.38 Special 158 gr handloads from a lever-action rifle): 19 of 20 read, and each string averaged within about 3 fps of the Athlon. Supersonic rifle ammo is next. Board v1.2, which puts both 5 V filters on the board, is designed but not built yet; this guide covers both boards. This guide also comes as a PDF and a Word file (`docs/` in the project), and there is a narrated [assembly video on YouTube](https://youtu.be/nRWELvyEKN8).
 
+&#91;image: BLIPR and an Athlon radar chronograph on the same 20 shots of .38 Special: BLIPR read 19 of 20 (one seen but held back as unsure), +0.3 fps overall vs the Athlon, a typical gap of 4.1 fps (0.4%) on any one shot\]
+
 &#91;image: The first BLIPR on a small tripod: screen window in the lid's back corner, sensor pod in front\]
 
 &#91;image: The same BLIPR from the radar side: the square radar window on the front face\]

@@ -268,6 +268,9 @@ def build():
     para("Circuit board v1.2 (v1.1 notes kept) · Case v0.12 · Teensy firmware 0.2.9 · ESP32 firmware 0.2.20 · November 2026",
          size=10, color=(90, 90, 90), align=WD_ALIGN_PARAGRAPH.CENTER)
     doc.add_page_break()
+    picture(PICS / "blipr_vs_athlon_2026-11-27.png", 6.9,
+            "BLIPR and an Athlon radar chronograph on the same 20 shots of .38 Special (Nov 27, 2026): 19 of 20 read "
+            "(one seen but held back as unsure), +0.3 fps overall, a typical gap of 4.1 fps (0.4%) on any one shot.")
 
     # ---------------------------------------------------------------- how it works
     doc.add_heading("How it works", 1)
