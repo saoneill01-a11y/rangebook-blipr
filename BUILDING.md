@@ -1,7 +1,7 @@
 # Building your own BLIPR
 
-BLIPR is a hobby project shared as it is. One unit has been built and tested on .22 LR; it hasn't been tested on
-rifles yet. If you build one, you're helping test it.
+BLIPR is a hobby project shared as it is. One unit has been built and tested on .22 LR and on .38 Special from a lever-action rifle
+(beside an Athlon chronograph: 19 of 20 read, within about 3 fps); it hasn't been tested on supersonic rifle ammo yet. If you build one, you're helping test it.
 
 **What it takes.** About $250-340 in parts (the spreadsheet in `docs/` has prices), a 3D printer that handles ASA,
 a temperature-controlled soldering iron and a multimeter. Every part is through-hole, and the guide has a meter

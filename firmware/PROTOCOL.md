@@ -1,6 +1,6 @@
 # BLIPR Bluetooth API
 
-**Interface version 0.3**, for ESP32 firmware 0.2.20 and Teensy firmware 0.2.8 (November 2026).
+**Interface version 0.3**, for ESP32 firmware 0.2.20 and Teensy firmware 0.2.9 (November 2026).
 
 This is how any app or script can talk to BLIPR over Bluetooth Low Energy: read each shot's velocity as it happens,
 read battery and status, change settings, and send commands. Range Book uses exactly this interface; nothing in it

@@ -18,8 +18,8 @@ Open a new terminal and check it with `claude --version`. It asks you to sign in
 The Claude desktop app's **Code** tab works too, if you'd rather not use a terminal.
 Instructions current as of October 2026; see https://code.claude.com/docs/en/overview if they've changed.
 
-**Git and GitHub.** You need `git` and to be signed in to GitHub, because the repo is private. The easiest
-way is the GitHub CLI: install it from https://cli.github.com, then run `gh auth login`.
+**Git and GitHub.** You need `git`. The repo is public, so no GitHub account is needed to download it. The GitHub CLI
+(https://cli.github.com, then `gh auth login`) is only needed if you want to push changes or use `gh`.
 
 **Python 3** (Mac: already there, or `brew install python`; Windows: python.org or the Microsoft Store).
 
@@ -29,7 +29,7 @@ pyserial, numpy) Claude Code installs for you in step 3.
 ## 2. Get the project
 
 ```
-gh repo clone saoneill01-a11y/rangebook-blipr
+git clone https://github.com/saoneill01-a11y/rangebook-blipr
 cd rangebook-blipr
 claude
 ```

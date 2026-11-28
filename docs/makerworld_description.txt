@@ -43,4 +43,4 @@ HARDWARE
 - 4 x M2 x 4 mm screws (screen)
 - 1 mm x 5 mm foam tape and a little hot glue for the radar
 
-The full parts list, wiring, soldering steps and electrical checks are in the build guide on GitHub. BLIPR is a hobby project and still being tested: it has been proven on .22 LR so far, with centerfire rifles next.
+The full parts list, wiring, soldering steps and electrical checks are in the build guide on GitHub. BLIPR is a hobby project and still being tested: it has been tested on .22 LR and .38 Special (within about 3 fps of an Athlon radar chronograph on the same shots), with supersonic rifle ammo next.

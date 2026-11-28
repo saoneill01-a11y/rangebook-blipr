@@ -1,9 +1,9 @@
 # Ideas for after the first build works
 
-## AMOLED display upgrade (decided: wait until BLIPR v1.1 is proven)
+## AMOLED display upgrade (decided: wait until BLIPR is proven at the range)
 - Replace the ESP32-C3 SuperMini + 0.96" OLED with a **Waveshare ESP32-S3-AMOLED-1.91** (536x240 RM67162 AMOLED,
   ESP32-S3 16 MB flash / 8 MB PSRAM, BLE 5, two 0.1" headers, 57.5 x 24.5 mm). Avoid the 1.8" touch model (1 mm pads only).
-- Board v1.1 stays: leave U4 empty and run 8 jumpers from its socket to the S3 board in the lid:
+- The main board (v1.1 or v1.2) stays: leave U4 empty and run 8 jumpers from its socket to the S3 board in the lid:
   5V, GND, 3V3 (feeds J4 sensors), GPIO20 (RX from Teensy via R23), GPIO21 (TX via R24), GPIO3 (battery sense),
   GPIO6/7 (I2C SDA/SCL to J4). J3 (OLED) goes unused.
 - Firmware: port BliprBLE to the S3; BLE, Teensy link, sensors, battery and OTA carry over; redo the screens with
@@ -22,7 +22,7 @@
   whether shared projects can include assembly); (2) order a batch of 20-50 assembled and sell them (e.g. Tindie):
   assembly falls to a few dollars a board, but stock and shipping are on Sean; (3) just publish the files in the
   public repo.
-- Before any of it: build and range-test BLIPR, and fix anything on board v1.1 first.
+- Before any of it: build and range-test BLIPR, and fix anything on the main board first (now v1.2).
 - If volume ever goes well past that, a surface-mount version of the board would be cheaper to machine-assemble.
 - Cost of a second BLIPR for Sean (Oct 24): about $80-90 (radar ~$45, Teensy $35.50, filament and screws); he has
   spare boards, ESP32, OLED, battery holder, 18650, op-amps, regulator and passives. Sensor kit about $35 more.

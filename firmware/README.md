@@ -268,7 +268,7 @@ Notes:
 
 ## Prebuilt files
 
-Current: Teensy 0.2.8 and ESP32 0.2.20 (Nov 26, 2026). `BliprBLE.app.bin` is the same file Range Book ships for
+Current: Teensy 0.2.9 and ESP32 0.2.20 (Nov 27, 2026). `BliprBLE.app.bin` is the same file Range Book ships for
 Bluetooth updates (780544 bytes, md5 aac87886042cb86a6981281b70e53d8a).
 
 - `prebuilt/BliprTeensy.hex` (built with USB Type Serial + MTP Disk): open the Teensy Loader app (installed with the Teensy package), File > Open HEX File, press the Teensy's button.

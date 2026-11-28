@@ -1,6 +1,6 @@
 # Wiring pictures
 
-Every connection, drawn with the parts as they look. They fit both builds: on the circuit board (v1.1, Circuit board tab) the off-board wires land on headers J1 to J5; on perfboard they land on the same points named in Step 4. Updated for board v1.1 and firmware 0.2.2: the serial link is on Teensy pins 34 and 35 through 1 kΩ resistors, the radar has 4 wires, and there are no 22 pF capacitors.
+Every connection, drawn with the parts as they look. They fit both builds: on the circuit board (v1.2 or v1.1, Circuit board tab) the off-board wires land on headers J1 to J5; on perfboard they land on the same points named in Step 4. For firmware 0.2.2 and later: the serial link is on Teensy pins 34 and 35 through 1 kΩ resistors, the radar has 4 wires, and there are no 22 pF capacitors.
 
 How to read them: each coloured line is one wire (or one solder trail on perfboard). A black dot joins wires; lines that cross without a dot don't touch. Pins with a red ring are the ones this project uses. Red is +5 V, black ground, orange 3.3 V, green radar I, blue radar Q (and SDA), yellow SCL and data.
 

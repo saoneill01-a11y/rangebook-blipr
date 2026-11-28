@@ -6,8 +6,8 @@ files in this repo: the board drawings come from `pcb/design.py`, the 3D case vi
 the video follows. The finished MP4 is not kept in git (too large for GitHub); it's on YouTube:
 https://youtu.be/nRWELvyEKN8.
 
-Current version (Nov 26, 2026): circuit board v1.2 (both 5 V filters on the board: L1/L2 with three holes, C27-C30,
-R23/R24 standing), case v0.12, Teensy 0.2.8, ESP32 0.2.20, the direct-wired screen and the dark-while-listening
+What the video shows (made Nov 26, 2026): circuit board v1.2 (both 5 V filters on the board: L1/L2 with three holes, C27-C30,
+R23/R24 standing), case v0.12, Teensy 0.2.8 (0.2.9 since, with no change to the build steps), ESP32 0.2.20, the direct-wired screen and the dark-while-listening
 screen, with Sean's photos of the first build at the start and end. v1.1 boards: one line in the parts chapter points
 to the build guide's "If you have a v1.1 board" section. (`scenes_v12.py` is the older 2-minute add-on for the v1.1
 video; not needed with this one.)
