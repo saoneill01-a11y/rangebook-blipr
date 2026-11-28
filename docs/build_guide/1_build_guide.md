@@ -114,7 +114,9 @@ The resistor and ceramic capacitor assortment kits from the spreadsheet should c
 
 The circuit has three parts: clean power for the radar and amplifiers, two identical amplifier channels (I and Q), and plain wiring between the modules.
 
-&#91;image: Schematic v0.5: power with battery sense, I-channel amplifier, Q-channel parts and module connections\]
+&#91;image: Schematic, main board v1.2: power with both 5 V filters and the battery gauge, I-channel amplifier, Q-channel parts and module and header connections\]
+
+The full-size schematic is `pcb/out/schematic_v1.2.png` (and `.pdf`) in the project.
 
 **Power.** The battery holder makes 5 V, and its own button turns everything on and off (there is no separate switch). 5 V feeds the Teensy, the ESP32 (through diode D1, which blocks power flowing back from the ESP32's USB port) and, through filter resistor R18, a separate low-noise 3.3 V regulator (U3) that powers only the radar and the amplifiers. Keeping the radar off the Teensy's own 3.3 V keeps digital noise out of the weakest signals in the build. R1 and C7 filter the op-amp supply a second time.
 

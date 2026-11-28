@@ -116,7 +116,8 @@ CHECK BEFORE SOLDERING THE ESP32
   its G pin to J1 pin 2. Both must beep. If either doesn't, stop and ask.
 
 WHAT WAS CHECKED
-  - Netlist matches schematic v0.5 (including the sensor kit parts R21, R22, J4, J5).
+  - Schematic: out/schematic_v1.2.png and .pdf, drawn by schematic.py from this netlist (design.py),
+    including the 5 V filters and the sensor kit parts R21, R22, J4, J5.
   - Design-rule check on tracks and pads: 0.25 mm clearance, 0 problems; every net fully connected.
     The ground pour keeps 0.35 mm from other copper and its thermal spokes at least 0.3 mm.
     (PCBWay's minimum is 0.1 mm.) The five vias are 0.3 mm drill / 0.6 mm pad.
